@@ -132,6 +132,7 @@ Navigate to `http://localhost:5173`. You're logged in as **Alex Morgan** by defa
 | `pnpm lint`         | 🔍 Run ESLint                                   |
 | `pnpm lint:fix`     | 🔧 Run ESLint with auto-fix                     |
 | `pnpm format`       | ✨ Format all source files with Prettier        |
+| `pnpm lint:all`     | 🧹 Format all files and auto-fix lint issues    |
 | `pnpm format:check` | ✅ Check formatting without writing changes     |
 
 ---
