@@ -153,4 +153,4 @@ src/
 
 ## 📄 License
 
-This project is for internal / demo use.
+This project is for internal/demo use.
