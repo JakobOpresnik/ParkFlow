@@ -10,25 +10,26 @@ A real-time parking management system for office buildings. ParkFlow gives emplo
 
 ## 📑 Table of Contents
 
-- [✨ Features](#-features)
-  - [📊 Dashboard](#-dashboard)
-  - [🗺️ Parking Spaces](#️-parking-spaces)
-  - [📅 My Bookings](#-my-bookings)
-  - [📉 Reports & Analytics](#-reports--analytics)
-  - [👤 Profile & Preferences](#-profile--preferences)
-  - [🔧 Other](#-other)
-- [🛠️ Tech Stack](#️-tech-stack)
-- [📋 Prerequisites](#-prerequisites)
-- [🚀 Getting Started](#-getting-started)
-- [📜 Available Scripts](#-available-scripts)
-- [📁 Project Structure](#-project-structure)
-- [📄 License](#-license)
+- ✨ [Features](#-features)
+  - 📊 [Dashboard](#-dashboard)
+  - 🗺️ [Parking Spaces](#️-parking-spaces)
+  - 📅 [My Bookings](#-my-bookings)
+  - 📉 [Reports & Analytics](#-reports--analytics)
+  - 👤 [Profile & Preferences](#-profile--preferences)
+  - 🔧 [Other](#-other)
+- 🛠️ [Tech Stack](#️-tech-stack)
+- 📋 [Prerequisites](#-prerequisites)
+- 🚀 [Getting Started](#-getting-started)
+- 📜 [Available Scripts](#-available-scripts)
+- 📁 [Project Structure](#-project-structure)
+- 📄 [License](#-license)
 
 ---
 
 ## ✨ Features
 
 ### 📊 Dashboard
+
 - 🔢 **Live occupancy overview** — summary cards showing total, available, occupied, and reserved spots at a glance
 - 🍩 **Per-floor ring charts** — visual breakdown of occupancy for each garage floor (B1, B2, B3)
 - 🧠 **Smart suggestions** — AI-style recommendations for the best available spots based on preferred floor, proximity to elevators, historical reliability, and spot type
@@ -36,26 +37,31 @@ A real-time parking management system for office buildings. ParkFlow gives emplo
 - 📈 **Weekly occupancy chart** — bar chart showing parking trends across the work week
 
 ### 🗺️ Parking Spaces
+
 - 🟢 **Interactive parking map** — grid-based floor plan with color-coded spots (green = available, red = occupied, violet = reserved)
 - ⚡ **One-click reservations** — tap any available spot to reserve it instantly
 - 🌡️ **Heatmap view** — toggle to a historical heatmap showing how frequently each spot is used over time
 - 🔍 **Spot detail modal** — view spot info, owner, type (standard / EV / handicap), and take action
 
 ### 📅 My Bookings
+
 - 🎫 **Active reservations list** — view all your current bookings with spot details and a visual timeline
 - ❌ **Cancel reservations** — release a spot you no longer need with one tap
 
 ### 📉 Reports & Analytics
+
 - 📏 **Utilization metrics** — overall usage percentage, available/in-use counts, and total capacity
 - 🏢 **Floor breakdown table** — per-floor stats with segmented progress bars (occupied / reserved / available)
 - 📊 **Weekly occupancy chart** — same trend chart as the dashboard for deeper analysis
 
 ### 👤 Profile & Preferences
+
 - 🪪 **Employee profile card** — name, department, attendance status, and assigned permanent spot
 - 🏗️ **Preferred floor setting** — choose your default floor, which also influences smart suggestions
 - 🔔 **Notification preferences** — toggle reservation confirmations and availability alerts
 
 ### 🔧 Other
+
 - 🔎 **Global search** — search for any spot or employee across all floors from the header
 - 🔔 **In-app notifications** — bell icon with unread count and a notification popover
 - 🚨 **Report a problem** — submit issues (damaged spots, lighting, access) via a built-in form
@@ -65,17 +71,17 @@ A real-time parking management system for office buildings. ParkFlow gives emplo
 
 ## 🛠️ Tech Stack
 
-| Category | Technology |
-|---|---|
-| ⚛️ Framework | React 19 + TypeScript |
-| ⚡ Build tool | Vite 7 |
-| 🎨 UI components | Mantine 8 |
-| 💨 Styling | Tailwind CSS 4 |
-| 🖼️ Icons | Lucide React |
-| 📊 Charts | Recharts |
-| 🐻 State management | Zustand |
-| 🔄 Data fetching | TanStack Query |
-| 🧭 Routing | TanStack Router |
+| Category            | Technology            |
+| ------------------- | --------------------- |
+| ⚛️ Framework        | React 19 + TypeScript |
+| ⚡ Build tool       | Vite 7                |
+| 🎨 UI components    | Mantine 8             |
+| 💨 Styling          | Tailwind CSS 4        |
+| 🖼️ Icons            | Lucide React          |
+| 📊 Charts           | Recharts              |
+| 🐻 State management | Zustand               |
+| 🔄 Data fetching    | TanStack Query        |
+| 🧭 Routing          | TanStack Router       |
 
 ---
 
@@ -117,15 +123,15 @@ Navigate to `http://localhost:5173`. You're logged in as **Alex Morgan** by defa
 
 ## 📜 Available Scripts
 
-| Command | Description |
-|---|---|
-| `pnpm dev` | 🟢 Start the development server with hot reload |
-| `pnpm build` | 🏗️ Type-check and create a production build |
-| `pnpm preview` | 👀 Preview the production build locally |
-| `pnpm lint` | 🔍 Run ESLint |
-| `pnpm lint:fix` | 🔧 Run ESLint with auto-fix |
-| `pnpm format` | ✨ Format all source files with Prettier |
-| `pnpm format:check` | ✅ Check formatting without writing changes |
+| Command             | Description                                     |
+| ------------------- | ----------------------------------------------- |
+| `pnpm dev`          | 🟢 Start the development server with hot reload |
+| `pnpm build`        | 🏗️ Type-check and create a production build     |
+| `pnpm preview`      | 👀 Preview the production build locally         |
+| `pnpm lint`         | 🔍 Run ESLint                                   |
+| `pnpm lint:fix`     | 🔧 Run ESLint with auto-fix                     |
+| `pnpm format`       | ✨ Format all source files with Prettier        |
+| `pnpm format:check` | ✅ Check formatting without writing changes     |
 
 ---
 
