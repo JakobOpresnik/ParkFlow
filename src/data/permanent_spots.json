@@ -1,0 +1,121 @@
+[
+  {
+    "spotId": "B1-A1",
+    "floor": "B1",
+    "ownerId": "emp-001",
+    "ownerName": "Sarah Chen",
+    "type": "standard"
+  },
+  {
+    "spotId": "B1-A2",
+    "floor": "B1",
+    "ownerId": "emp-002",
+    "ownerName": "James Wilson",
+    "type": "standard"
+  },
+  {
+    "spotId": "B1-A3",
+    "floor": "B1",
+    "ownerId": "emp-003",
+    "ownerName": "Maria Garcia",
+    "type": "standard"
+  },
+  {
+    "spotId": "B1-B1",
+    "floor": "B1",
+    "ownerId": "emp-004",
+    "ownerName": "David Kim",
+    "type": "ev"
+  },
+  {
+    "spotId": "B1-B2",
+    "floor": "B1",
+    "ownerId": "emp-005",
+    "ownerName": "Emily Johnson",
+    "type": "standard"
+  },
+  {
+    "spotId": "B1-C1",
+    "floor": "B1",
+    "ownerId": "emp-006",
+    "ownerName": "Michael Brown",
+    "type": "standard"
+  },
+  {
+    "spotId": "B1-C3",
+    "floor": "B1",
+    "ownerId": "emp-007",
+    "ownerName": "Lisa Wang",
+    "type": "standard"
+  },
+  {
+    "spotId": "B2-A1",
+    "floor": "B2",
+    "ownerId": "emp-008",
+    "ownerName": "Robert Taylor",
+    "type": "standard"
+  },
+  {
+    "spotId": "B2-A5",
+    "floor": "B2",
+    "ownerId": "emp-009",
+    "ownerName": "Jennifer Lee",
+    "type": "ev"
+  },
+  {
+    "spotId": "B2-B3",
+    "floor": "B2",
+    "ownerId": "emp-010",
+    "ownerName": "Daniel Martinez",
+    "type": "standard"
+  },
+  {
+    "spotId": "B2-C1",
+    "floor": "B2",
+    "ownerId": "emp-011",
+    "ownerName": "Amanda White",
+    "type": "standard"
+  },
+  {
+    "spotId": "B2-C5",
+    "floor": "B2",
+    "ownerId": "emp-012",
+    "ownerName": "Kevin Harris",
+    "type": "standard"
+  },
+  {
+    "spotId": "B2-D2",
+    "floor": "B2",
+    "ownerId": "emp-013",
+    "ownerName": "Rachel Clark",
+    "type": "handicap"
+  },
+  {
+    "spotId": "B3-A1",
+    "floor": "B3",
+    "ownerId": "emp-014",
+    "ownerName": "Thomas Anderson",
+    "type": "standard"
+  },
+  {
+    "spotId": "B3-A3",
+    "floor": "B3",
+    "ownerId": "emp-015",
+    "ownerName": "Sophie Turner",
+    "type": "standard"
+  },
+  {
+    "spotId": "B3-B2",
+    "floor": "B3",
+    "ownerId": "emp-016",
+    "ownerName": "Chris Evans",
+    "type": "ev"
+  },
+  {
+    "spotId": "B3-C4",
+    "floor": "B3",
+    "ownerId": "emp-017",
+    "ownerName": "Olivia Scott",
+    "type": "standard"
+  }
+]

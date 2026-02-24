@@ -1,0 +1,122 @@
+[
+  {
+    "employeeId": "emp-001",
+    "employeeName": "Sarah Chen",
+    "status": "In-Office",
+    "date": "2026-02-23"
+  },
+  {
+    "employeeId": "emp-002",
+    "employeeName": "James Wilson",
+    "status": "Remote",
+    "date": "2026-02-23"
+  },
+  {
+    "employeeId": "emp-003",
+    "employeeName": "Maria Garcia",
+    "status": "In-Office",
+    "date": "2026-02-23"
+  },
+  {
+    "employeeId": "emp-004",
+    "employeeName": "David Kim",
+    "status": "Sick",
+    "date": "2026-02-23"
+  },
+  {
+    "employeeId": "emp-005",
+    "employeeName": "Emily Johnson",
+    "status": "In-Office",
+    "date": "2026-02-23"
+  },
+  {
+    "employeeId": "emp-006",
+    "employeeName": "Michael Brown",
+    "status": "Vacation",
+    "date": "2026-02-23"
+  },
+  {
+    "employeeId": "emp-007",
+    "employeeName": "Lisa Wang",
+    "status": "In-Office",
+    "date": "2026-02-23"
+  },
+  {
+    "employeeId": "emp-008",
+    "employeeName": "Robert Taylor",
+    "status": "In-Office",
+    "date": "2026-02-23"
+  },
+  {
+    "employeeId": "emp-009",
+    "employeeName": "Jennifer Lee",
+    "status": "Remote",
+    "date": "2026-02-23"
+  },
+  {
+    "employeeId": "emp-010",
+    "employeeName": "Daniel Martinez",
+    "status": "In-Office",
+    "date": "2026-02-23"
+  },
+  {
+    "employeeId": "emp-011",
+    "employeeName": "Amanda White",
+    "status": "Sick",
+    "date": "2026-02-23"
+  },
+  {
+    "employeeId": "emp-012",
+    "employeeName": "Kevin Harris",
+    "status": "In-Office",
+    "date": "2026-02-23"
+  },
+  {
+    "employeeId": "emp-013",
+    "employeeName": "Rachel Clark",
+    "status": "In-Office",
+    "date": "2026-02-23"
+  },
+  {
+    "employeeId": "emp-014",
+    "employeeName": "Thomas Anderson",
+    "status": "Remote",
+    "date": "2026-02-23"
+  },
+  {
+    "employeeId": "emp-015",
+    "employeeName": "Sophie Turner",
+    "status": "In-Office",
+    "date": "2026-02-23"
+  },
+  {
+    "employeeId": "emp-016",
+    "employeeName": "Chris Evans",
+    "status": "Vacation",
+    "date": "2026-02-23"
+  },
+  {
+    "employeeId": "emp-017",
+    "employeeName": "Olivia Scott",
+    "status": "In-Office",
+    "date": "2026-02-23"
+  },
+  {
+    "employeeId": "emp-018",
+    "employeeName": "Nathan Brooks",
+    "status": "In-Office",
+    "date": "2026-02-23"
+  },
+  {
+    "employeeId": "emp-019",
+    "employeeName": "Hannah Davis",
+    "status": "Remote",
+    "date": "2026-02-23"
+  },
+  {
+    "employeeId": "emp-020",
+    "employeeName": "Alex Morgan",
+    "status": "In-Office",
+    "date": "2026-02-23"
+  }
+]
