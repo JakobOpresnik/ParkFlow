@@ -97,7 +97,8 @@ A real-time parking management system for office buildings. ParkFlow gives emplo
 **1️⃣ Clone the repository**
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/parkflow.git
+git clone https://git.matheo.si/jakobo/parkflow.git
+
 cd parkflow
 ```
 
