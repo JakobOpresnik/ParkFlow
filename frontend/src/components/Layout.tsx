@@ -1,4 +1,4 @@
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import {
   Map,
   Users,
@@ -7,6 +7,7 @@ import {
   Calendar,
   LogIn,
   LogOut,
+  Loader2,
   Settings,
   PenLine,
 } from 'lucide-react'
@@ -31,12 +32,19 @@ interface LayoutProps {
 
 export function Layout({ children, noPadding }: LayoutProps) {
   const user = useAuthStore((s) => s.user)
+  const isLoading = useAuthStore((s) => s.isLoading)
   const logout = useAuthStore((s) => s.logout)
-  const navigate = useNavigate()
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="text-primary size-8 animate-spin" />
+      </div>
+    )
+  }
 
   function handleLogout() {
     logout()
-    void navigate({ to: '/login' })
   }
 
   return (

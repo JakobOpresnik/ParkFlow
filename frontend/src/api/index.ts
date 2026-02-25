@@ -10,7 +10,7 @@ import type {
 } from '@/types'
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
-const TOKEN_KEY = 'pf_token'
+const TOKEN_KEY = 'pf_access_token'
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const token = localStorage.getItem(TOKEN_KEY)
@@ -119,11 +119,6 @@ export const api = {
     ),
 
   // Auth
-  login: (username: string, password: string) =>
-    request<{ token: string; user: AppUser }>('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ username, password }),
-    }),
   getMe: () => request<AppUser>('/api/auth/me'),
 
   // Bookings

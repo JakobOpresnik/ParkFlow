@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from 'next-themes'
 import { Toaster } from '@/components/ui/sonner'
 import { router } from '@/routeTree.gen.tsx'
+import { useAuthStore } from '@/store/authStore'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -15,6 +16,9 @@ const queryClient = new QueryClient({
     },
   },
 })
+
+// Validate stored token on startup
+void useAuthStore.getState().initialize()
 
 const root = document.getElementById('root')
 if (!root) throw new Error('Root element not found')

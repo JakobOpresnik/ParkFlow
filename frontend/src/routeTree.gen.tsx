@@ -10,6 +10,7 @@ import { OwnersPage } from '@/pages/OwnersPage'
 import { StatsPage } from '@/pages/StatsPage'
 import { MyBookingsPage } from '@/pages/MyBookingsPage'
 import { LoginPage } from '@/pages/LoginPage'
+import { CallbackPage } from '@/pages/CallbackPage'
 import { AdminPage } from '@/pages/AdminPage'
 import { MapEditorPage } from '@/pages/MapEditorPage'
 import { Layout } from '@/components/Layout'
@@ -22,6 +23,13 @@ const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
   component: LoginPage,
+})
+
+// OAuth callback — outside the sidebar layout
+const callbackRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/callback',
+  component: CallbackPage,
 })
 
 // Full-screen layout for the map page (no padding, no max-width)
@@ -84,6 +92,7 @@ const mapEditorRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
+  callbackRoute,
   mapLayoutRoute.addChildren([mapRoute]),
   layoutRoute.addChildren([
     ownersRoute,
