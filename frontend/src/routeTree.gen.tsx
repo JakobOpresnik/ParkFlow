@@ -7,6 +7,7 @@ import {
   redirect,
 } from '@tanstack/react-router'
 import { MapPage } from '@/pages/MapPage'
+import { DashboardPage } from '@/pages/DashboardPage'
 import { OwnersPage } from '@/pages/OwnersPage'
 import { StatsPage } from '@/pages/StatsPage'
 import { MyBookingsPage } from '@/pages/MyBookingsPage'
@@ -70,6 +71,12 @@ const mapRoute = createRoute({
   component: MapPage,
 })
 
+const dashboardRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/dashboard',
+  component: DashboardPage,
+})
+
 const ownersRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/owners',
@@ -105,6 +112,7 @@ const routeTree = rootRoute.addChildren([
   callbackRoute,
   mapLayoutRoute.addChildren([mapRoute]),
   layoutRoute.addChildren([
+    dashboardRoute,
     ownersRoute,
     statsRoute,
     myBookingsRoute,

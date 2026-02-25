@@ -11,6 +11,7 @@ import {
   Settings,
   PenLine,
   ChevronDown,
+  LayoutDashboard,
 } from 'lucide-react'
 import { useState, useEffect, type ReactNode } from 'react'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -19,6 +20,7 @@ import { Button } from '@/components/ui/button'
 
 const topNavItems = [
   { to: '/', label: 'Map', Icon: Map },
+  { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
   { to: '/stats', label: 'Statistics', Icon: BarChart2 },
   { to: '/my-bookings', label: 'My Bookings', Icon: Calendar },
 ]
