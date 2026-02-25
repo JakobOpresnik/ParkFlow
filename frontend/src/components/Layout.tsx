@@ -28,11 +28,9 @@ const topNavItems = [
 const adminSubItems = [
   { to: '/admin', label: 'Parking', Icon: ParkingCircle },
   { to: '/owners', label: 'Owners', Icon: Users },
-]
-
-const bottomNavItems = [
   { to: '/map-editor', label: 'Map Editor', Icon: PenLine },
 ]
+
 
 interface LayoutProps {
   children: ReactNode
@@ -45,7 +43,8 @@ export function Layout({ children, noPadding }: LayoutProps) {
   const logout = useAuthStore((s) => s.logout)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
 
-  const isAdminSection = pathname === '/admin' || pathname === '/owners'
+  const isAdminSection =
+    pathname === '/admin' || pathname === '/owners' || pathname === '/map-editor'
   const [adminOpen, setAdminOpen] = useState(isAdminSection)
 
   useEffect(() => {
@@ -124,17 +123,6 @@ export function Layout({ children, noPadding }: LayoutProps) {
             </div>
           )}
 
-          {bottomNavItems.map(({ to, label, Icon }) => (
-            <Link
-              key={to}
-              to={to}
-              className={linkClass}
-              activeProps={{ className: activeLinkClass }}
-            >
-              <Icon className="size-4 shrink-0" />
-              <span className="hidden sm:block">{label}</span>
-            </Link>
-          ))}
         </nav>
 
         {/* Bottom — user info + logout / login */}
