@@ -20,9 +20,6 @@ ui_reference.url
 *.url
 *.mp4
 
-# Claude Code
-.claude/
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

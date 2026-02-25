@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /c/Acex/parkflow && pnpm build 2>&1)",
+      "Bash(cd /c/Acex/parkflow && pnpm lint:fix 2>&1)",
+      "Bash(cd /c/Acex/parkflow && pnpm lint 2>&1)",
+      "Bash(cd /c/Acex/parkflow && pnpm build 2>&1 && pnpm lint:fix 2>&1)"
+    ]
+  }
+}
