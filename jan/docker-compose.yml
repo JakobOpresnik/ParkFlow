@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: parkflow
+      POSTGRES_PASSWORD: parkflow
+      POSTGRES_DB: parkflow
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Migrations run automatically on first start (alphabetical order = correct)
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U parkflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: postgresql://parkflow:parkflow@db:5432/parkflow
+      PORT: 3001
+      JWT_SECRET: local-dev-secret-change-in-prod
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      # Browser reaches backend via the host — keep localhost:3001
+      VITE_API_URL: http://localhost:3001
+    ports:
+      - "5173:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres-data:

@@ -1,0 +1,242 @@
+> vite --port 3000 --host
+
+15:24:00 [vite] (client) Re-optimizing dependencies because vite config has changed
+
+  VITE v7.3.1  ready in 1308 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: http://192.168.1.12:3000/
+             k:             k:             k:             k:             kel             k:             k:             k:             k��             k:             k:             k:             k�             k:             k:             k:             k��             k:             k:             k:             k��             k:             k:             k:             k��             k:             k:             k:             k��             k:             k:             k:             �             k:             k:             k:             k �             k:             k:             k:             k:    ��             k:             k:             k:        ��             k:             k:          
+                                                                ��     █
+  █▄██▄██▄█▀█▄▄ ▄▀▀ ▄▄▄ █ ███
+  █ ▄▄▄▄▄ █ ▀  █▄▄█ █▄█ ▄█▀ █
+  █ █   █ ██▄▀  ▄█▄▄▄  ▄ ▄▀▀█
+  █ █▄▄▄█ █▀▄▀█ ██▀▀▄▀▀▀█▄█ █
+  █▄▄▄▄▄▄▄█▄█▄▄██▄▄▄█▄██▄██▄█
+
+  http://192.168.64.1:3000/
+  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+  █ ▄▄▄▄▄ ██▀▀▄▄▀ █▄█ ▄▄▄▄▄ █
+  █ █   █ █▀███ ▀▀▄▄█ █   █ █
+  █ █▄▄▄█ █▄▄█▀▀█▄███ █▄▄▄█ █
+  █▄▄▄▄▄▄▄█▄█ ▀▄█ ▀ █▄▄▄▄▄▄▄█
+  █  █▀▀ ▄ ▀ █▄▀ █  ▀██  ▀▀██
+  █  ▀ █▄▄█▄▀▄█▀▄█ ▀█▄▄▀ █▄ █
+  █  ▄██▀▄▄█ █▄▄█ ▀▄▄▄████▀▄█
+  █ █ ▄▀█▄▀███ ▄▄█▄▀▄█▄▀▄▀▄ █
+  █▄█▄▄██▄▄ ▄ ▄ ▄▀▀ ▄▄▄ █ ███
+  █ ▄▄▄▄▄ █  ▀ █▄▄█ █▄█ ▄█▀ █
+  █ █   █ ██▀   ▄█▄▄▄  ▄ ▄▀▀█
+  █ █▄▄▄█ █▀█▄█ ██▀▀▄▀▀▀█▄█ █
+  █▄▄▄▄▄▄▄█▄█▄▄██▄▄▄█▄██▄██▄█
+
+
+[TypeScript] Found 0 errors. Watching for file changes.
+15:24:50 [vite] (client) ✨ new dependencies optimized: vite-plugin-node-polyfills/shims/buffer, vite-plugin-node-polyfills/shims/global, vite-plugin-node-polyfills/shims/process
+15:24:50 [vite] (client) ✨ optimized dependencies changed. reloading
+[Client] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[Client] Constructed Xumm { runtime: [ 'browser' ] }
+[Client] XUMM SDK: Running in browser
+[Client] [Ledger] restoreConnection() called
+[Client] [Ledger] restoreConnection(): no saved session, skipping
+[Client] [MultiChain] Connector failed to mount: {
+  name: 'DcentError',
+  walletType: 'dcent',
+  codeKey: 'DCENT_NOT_IN_BROWSER',
+  code: 4500
+}
+[Client] src/singletons/multichain.ts:29:7 Wallet connected rNAq2BUM7iQUwyNzy7gugpy2TnrhGXvN6n xaman
+[Client] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[Client] Constructed Xumm { runtime: [ 'browser' ] }
+[Client] XUMM SDK: Running in browser
+[Client] [Ledger] restoreConnection() called
+[Client] [Ledger] restoreConnection(): no saved session, skipping
+[Client] [MultiChain] Connector failed to mount: {
+  name: 'DcentError',
+  walletType: 'dcent',
+  codeKey: 'DCENT_NOT_IN_BROWSER',
+  code: 4500
+}
+[Client] src/singletons/multichain.ts:29:7 Wallet connected rNAq2BUM7iQUwyNzy7gugpy2TnrhGXvN6n xaman
+[Client] [vite] server connection lost. Polling for restart...
+[Client] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[Client] Constructed Xumm { runtime: [ 'browser' ] }
+[Client] XUMM SDK: Running in browser
+[Client] [Ledger] restoreConnection() called
+[Client] [Ledger] restoreConnection(): no saved session, skipping
+[Client] src/singletons/multichain.ts:29:7 Wallet connected rNAq2BUM7iQUwyNzy7gugpy2TnrhGXvN6n xaman
+[Client] [MultiChain] Connector failed to mount: {
+  name: 'DcentError',
+  walletType: 'dcent',
+  codeKey: 'DCENT_NOT_IN_BROWSER',
+  code: 4500
+}
+[Client] [vite] server connection lost. Polling for restart...
+[Client] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[Client] Constructed Xumm { runtime: [ 'browser' ] }
+[Client] XUMM SDK: Running in browser
+[Client] [Ledger] restoreConnection() called
+[Client] [Ledger] restoreConnection(): no saved session, skipping
+[Client] src/singletons/multichain.ts:29:7 Wallet connected rNAq2BUM7iQUwyNzy7gugpy2TnrhGXvN6n xaman
+[Client] [MultiChain] Connector failed to mount: {
+  name: 'DcentError',
+  walletType: 'dcent',
+  codeKey: 'DCENT_NOT_IN_BROWSER',
+  code: 4500
+}
+[Client] [vite] server connection lost. Polling for restart...
+[Client] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[Client] Constructed Xumm { runtime: [ 'browser' ] }
+[Client] XUMM SDK: Running in browser
+[Client] [Ledger] restoreConnection() called
+[Client] [Ledger] restoreConnection(): no saved session, skipping
+[Client] src/singletons/multichain.ts:29:7 Wallet connected rNAq2BUM7iQUwyNzy7gugpy2TnrhGXvN6n xaman
+[Client] [MultiChain] Connector failed to mount: {
+  name: 'DcentError',
+  walletType: 'dcent',
+  codeKey: 'DCENT_NOT_IN_BROWSER',
+  code: 4500
+}
+[Client] [vite] server connection lost. Polling for restart...
+[Client] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[Client] Constructed Xumm { runtime: [ 'browser' ] }
+[Client] XUMM SDK: Running in browser
+[Client] [Ledger] restoreConnection() called
+[Client] [Ledger] restoreConnection(): no saved session, skipping
+[Client] src/singletons/multichain.ts:29:7 Wallet connected rNAq2BUM7iQUwyNzy7gugpy2TnrhGXvN6n xaman
+[Client] [MultiChain] Connector failed to mount: {
+  name: 'DcentError',
+  walletType: 'dcent',
+  codeKey: 'DCENT_NOT_IN_BROWSER',
+  code: 4500
+}
+[Client] [vite] server connection lost. Polling for restart...
+[Client] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[Client] Constructed Xumm { runtime: [ 'browser' ] }
+[Client] XUMM SDK: Running in browser
+[Client] [Ledger] restoreConnection() called
+[Client] [Ledger] restoreConnection(): no saved session, skipping
+[Client] src/singletons/multichain.ts:29:7 Wallet connected rNAq2BUM7iQUwyNzy7gugpy2TnrhGXvN6n xaman
+[Client] [MultiChain] Connector failed to mount: {
+  name: 'DcentError',
+  walletType: 'dcent',
+  codeKey: 'DCENT_NOT_IN_BROWSER',
+  code: 4500
+}
+[Client] [vite] server connection lost. Polling for restart...
+[Client] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[Client] Constructed Xumm { runtime: [ 'browser' ] }
+[Client] XUMM SDK: Running in browser
+[Client] [Ledger] restoreConnection() called
+[Client] [Ledger] restoreConnection(): no saved session, skipping
+[Client] src/singletons/multichain.ts:29:7 Wallet connected rNAq2BUM7iQUwyNzy7gugpy2TnrhGXvN6n xaman
+[Client] [MultiChain] Connector failed to mount: {
+  name: 'DcentError',
+  walletType: 'dcent',
+  codeKey: 'DCENT_NOT_IN_BROWSER',
+  code: 4500
+}
+[Client] [vite] server connection lost. Polling for restart...
+[Client] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[Client] Constructed Xumm { runtime: [ 'browser' ] }
+[Client] XUMM SDK: Running in browser
+[Client] [Ledger] restoreConnection() called
+[Client] [Ledger] restoreConnection(): no saved session, skipping
+[Client] src/singletons/multichain.ts:29:7 Wallet connected rNAq2BUM7iQUwyNzy7gugpy2TnrhGXvN6n xaman
+[Client] [MultiChain] Connector failed to mount: {
+  name: 'DcentError',
+  walletType: 'dcent',
+  codeKey: 'DCENT_NOT_IN_BROWSER',
+  code: 4500
+}
+[Client] [vite] server connection lost. Polling for restart...
+[Client] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[Client] Constructed Xumm { runtime: [ 'browser' ] }
+[Client] XUMM SDK: Running in browser
+[Client] [Ledger] restoreConnection() called
+[Client] [Ledger] restoreConnection(): no saved session, skipping
+[Client] src/singletons/multichain.ts:29:7 Wallet connected rNAq2BUM7iQUwyNzy7gugpy2TnrhGXvN6n xaman
+[Client] [MultiChain] Connector failed to mount: {
+  name: 'DcentError',
+  walletType: 'dcent',
+  codeKey: 'DCENT_NOT_IN_BROWSER',
+  code: 4500
+}
+[Client] [vite] server connection lost. Polling for restart...
+[Client] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[Client] Constructed Xumm { runtime: [ 'browser' ] }
+[Client] XUMM SDK: Running in browser
+[Client] [Ledger] restoreConnection() called
+[Client] [Ledger] restoreConnection(): no saved session, skipping
+[Client] src/singletons/multichain.ts:29:7 Wallet connected rNAq2BUM7iQUwyNzy7gugpy2TnrhGXvN6n xaman
+[Client] [MultiChain] Connector failed to mount: {
+  name: 'DcentError',
+  walletType: 'dcent',
+  codeKey: 'DCENT_NOT_IN_BROWSER',
+  code: 4500
+}
+[Client] [vite] server connection lost. Polling for restart...
+[Client] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[Client] Constructed Xumm { runtime: [ 'browser' ] }
+[Client] XUMM SDK: Running in browser
+[Client] [Ledger] restoreConnection() called
+[Client] [Ledger] restoreConnection(): no saved session, skipping
+[Client] src/singletons/multichain.ts:29:7 Wallet connected rNAq2BUM7iQUwyNzy7gugpy2TnrhGXvN6n xaman
+[Client] [MultiChain] Connector failed to mount: {
+  name: 'DcentError',
+  walletType: 'dcent',
+  codeKey: 'DCENT_NOT_IN_BROWSER',
+  code: 4500
+}
+[Client] [vite] server connection lost. Polling for restart...
+[Client] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[Client] Constructed Xumm { runtime: [ 'browser' ] }
+[Client] XUMM SDK: Running in browser
+[Client] [Ledger] restoreConnection() called
+[Client] [Ledger] restoreConnection(): no saved session, skipping
+[Client] src/singletons/multichain.ts:29:7 Wallet connected rNAq2BUM7iQUwyNzy7gugpy2TnrhGXvN6n xaman
+[Client] [MultiChain] Connector failed to mount: {
+  name: 'DcentError',
+  walletType: 'dcent',
+  codeKey: 'DCENT_NOT_IN_BROWSER',
+  code: 4500
+}
+[Client] [vite] server connection lost. Polling for restart...
+[Client] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[Client] Constructed Xumm { runtime: [ 'browser' ] }
+[Client] XUMM SDK: Running in browser
+[Client] [Ledger] restoreConnection() called
+[Client] [Ledger] restoreConnection(): no saved session, skipping
+[Client] src/singletons/multichain.ts:29:7 Wallet connected rNAq2BUM7iQUwyNzy7gugpy2TnrhGXvN6n xaman
+[Client] [MultiChain] Connector failed to mount: {
+  name: 'DcentError',
+  walletType: 'dcent',
+  codeKey: 'DCENT_NOT_IN_BROWSER',
+  code: 4500
+}
+[Client] [vite] server connection lost. Polling for restart...
+[Client] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[Client] Constructed Xumm { runtime: [ 'browser' ] }
+[Client] XUMM SDK: Running in browser
+[Client] [Ledger] restoreConnection() called
+[Client] [Ledger] restoreConnection(): no saved session, skipping
+[Client] src/singletons/multichain.ts:29:7 Wallet connected rNAq2BUM7iQUwyNzy7gugpy2TnrhGXvN6n xaman
+[Client] [MultiChain] Connector failed to mount: {
+  name: 'DcentError',
+  walletType: 'dcent',
+  codeKey: 'DCENT_NOT_IN_BROWSER',
+  code: 4500
+}
+[Client] [vite] server connection lost. Polling for restart...
+[Client] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[Client] Constructed Xumm { runtime: [ 'browser' ] }
+[Client] XUMM SDK: Running in browser
+[Client] [Ledger] restoreConnection() called
+[Client] [Ledger] restoreConnection(): no saved session, skipping
+[Client] src/singletons/multichain.ts:29:7 Wallet connected rNAq2BUM7iQUwyNzy7gugpy2TnrhGXvN6n xaman
+[Client] [MultiChain] Connector failed to mount: {
+  name: 'DcentError',
+  walletType: 'dcent',
+  codeKey: 'DCENT_NOT_IN_BROWSER',
+  code: 4500
+}
