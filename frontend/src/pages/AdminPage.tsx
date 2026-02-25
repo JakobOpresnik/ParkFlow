@@ -437,7 +437,7 @@ function SpotsSection() {
 
   function handleSubmit() {
     const num = parseInt(form.number)
-    if (!form.number || isNaN(num) || num < 1) {
+    if (!form.number || isNaN(num) || num < 0) {
       toast.error('Number must be a positive integer')
       return
     }
