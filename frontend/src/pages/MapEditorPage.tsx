@@ -516,6 +516,7 @@ export function MapEditorPage() {
   } | null>(null)
   const [pendingRect, setPendingRect] = useState<PendingRect | null>(null)
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null)
+  const [imageError, setImageError] = useState(false)
 
   // Auto-save
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
@@ -526,6 +527,12 @@ export function MapEditorPage() {
 
   const activeLotId = selectedLotId ?? lots[0]?.id ?? null
   const activeLot = lots.find((l) => l.id === activeLotId) ?? null
+  // Reset image error state whenever the active lot (and thus image URL) changes
+  const prevLotIdRef = useRef<string | null>(null)
+  if (prevLotIdRef.current !== activeLotId) {
+    prevLotIdRef.current = activeLotId
+    if (imageError) setImageError(false)
+  }
 
   const imgW = activeLot?.image_width ?? 792
   const imgH = activeLot?.image_height ?? 612
@@ -758,11 +765,51 @@ export function MapEditorPage() {
                 setDragCurrent(null)
               }}
             >
-              <image
-                href={`/${activeLot.image_filename}`}
-                width={imgW}
-                height={imgH}
-              />
+              {activeLot.image_filename && !imageError ? (
+                <image
+                  href={`/${activeLot.image_filename}`}
+                  width={imgW}
+                  height={imgH}
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <>
+                  <rect width={imgW} height={imgH} fill="#f1f5f9" />
+                  <text
+                    x={imgW / 2}
+                    y={imgH / 2 - 16}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize={32}
+                    fill="#94a3b8"
+                    className="pointer-events-none"
+                  >
+                    🗺
+                  </text>
+                  <text
+                    x={imgW / 2}
+                    y={imgH / 2 + 24}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize={26}
+                    fill="#94a3b8"
+                    className="pointer-events-none"
+                  >
+                    No floor plan uploaded
+                  </text>
+                  <text
+                    x={imgW / 2}
+                    y={imgH / 2 + 52}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize={20}
+                    fill="#cbd5e1"
+                    className="pointer-events-none"
+                  >
+                    Upload an image via the Admin page to get started
+                  </text>
+                </>
+              )}
 
               {/* Mapped spots — DB coords are relative; convert to viewBox for rendering */}
               {mappedSpots.map((spot) => {
