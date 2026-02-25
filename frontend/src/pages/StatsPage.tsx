@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useSpots } from '@/hooks/useSpots'
 import { useLots } from '@/hooks/useLots'
-import { useChanges } from '@/hooks/useChanges'
 import {
   Select,
   SelectContent,
@@ -127,24 +126,6 @@ const STATUS_META: Record<SpotStatus, { label: string; colorVar: string }> = {
   reserved: { label: 'Reserved', colorVar: '--color-spot-reserved' },
 }
 
-// ─── Audit log table ──────────────────────────────────────────────────────────
-
-const CHANGE_TYPE_LABEL: Record<string, string> = {
-  owner_assigned: 'Owner assigned',
-  owner_unassigned: 'Owner unassigned',
-  status_changed: 'Status changed',
-}
-
-function formatTime(iso: string) {
-  const d = new Date(iso)
-  return d.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function StatsPage() {
@@ -152,13 +133,10 @@ export function StatsPage() {
   const { data: lots = [], isLoading: lotsLoading } = useLots()
   const [selectedLotId, setSelectedLotId] = useState<string>('__all__')
 
-  const { data: changes = [], isLoading: changesLoading } = useChanges(
-    selectedLotId === '__all__' ? undefined : selectedLotId,
-  )
-
   const isLoading = spotsLoading || lotsLoading
 
   // Filter spots for the selected lot
+
   const spots =
     selectedLotId === '__all__'
       ? allSpots
@@ -299,67 +277,6 @@ export function StatsPage() {
         </>
       )}
 
-      {/* Audit log */}
-      <div className="bg-card rounded-lg border shadow-sm">
-        <div className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Recent changes</h2>
-          <p className="text-muted-foreground text-xs">
-            Last 50 · auto-refreshes every 15s
-          </p>
-        </div>
-
-        {changesLoading && (
-          <div className="bg-muted m-4 h-24 animate-pulse rounded" />
-        )}
-
-        {!changesLoading && changes.length === 0 && (
-          <p className="text-muted-foreground p-6 text-center text-sm">
-            No changes recorded yet. Assign owners or change statuses to see
-            activity.
-          </p>
-        )}
-
-        {!changesLoading && changes.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-muted-foreground border-b text-xs">
-                  <th className="px-4 py-2 text-left font-medium">Time</th>
-                  <th className="px-4 py-2 text-left font-medium">Spot</th>
-                  <th className="px-4 py-2 text-left font-medium">Change</th>
-                  <th className="px-4 py-2 text-left font-medium">Value</th>
-                </tr>
-              </thead>
-              <tbody className="px-4">
-                {changes.map((change) => (
-                  <tr key={change.id} className="border-b px-4 last:border-0">
-                    <td className="text-muted-foreground px-4 py-2 text-xs whitespace-nowrap">
-                      {formatTime(change.changed_at)}
-                    </td>
-                    <td className="px-4 py-2 text-sm font-medium">
-                      #{change.spot_number}
-                      {change.spot_label && (
-                        <span className="text-muted-foreground ml-1 font-normal">
-                          {change.spot_label}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2 text-sm">
-                      {CHANGE_TYPE_LABEL[change.change_type] ??
-                        change.change_type}
-                    </td>
-                    <td className="text-muted-foreground px-4 py-2 text-sm">
-                      {change.old_value ?? '—'}
-                      {' → '}
-                      {change.new_value ?? '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
     </div>
   )
 }
