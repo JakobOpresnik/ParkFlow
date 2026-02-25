@@ -3,6 +3,8 @@ import { pool } from '../db/pool.js'
 
 const router = Router()
 
+const ACEX_OWNER_NAME = 'ACEX - kdor prej pride, prej melje'
+
 const SPOT_SELECT = `
   SELECT
     s.id,
@@ -10,7 +12,7 @@ const SPOT_SELECT = `
     s.label,
     s.floor,
     s.lot_id,
-    s.status,
+    CASE WHEN o.name = '${ACEX_OWNER_NAME}' THEN 'free' ELSE s.status END AS status,
     s.coordinates,
     s.created_at,
     o.id            AS owner_id,
