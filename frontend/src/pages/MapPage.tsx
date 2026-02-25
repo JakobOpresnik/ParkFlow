@@ -312,19 +312,8 @@ export function MapPage() {
         </div>
       </div>
 
-      {/* ── Top-right: sidebar toggle + view mode toggle ────────── */}
-      <div className="absolute top-3 right-3 z-20 flex flex-col items-end gap-2">
-        {/* Sidebar toggle */}
-        <div className="rounded-xl bg-black/40 p-1 backdrop-blur-sm">
-          <OverlayBtn
-            onClick={() => setSidebarOpen((v) => !v)}
-            title="Toggle sidebar"
-            active={sidebarOpen}
-          >
-            <PanelRight className="size-5" />
-          </OverlayBtn>
-        </div>
-
+      {/* ── Top-right: view mode toggle ─────────────────────────── */}
+      <div className="absolute top-3 right-3 z-20">
         {/* View mode toggle — horizontal segmented pill */}
         <div className="flex gap-0.5 rounded-xl bg-black/40 p-1 backdrop-blur-sm">
           <button
@@ -354,9 +343,19 @@ export function MapPage() {
         </div>
       </div>
 
-      {/* ── Bottom-right: zoom + fullscreen (map mode only) ──────── */}
+      {/* ── Bottom-right: sidebar toggle + zoom + fullscreen (map mode only) ──────── */}
       {isMapMode && (
         <div className="absolute right-3 bottom-3 z-20 flex flex-col gap-2">
+          {/* Sidebar toggle */}
+          <div className="rounded-xl bg-black/40 p-1 backdrop-blur-sm">
+            <OverlayBtn
+              onClick={() => setSidebarOpen((v) => !v)}
+              title="Toggle sidebar"
+              active={sidebarOpen}
+            >
+              <PanelRight className="size-5" />
+            </OverlayBtn>
+          </div>
           <div className="flex flex-col rounded-xl bg-black/40 p-1 backdrop-blur-sm">
             <OverlayBtn
               onClick={() => mapRef.current?.zoomIn()}
