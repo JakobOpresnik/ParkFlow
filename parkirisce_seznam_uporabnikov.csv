@@ -1,0 +1,55 @@
+,Seznam uporabnikov P prostora,,,,,,,,,
+,zunanje parkirišče,,,,,,,Komentarji:,,
+,št. parkirišča,Uporabnik,št. kartice,daljinec za rampo,daljinec za garažo,dvojni daljinec,,Aleš,Por,ne potrebuje parkinga
+1,0,kontejner - prenova,/,/,/,/,,Bernard,Sovdat,K -1
+2,3,"ACEX - kdor prej pride, prej melje",/,/,/,/,,Boris,Horvat,K -1
+3,4,"ACEX - kdor prej pride, prej melje",/,/,/,/,,Erik,Langerholc,ne potrebuje parkinga
+4,5,"ACEX - kdor prej pride, prej melje",/,/,/,/,,Gašper,Košmrlj,ne potrebuje parkinga
+5,9,"ACEX - kdor prej pride, prej melje",/,/,/,/,,Iztok,Kavkler,K -1
+6,11,"ACEX - kdor prej pride, prej melje",/,/,/,/,,Jan,Grošelj,K -1
+,,,,,,,,Jernej,Borlinić,K -1
+,Klet -1,,,,,,,Jernej,Rus,ne potrebuje parkinga
+,št. parkirišča,Uporabnik,št. kartice,daljinec za rampo,daljinec za garažo,dvojni daljinec,,Marko,Boben,K -1
+1,2,Urška Krivic,166,FALSE,TRUE,FALSE,,Marko,Stijepić,K -1
+2,3,Mitja Gornik,/,FALSE,FALSE,TRUE,,Matija,Stupar,HeroLabs - mu ne pripada
+3,4,Petra Jakovac,015,FALSE,TRUE,TRUE,,Miha,Burgar,K -1
+4,5,Tesla S,197,FALSE,FALSE,FALSE,,Miha,Ljubi,ne potrebuje parkinga
+5,6,Tesla X,?,FALSE,FALSE,FALSE,,Mitja,Gornik,K -1
+6,8,Borut Mrak,?,FALSE,FALSE,FALSE,,Nevena,Pivač,zunaj
+7,9,oddano v najem: MIK,,FALSE,FALSE,FALSE,,Petra,Jakovac,K -1
+8,10,Marko Stijepić,/,FALSE,FALSE,TRUE,,Primož,Lukšič,K -1
+9,11,Bernard Sovdat,,FALSE,FALSE,FALSE,,Tilen,Marc,K - 2 (deljen)
+10,18,Iztok Kavkler / Jan Grošelj,020,FALSE,FALSE,FALSE,,Urška,Krivc,K -1
+11,19,Primož Lukšič,/,FALSE,FALSE,TRUE,,Alen,Orbanić,K -1
+12,20,Tilen Šarlah,019,FALSE,FALSE,TRUE,,Aljaž,Konečnik,zunaj (štajerci)
+13,23,PROST,/,FALSE,FALSE,FALSE,,Barbara,Kepic,K -1
+14,24,Tadeja Gornik,/,FALSE,FALSE,TRUE,,Boštjan,Kovač,K -2
+15,25,Marko Boben,023,FALSE,FALSE,FALSE,,Demijan,Lesjak,K -2 (deljen)
+16,26,Boris Horvat,022 / 128,FALSE,FALSE,TRUE,,Eva,Vidrih,zunaj
+17,27,Barbara Kepic,/,FALSE,FALSE,TRUE,,Evgenija,Burger,K -2
+18,28,X,/,FALSE,FALSE,FALSE,,Jakob,Oprešnik,zunaj (štajerci)
+19,29,PROSTO - delavci prenova,/,FALSE,FALSE,FALSE,,Jan,Sernec,zunaj (štajerci)
+20,32,Alen Orbanić,/,FALSE,FALSE,TRUE,,Jurij,Kolenik,zunaj
+21,33,ARHEA,024 / 118,FALSE,FALSE,FALSE,,Katarina,Rakar,K -1
+22,34,Katarina Rakar,/,FALSE,FALSE,TRUE,,Maša,Slemenik,zunaj
+23,35,ARHEA,025 / 121,FALSE,FALSE,FALSE,,Nina,Kovač,zunaj
+24,36,Miha Burgar,/,FALSE,FALSE,TRUE,,Tadeja,Gornik,K -1
+25,38,PROST,/,FALSE,FALSE,FALSE,,Tilen,Šarlah,K -1
+26,46,REDUXI - Tomaž Buh,/,TRUE,TRUE,FALSE,,Timotej,Vesel,K -2
+27,47,REDUXI - Primož Bečan,/,TRUE,TRUE,FALSE,,Vid,Eržen,ne potrebuje parkinga
+28,C,Jernej Borlinić,014,FALSE,TRUE,FALSE,,,,
+29,,,,FALSE,FALSE,FALSE,,,,
+30,,,,FALSE,FALSE,FALSE,,,,
+31,,,,FALSE,FALSE,FALSE,,REDUXI ima 7 daljincev ra rampo,,
+,,,,,,,,,,
+,,,,,,,,,,
+,Klet -2,,,,,,,,,
+,št. parkirišča,Uporabnik,št. kartice,daljinec za rampo,daljinec za garažo,,,,,
+1,50,Evgenija Burger,,TRUE,TRUE,FALSE,,,,
+2,56,Tilen Marc,,FALSE,FALSE,FALSE,,,,
+,56,Demijan Lesjak,,TRUE,TRUE,FALSE,,,,
+,56,Timotej Vesel,173,FALSE,FALSE,FALSE,,,,
+3,95,Boštjan Kovač,,FALSE,FALSE,FALSE,,,,
+,95,,,,,,,,,
+,95,Aljaž Konečnik,,,,,,,,
+4,,Reduxi,,,,,,,,
