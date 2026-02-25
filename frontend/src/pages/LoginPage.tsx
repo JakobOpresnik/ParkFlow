@@ -1,33 +1,36 @@
 import { useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { ParkingCircle } from 'lucide-react'
+import { ParkingCircle, LogIn } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { api } from '@/api'
-import { useAuthStore } from '@/store/authStore'
+import { oauthConfig } from '@/lib/oauth'
+import { generateCodeVerifier, generateCodeChallenge } from '@/lib/pkce'
 import { toast } from 'sonner'
 
 export function LoginPage() {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const setAuth = useAuthStore((s) => s.setAuth)
-  const navigate = useNavigate()
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!username.trim() || !password.trim()) {
-      toast.error('Enter username and password')
-      return
-    }
+  async function handleLogin() {
     setLoading(true)
     try {
-      const { token, user } = await api.login(username.trim(), password)
-      setAuth(user, token)
-      void navigate({ to: '/' })
+      const verifier = generateCodeVerifier()
+      const challenge = await generateCodeChallenge(verifier)
+      const state = crypto.randomUUID()
+
+      sessionStorage.setItem('oauth_code_verifier', verifier)
+      sessionStorage.setItem('oauth_state', state)
+
+      const params = new URLSearchParams({
+        response_type: 'code',
+        client_id: oauthConfig.clientId,
+        redirect_uri: oauthConfig.redirectUri,
+        scope: oauthConfig.scopes,
+        state,
+        code_challenge: challenge,
+        code_challenge_method: 'S256',
+      })
+
+      window.location.href = `${oauthConfig.authorizeUrl}?${params.toString()}`
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Login failed')
-    } finally {
+      toast.error(err instanceof Error ? err.message : 'Failed to start login')
       setLoading(false)
     }
   }
@@ -43,31 +46,14 @@ export function LoginPage() {
           </p>
         </div>
 
-        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Username</label>
-            <Input
-              autoFocus
-              autoComplete="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="admin"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Password</label>
-            <Input
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••"
-            />
-          </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
-          </Button>
-        </form>
+        <Button
+          className="w-full"
+          disabled={loading}
+          onClick={() => void handleLogin()}
+        >
+          <LogIn className="mr-2 size-4" />
+          {loading ? 'Redirecting…' : 'Sign in with SSO'}
+        </Button>
       </div>
     </div>
   )

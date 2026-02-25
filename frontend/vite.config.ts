@@ -16,6 +16,13 @@ export default defineConfig({
     host: true,
     port: 3000,
     strictPort: true,
+    proxy: {
+      '/oauth': {
+        target: 'https://sso.matheo.si',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/oauth/, '/application/o'),
+      },
+    },
   },
   test: {
     environment: 'jsdom',

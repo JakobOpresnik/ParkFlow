@@ -1,5 +1,4 @@
 import type { Request, Response, NextFunction } from 'express'
-import jwt from 'jsonwebtoken'
 
 export interface AuthPayload {
   userId: string
@@ -16,19 +15,45 @@ declare global {
   }
 }
 
-export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+const USERINFO_URL =
+  process.env.AUTHENTIK_USERINFO_URL ?? 'https://sso.matheo.si/application/o/userinfo/'
+const ADMIN_GROUP = process.env.AUTHENTIK_ADMIN_GROUP ?? 'parkflow-admins'
+
+export async function requireAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   const header = req.headers.authorization
   if (!header?.startsWith('Bearer ')) {
     res.status(401).json({ error: 'Authentication required' })
     return
   }
-  const token = header.slice(7)
+
   try {
-    const secret = process.env.JWT_SECRET ?? 'dev-secret-change-me'
-    const payload = jwt.verify(token, secret) as AuthPayload
-    req.user = payload
+    const userinfoRes = await fetch(USERINFO_URL, {
+      headers: { Authorization: header },
+    })
+
+    if (!userinfoRes.ok) {
+      res.status(401).json({ error: 'Invalid or expired token' })
+      return
+    }
+
+    const userinfo = (await userinfoRes.json()) as {
+      sub: string
+      preferred_username?: string
+      groups?: string[]
+    }
+
+    req.user = {
+      userId: userinfo.sub,
+      username: userinfo.preferred_username ?? userinfo.sub,
+      role: userinfo.groups?.includes(ADMIN_GROUP) ? 'admin' : 'user',
+    }
+
     next()
   } catch {
-    res.status(401).json({ error: 'Invalid or expired token' })
+    res.status(401).json({ error: 'Token validation failed' })
   }
 }
