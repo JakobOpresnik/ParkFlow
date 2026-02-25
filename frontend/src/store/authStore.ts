@@ -5,6 +5,8 @@ import { oauthConfig } from '@/lib/oauth'
 const ACCESS_TOKEN_KEY = 'pf_access_token'
 const ID_TOKEN_KEY = 'pf_id_token'
 
+export let authInitPromise: Promise<void> = Promise.resolve()
+
 interface AuthStore {
   user: AppUser | null
   accessToken: string | null
@@ -26,45 +28,49 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   initialize: async () => {
-    const token = get().accessToken
-    if (!token) {
-      set({ isLoading: false })
-      return
-    }
-
-    try {
-      const res = await fetch(oauthConfig.userinfoUrl, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-
-      if (!res.ok) {
-        // Token invalid/expired — clear and let user re-login
-        localStorage.removeItem(ACCESS_TOKEN_KEY)
-        localStorage.removeItem(ID_TOKEN_KEY)
-        set({ user: null, accessToken: null, isLoading: false })
+    const run = async () => {
+      const token = get().accessToken
+      if (!token) {
+        set({ isLoading: false })
         return
       }
 
-      const userinfo = (await res.json()) as {
-        sub: string
-        preferred_username?: string
-        name?: string
-        groups?: string[]
-      }
+      try {
+        const res = await fetch(oauthConfig.userinfoUrl, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
 
-      const user: AppUser = {
-        id: userinfo.sub,
-        username: userinfo.preferred_username ?? userinfo.sub,
-        displayName: userinfo.name ?? userinfo.preferred_username ?? userinfo.sub,
-        role: userinfo.groups?.includes(oauthConfig.adminGroup) ? 'admin' : 'user',
-      }
+        if (!res.ok) {
+          localStorage.removeItem(ACCESS_TOKEN_KEY)
+          localStorage.removeItem(ID_TOKEN_KEY)
+          set({ user: null, accessToken: null, isLoading: false })
+          return
+        }
 
-      set({ user, isLoading: false })
-    } catch {
-      localStorage.removeItem(ACCESS_TOKEN_KEY)
-      localStorage.removeItem(ID_TOKEN_KEY)
-      set({ user: null, accessToken: null, isLoading: false })
+        const userinfo = (await res.json()) as {
+          sub: string
+          preferred_username?: string
+          name?: string
+          groups?: string[]
+        }
+
+        const user: AppUser = {
+          id: userinfo.sub,
+          username: userinfo.preferred_username ?? userinfo.sub,
+          displayName: userinfo.name ?? userinfo.preferred_username ?? userinfo.sub,
+          role: userinfo.groups?.includes(oauthConfig.adminGroup) ? 'admin' : 'user',
+        }
+
+        set({ user, isLoading: false })
+      } catch {
+        localStorage.removeItem(ACCESS_TOKEN_KEY)
+        localStorage.removeItem(ID_TOKEN_KEY)
+        set({ user: null, accessToken: null, isLoading: false })
+      }
     }
+
+    authInitPromise = run()
+    return authInitPromise
   },
 
   logout: () => {

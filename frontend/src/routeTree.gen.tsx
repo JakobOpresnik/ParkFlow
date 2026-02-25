@@ -4,6 +4,7 @@ import {
   createRoute,
   createRouter,
   Outlet,
+  redirect,
 } from '@tanstack/react-router'
 import { MapPage } from '@/pages/MapPage'
 import { OwnersPage } from '@/pages/OwnersPage'
@@ -14,6 +15,13 @@ import { CallbackPage } from '@/pages/CallbackPage'
 import { AdminPage } from '@/pages/AdminPage'
 import { MapEditorPage } from '@/pages/MapEditorPage'
 import { Layout } from '@/components/Layout'
+import { useAuthStore, authInitPromise } from '@/store/authStore'
+
+async function requireAuth() {
+  await authInitPromise
+  const { user } = useAuthStore.getState()
+  if (!user) throw redirect({ to: '/login' })
+}
 
 // Root — bare Outlet (no layout of its own)
 const rootRoute = createRootRoute({ component: Outlet })
@@ -36,6 +44,7 @@ const callbackRoute = createRoute({
 const mapLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'map-layout',
+  beforeLoad: requireAuth,
   component: () => (
     <Layout noPadding>
       <Outlet />
@@ -47,6 +56,7 @@ const mapLayoutRoute = createRoute({
 const layoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'layout',
+  beforeLoad: requireAuth,
   component: () => (
     <Layout>
       <Outlet />
