@@ -568,9 +568,9 @@ function SpotsSection() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {displayedSpots.map((spot) => (
+              {displayedSpots.map((spot, index) => (
                 <TableRow key={spot.id}>
-                  <TableCell className="font-semibold">{spot.number}</TableCell>
+                  <TableCell className="font-semibold">{index + 1}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {spot.label ?? '—'}
                   </TableCell>
