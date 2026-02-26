@@ -566,7 +566,10 @@ export function MapEditorPage() {
             },
             onError: (err) => {
               setSaveStatus('idle')
-              notifications.show({ message: err instanceof Error ? err.message : 'Save failed', color: 'red' })
+              notifications.show({
+                message: err instanceof Error ? err.message : 'Save failed',
+                color: 'red',
+              })
             },
           },
         )
@@ -633,7 +636,10 @@ export function MapEditorPage() {
       setSelectedSpotId(spotId)
       setMode('select')
     } catch (err) {
-      notifications.show({ message: err instanceof Error ? err.message : 'Failed to save', color: 'red' })
+      notifications.show({
+        message: err instanceof Error ? err.message : 'Failed to save',
+        color: 'red',
+      })
     }
   }
 
@@ -655,7 +661,10 @@ export function MapEditorPage() {
       setSelectedSpotId(spot.id)
       setMode('select')
     } catch (err) {
-      notifications.show({ message: err instanceof Error ? err.message : 'Failed to create spot', color: 'red' })
+      notifications.show({
+        message: err instanceof Error ? err.message : 'Failed to create spot',
+        color: 'red',
+      })
     }
   }
 
@@ -666,7 +675,10 @@ export function MapEditorPage() {
       notifications.show({ message: 'Coordinates removed', color: 'green' })
       setSelectedSpotId(null)
     } catch (err) {
-      notifications.show({ message: err instanceof Error ? err.message : 'Failed to remove', color: 'red' })
+      notifications.show({
+        message: err instanceof Error ? err.message : 'Failed to remove',
+        color: 'red',
+      })
     }
   }
 

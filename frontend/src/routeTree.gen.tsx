@@ -15,6 +15,7 @@ import { LoginPage } from '@/pages/LoginPage'
 import { CallbackPage } from '@/pages/CallbackPage'
 import { AdminPage } from '@/pages/AdminPage'
 import { MapEditorPage } from '@/pages/MapEditorPage'
+import { ProfilePage } from '@/pages/ProfilePage'
 import { Layout } from '@/components/Layout'
 import { useAuthStore, authInitPromise } from '@/store/authStore'
 
@@ -107,6 +108,12 @@ const mapEditorRoute = createRoute({
   component: MapEditorPage,
 })
 
+const profileRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/profile',
+  component: ProfilePage,
+})
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   callbackRoute,
@@ -118,6 +125,7 @@ const routeTree = rootRoute.addChildren([
     myBookingsRoute,
     adminRoute,
     mapEditorRoute,
+    profileRoute,
   ]),
 ])
 

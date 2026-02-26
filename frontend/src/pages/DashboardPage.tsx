@@ -52,11 +52,17 @@ function LotBar({
       <div className="bg-muted flex h-3 w-full overflow-hidden rounded-full">
         <div
           className="h-full transition-all duration-500"
-          style={{ width: `${occupiedPct}%`, background: 'var(--color-spot-occupied)' }}
+          style={{
+            width: `${occupiedPct}%`,
+            background: 'var(--color-spot-occupied)',
+          }}
         />
         <div
           className="h-full transition-all duration-500"
-          style={{ width: `${reservedPct}%`, background: 'var(--color-spot-reserved)' }}
+          style={{
+            width: `${reservedPct}%`,
+            background: 'var(--color-spot-reserved)',
+          }}
         />
         <div
           className="h-full transition-all duration-500"
@@ -65,16 +71,25 @@ function LotBar({
       </div>
       <div className="text-muted-foreground flex flex-wrap gap-3 text-xs">
         <span className="flex items-center gap-1">
-          <span className="size-2 rounded-full" style={{ background: 'var(--color-spot-free)' }} />
+          <span
+            className="size-2 rounded-full"
+            style={{ background: 'var(--color-spot-free)' }}
+          />
           {free} free
         </span>
         <span className="flex items-center gap-1">
-          <span className="size-2 rounded-full" style={{ background: 'var(--color-spot-occupied)' }} />
+          <span
+            className="size-2 rounded-full"
+            style={{ background: 'var(--color-spot-occupied)' }}
+          />
           {occupied} occupied
         </span>
         {reserved > 0 && (
           <span className="flex items-center gap-1">
-            <span className="size-2 rounded-full" style={{ background: 'var(--color-spot-reserved)' }} />
+            <span
+              className="size-2 rounded-full"
+              style={{ background: 'var(--color-spot-reserved)' }}
+            />
             {reserved} reserved
           </span>
         )}
@@ -99,7 +114,9 @@ export function DashboardPage() {
   const totalOccupied = countByStatus(allSpots, 'occupied')
   const totalReserved = countByStatus(allSpots, 'reserved')
   const total = allSpots.length
-  const occupancyPct = total ? Math.round(((totalOccupied + totalReserved) / total) * 100) : 0
+  const occupancyPct = total
+    ? Math.round(((totalOccupied + totalReserved) / total) * 100)
+    : 0
 
   const statCards = [
     {
@@ -146,7 +163,10 @@ export function DashboardPage() {
       {isLoading ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-muted h-24 animate-pulse rounded-lg border" />
+            <div
+              key={i}
+              className="bg-muted h-24 animate-pulse rounded-lg border"
+            />
           ))}
         </div>
       ) : (
@@ -157,7 +177,9 @@ export function DashboardPage() {
               className="bg-card flex flex-col gap-1.5 rounded-lg border p-4 shadow-sm"
             >
               <Icon className={`size-4 ${color}`} />
-              <p className="text-2xl font-bold tabular-nums sm:text-3xl">{value}</p>
+              <p className="text-2xl font-bold tabular-nums sm:text-3xl">
+                {value}
+              </p>
               <p className="text-sm font-medium">{label}</p>
               <p className="text-muted-foreground text-xs">{sub}</p>
             </div>
@@ -168,7 +190,9 @@ export function DashboardPage() {
       {/* Per-lot breakdown */}
       {!isLoading && lots.length > 0 && (
         <div className="bg-card rounded-lg border p-5 shadow-sm">
-          <h2 className="mb-4 text-sm font-semibold">Availability by location</h2>
+          <h2 className="mb-4 text-sm font-semibold">
+            Availability by location
+          </h2>
           <div className="space-y-5">
             {lots.map((lot) => {
               const lotSpots = allSpots.filter((s) => s.lot_id === lot.id)
@@ -191,7 +215,9 @@ export function DashboardPage() {
       <div className="bg-card rounded-lg border shadow-sm">
         <div className="border-b px-4 py-3">
           <h2 className="text-sm font-semibold">Recent changes</h2>
-          <p className="text-muted-foreground text-xs">Last 50 · auto-refreshes every 15s</p>
+          <p className="text-muted-foreground text-xs">
+            Last 50 · auto-refreshes every 15s
+          </p>
         </div>
 
         {changesLoading && (
@@ -200,7 +226,8 @@ export function DashboardPage() {
 
         {!changesLoading && changes.length === 0 && (
           <p className="text-muted-foreground p-6 text-center text-sm">
-            No changes recorded yet. Assign owners or change statuses to see activity.
+            No changes recorded yet. Assign owners or change statuses to see
+            activity.
           </p>
         )}
 
@@ -212,7 +239,9 @@ export function DashboardPage() {
                   <th className="px-4 py-2 text-left font-medium">Time</th>
                   <th className="px-4 py-2 text-left font-medium">Spot</th>
                   <th className="px-4 py-2 text-left font-medium">Change</th>
-                  <th className="hidden px-4 py-2 text-left font-medium sm:table-cell">Value</th>
+                  <th className="hidden px-4 py-2 text-left font-medium sm:table-cell">
+                    Value
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -230,7 +259,8 @@ export function DashboardPage() {
                       )}
                     </td>
                     <td className="px-4 py-2 text-sm">
-                      {CHANGE_TYPE_LABEL[change.change_type] ?? change.change_type}
+                      {CHANGE_TYPE_LABEL[change.change_type] ??
+                        change.change_type}
                     </td>
                     <td className="text-muted-foreground hidden px-4 py-2 text-sm sm:table-cell">
                       {change.old_value ?? '—'}

@@ -3,10 +3,10 @@ import { useUIStore } from '@/store/uiStore'
 import { useParkingStore } from '@/store/parkingStore'
 import type { Spot, SpotStatus } from '@/types'
 
-const STATUS_BADGE: Record<SpotStatus, string> = {
-  free: 'bg-spot-free text-white border-transparent',
-  occupied: 'bg-spot-occupied text-white border-transparent',
-  reserved: 'bg-spot-reserved text-white border-transparent',
+const STATUS_COLOR: Record<SpotStatus, string> = {
+  free: 'green',
+  occupied: 'red',
+  reserved: 'yellow',
 }
 
 const STATUS_BORDER: Record<SpotStatus, string> = {
@@ -46,7 +46,7 @@ export function SpotGrid({ spots }: SpotGridProps) {
         >
           <div className="flex items-center justify-between gap-1">
             <span className="text-lg font-bold">#{spot.number}</span>
-            <Badge className={`text-xs ${STATUS_BADGE[spot.status]}`}>
+            <Badge className="text-xs" color={STATUS_COLOR[spot.status]}>
               {STATUS_LABELS[spot.status]}
             </Badge>
           </div>

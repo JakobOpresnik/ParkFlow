@@ -2,7 +2,13 @@ import * as React from 'react'
 import { Badge as MantineBadge } from '@mantine/core'
 import { cn } from '@/lib/utils'
 
-type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline' | 'ghost' | 'link'
+type BadgeVariant =
+  | 'default'
+  | 'secondary'
+  | 'destructive'
+  | 'outline'
+  | 'ghost'
+  | 'link'
 
 function resolveVariant(variant: BadgeVariant): {
   mantineVariant: 'filled' | 'light' | 'outline' | 'transparent'
@@ -26,14 +32,17 @@ function resolveVariant(variant: BadgeVariant): {
 function Badge({
   className,
   variant = 'default',
+  color: colorProp,
   children,
   asChild: _asChild,
   ...props
 }: React.ComponentProps<'span'> & {
   variant?: BadgeVariant
+  color?: string
   asChild?: boolean
 }) {
-  const { mantineVariant, color } = resolveVariant(variant)
+  const { mantineVariant, color: variantColor } = resolveVariant(variant)
+  const color = colorProp ?? variantColor
 
   return (
     <MantineBadge

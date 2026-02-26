@@ -202,7 +202,9 @@ export function StatsPage() {
                   className="h-1 w-10 rounded-full"
                   style={{ background: `var(${seg.colorVar})` }}
                 />
-                <p className="text-2xl font-bold tabular-nums sm:text-3xl">{seg.pct}%</p>
+                <p className="text-2xl font-bold tabular-nums sm:text-3xl">
+                  {seg.pct}%
+                </p>
                 <p className="text-muted-foreground text-sm">{seg.label}</p>
                 <p className="text-xs font-medium">
                   {seg.count} / {total} spots
@@ -266,7 +268,6 @@ export function StatsPage() {
           </div>
         </>
       )}
-
     </div>
   )
 }

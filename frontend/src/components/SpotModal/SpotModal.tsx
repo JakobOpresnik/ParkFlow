@@ -25,16 +25,10 @@ const STATUS_LABELS: Record<SpotStatus, string> = {
   reserved: 'Reserved',
 }
 
-const STATUS_BADGE: Record<SpotStatus, string> = {
-  free: 'bg-spot-free text-white border-transparent',
-  occupied: 'bg-spot-occupied text-white border-transparent',
-  reserved: 'bg-spot-reserved text-white border-transparent',
-}
-
-const STATUS_BTN: Record<SpotStatus, string> = {
-  free: 'border-spot-free text-spot-free hover:bg-spot-free/10',
-  occupied: 'border-spot-occupied text-spot-occupied hover:bg-spot-occupied/10',
-  reserved: 'border-spot-reserved text-spot-reserved hover:bg-spot-reserved/10',
+const STATUS_COLOR: Record<SpotStatus, string> = {
+  free: 'green',
+  occupied: 'red',
+  reserved: 'yellow',
 }
 
 const ALL_STATUSES: SpotStatus[] = ['free', 'occupied', 'reserved']
@@ -89,7 +83,8 @@ export function SpotModal() {
           }),
         onError: (err) =>
           notifications.show({
-            message: err instanceof Error ? err.message : 'Failed to update status',
+            message:
+              err instanceof Error ? err.message : 'Failed to update status',
             color: 'red',
           }),
       },
@@ -98,8 +93,7 @@ export function SpotModal() {
 
   function handleAssignConfirm() {
     if (!spot || !selectedOwnerId) return
-    const ownerId =
-      selectedOwnerId === '__unassign__' ? null : selectedOwnerId
+    const ownerId = selectedOwnerId === '__unassign__' ? null : selectedOwnerId
     assignOwner.mutate(
       { id: spot.id, owner_id: ownerId },
       {
@@ -114,7 +108,8 @@ export function SpotModal() {
         },
         onError: (err) =>
           notifications.show({
-            message: err instanceof Error ? err.message : 'Failed to assign owner',
+            message:
+              err instanceof Error ? err.message : 'Failed to assign owner',
             color: 'red',
           }),
       },
@@ -145,7 +140,8 @@ export function SpotModal() {
               },
               onError: (err) =>
                 notifications.show({
-                  message: err instanceof Error ? err.message : 'Failed to assign',
+                  message:
+                    err instanceof Error ? err.message : 'Failed to assign',
                   color: 'red',
                 }),
             },
@@ -153,7 +149,8 @@ export function SpotModal() {
         },
         onError: (err) =>
           notifications.show({
-            message: err instanceof Error ? err.message : 'Failed to create owner',
+            message:
+              err instanceof Error ? err.message : 'Failed to create owner',
             color: 'red',
           }),
       },
@@ -196,13 +193,13 @@ export function SpotModal() {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex min-w-0 items-center gap-3">
-            <span className="text-2xl font-bold shrink-0">#{spot.number}</span>
+            <span className="shrink-0 text-2xl font-bold">#{spot.number}</span>
             {spot.label && (
               <span className="text-muted-foreground min-w-0 truncate text-base font-normal">
                 {spot.label}
               </span>
             )}
-            <Badge className={`ml-auto shrink-0 ${STATUS_BADGE[spot.status]}`}>
+            <Badge className="ml-auto shrink-0" color={STATUS_COLOR[spot.status]}>
               {STATUS_LABELS[spot.status]}
             </Badge>
           </DialogTitle>
@@ -248,13 +245,10 @@ export function SpotModal() {
                   key={s}
                   size="sm"
                   variant="outline"
+                  color={STATUS_COLOR[s]}
                   disabled={s === spot.status || isPending}
                   onClick={() => handleStatusChange(s)}
-                  className={
-                    s !== spot.status
-                      ? STATUS_BTN[s]
-                      : 'cursor-default opacity-40'
-                  }
+                  className={s === spot.status ? 'cursor-default opacity-40' : ''}
                 >
                   {STATUS_LABELS[s]}
                 </Button>
@@ -273,7 +267,7 @@ export function SpotModal() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="text-destructive hover:text-destructive h-7 text-xs"
+                    className="text-destructive hover:text-destructive h-7 text-xs gap-1.5"
                     disabled={isPending}
                     onClick={() => {
                       assignOwner.mutate(
@@ -286,7 +280,8 @@ export function SpotModal() {
                             }),
                           onError: (err) =>
                             notifications.show({
-                              message: err instanceof Error ? err.message : 'Failed',
+                              message:
+                                err instanceof Error ? err.message : 'Failed',
                               color: 'red',
                             }),
                         },

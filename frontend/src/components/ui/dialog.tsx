@@ -94,7 +94,7 @@ function DialogFooter({
       {showCloseButton && (
         <button
           onClick={onClose}
-          className="inline-flex h-9 items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+          className="hover:bg-accent hover:text-accent-foreground inline-flex h-9 items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors"
         >
           Close
         </button>
@@ -103,10 +103,7 @@ function DialogFooter({
   )
 }
 
-function DialogTitle({
-  className,
-  ...props
-}: React.ComponentProps<'h2'>) {
+function DialogTitle({ className, ...props }: React.ComponentProps<'h2'>) {
   return (
     <h2
       className={cn('text-lg leading-none font-semibold', className)}
@@ -115,15 +112,9 @@ function DialogTitle({
   )
 }
 
-function DialogDescription({
-  className,
-  ...props
-}: React.ComponentProps<'p'>) {
+function DialogDescription({ className, ...props }: React.ComponentProps<'p'>) {
   return (
-    <p
-      className={cn('text-muted-foreground text-sm', className)}
-      {...props}
-    />
+    <p className={cn('text-muted-foreground text-sm', className)} {...props} />
   )
 }
 

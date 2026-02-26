@@ -12,8 +12,9 @@ import {
   PenLine,
   ChevronDown,
   LayoutDashboard,
+  User,
 } from 'lucide-react'
-import { useState, useEffect, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { useAuthStore } from '@/store/authStore'
 import { Button } from '@/components/ui/button'
@@ -31,7 +32,6 @@ const adminSubItems = [
   { to: '/map-editor', label: 'Map Editor', Icon: PenLine },
 ]
 
-
 interface LayoutProps {
   children: ReactNode
   noPadding?: boolean
@@ -44,12 +44,10 @@ export function Layout({ children, noPadding }: LayoutProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
 
   const isAdminSection =
-    pathname === '/admin' || pathname === '/owners' || pathname === '/map-editor'
+    pathname === '/admin' ||
+    pathname === '/owners' ||
+    pathname === '/map-editor'
   const [adminOpen, setAdminOpen] = useState(isAdminSection)
-
-  useEffect(() => {
-    if (isAdminSection) setAdminOpen(true)
-  }, [isAdminSection])
 
   if (isLoading) {
     return (
@@ -129,18 +127,31 @@ export function Layout({ children, noPadding }: LayoutProps) {
               ))}
             </div>
           )}
-
         </nav>
 
         {/* Bottom — user info + logout / login */}
         <div className="border-t p-2 sm:p-3">
           {user ? (
             <div className="space-y-2">
-              <div className="hidden sm:block">
+              <Link
+                to="/profile"
+                className="hover:bg-muted -mx-1 hidden rounded-md px-1 py-1 sm:block"
+                title="View profile"
+              >
                 <p className="text-xs font-medium">{user.displayName}</p>
                 <p className="text-muted-foreground text-xs">{user.username}</p>
-              </div>
-              <div className="flex items-center gap-2" title={`${user.displayName} (${user.username})`}>
+              </Link>
+              <div
+                className="flex items-center justify-between"
+                title={`${user.displayName} (${user.username})`}
+              >
+                <Link
+                  to="/profile"
+                  className="text-muted-foreground hover:bg-muted flex size-8 items-center justify-center rounded-md transition-colors sm:hidden"
+                  title="Profile"
+                >
+                  <User className="size-4" />
+                </Link>
                 <ThemeToggle />
                 <Button
                   variant="ghost"

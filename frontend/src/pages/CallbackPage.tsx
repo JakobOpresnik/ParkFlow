@@ -78,11 +78,16 @@ export function CallbackPage() {
         const user: AppUser = {
           id: userinfo.sub,
           username: userinfo.preferred_username ?? userinfo.sub,
-          displayName: userinfo.name ?? userinfo.preferred_username ?? userinfo.sub,
-          role: userinfo.groups?.includes(oauthConfig.adminGroup) ? 'admin' : 'user',
+          displayName:
+            userinfo.name ?? userinfo.preferred_username ?? userinfo.sub,
+          role: userinfo.groups?.includes(oauthConfig.adminGroup)
+            ? 'admin'
+            : 'user',
         }
 
-        useAuthStore.getState().setAuth(user, tokens.access_token, tokens.id_token)
+        useAuthStore
+          .getState()
+          .setAuth(user, tokens.access_token, tokens.id_token)
 
         // Clean up session storage
         sessionStorage.removeItem('oauth_state')
@@ -90,7 +95,10 @@ export function CallbackPage() {
 
         void navigate({ to: '/' })
       } catch (err) {
-        notifications.show({ message: err instanceof Error ? err.message : 'Authentication failed', color: 'red' })
+        notifications.show({
+          message: err instanceof Error ? err.message : 'Authentication failed',
+          color: 'red',
+        })
         void navigate({ to: '/login' })
       }
     }

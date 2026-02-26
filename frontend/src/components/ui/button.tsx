@@ -60,6 +60,7 @@ function Button({
   className,
   variant = 'default',
   size = 'default',
+  color: colorProp,
   disabled,
   children,
   onClick,
@@ -71,9 +72,11 @@ function Button({
 }: React.ComponentProps<'button'> & {
   variant?: ButtonVariant
   size?: ButtonSize
+  color?: string
   asChild?: boolean
 }) {
-  const { mantineVariant, color } = resolveVariant(variant)
+  const { mantineVariant, color: variantColor } = resolveVariant(variant)
+  const color = colorProp ?? variantColor
   const iconClass = ICON_SIZE_CLASS[size]
   const mantineSize = MANTINE_SIZE[size] ?? 'md'
 
@@ -109,8 +112,9 @@ function Button({
       type={type}
       aria-label={ariaLabel}
       title={title}
+      classNames={{ label: 'gap-2' }}
       className={cn(
-        'inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap font-medium [&_svg]:pointer-events-none [&_svg]:shrink-0',
+        'inline-flex cursor-pointer items-center justify-center font-medium whitespace-nowrap [&_svg]:pointer-events-none [&_svg]:shrink-0',
         className,
       )}
       {...(rest as Record<string, unknown>)}

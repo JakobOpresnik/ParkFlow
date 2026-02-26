@@ -211,7 +211,7 @@ export function OwnersPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Plate</TableHead>
-                <TableHead className="bg-card sticky right-0 w-[100px] text-center before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-border before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
+                <TableHead className="bg-card before:bg-border sticky right-0 w-[100px] text-center before:absolute before:inset-y-0 before:left-0 before:w-px before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
                   Actions
                 </TableHead>
               </TableRow>
@@ -229,7 +229,7 @@ export function OwnersPage() {
                   <TableCell className="font-mono text-sm">
                     {owner.vehicle_plate ?? '—'}
                   </TableCell>
-                  <TableCell className="bg-card sticky right-0 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-border before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
+                  <TableCell className="bg-card before:bg-border sticky right-0 before:absolute before:inset-y-0 before:left-0 before:w-px before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
                     <div className="flex items-center gap-1">
                       <Button
                         size="sm"

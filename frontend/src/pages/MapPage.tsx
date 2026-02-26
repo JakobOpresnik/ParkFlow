@@ -21,6 +21,7 @@ import { useSpots } from '@/hooks/useSpots'
 import { useLots } from '@/hooks/useLots'
 import { useParkingStore } from '@/store/parkingStore'
 import { useUIStore } from '@/store/uiStore'
+import { usePrefsStore } from '@/store/prefsStore'
 import type { ParkingLot, Spot, SpotStatus } from '@/types'
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
@@ -131,15 +132,21 @@ export function MapPage() {
   const mapViewMode = useUIStore((s) => s.mapViewMode)
   const setMapViewMode = useUIStore((s) => s.setMapViewMode)
 
+  const preferredLotId = usePrefsStore((s) => s.preferredLotId)
+
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
-  // Auto-select first lot
+  // Auto-select preferred lot (or first lot as fallback) when arriving at map
   useEffect(() => {
     if (lots.length > 0 && selectedLotId === null) {
-      setSelectedLotId(lots[0].id)
+      const preferred =
+        preferredLotId !== null
+          ? lots.find((l) => l.id === preferredLotId)
+          : null
+      setSelectedLotId(preferred ? preferred.id : lots[0].id)
     }
-  }, [lots, selectedLotId, setSelectedLotId])
+  }, [lots, selectedLotId, preferredLotId, setSelectedLotId])
 
   // Fullscreen change listener
   useEffect(() => {

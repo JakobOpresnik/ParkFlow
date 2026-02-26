@@ -50,11 +50,11 @@ export function LoginPage() {
         </div>
 
         <Button
-          className="w-full"
+          className="w-full gap-2"
           disabled={loading}
           onClick={() => void handleLogin()}
         >
-          <LogIn className="mr-2 size-4" />
+          <LogIn className="size-4" />
           {loading ? 'Redirecting…' : 'Sign in with SSO'}
         </Button>
       </div>
