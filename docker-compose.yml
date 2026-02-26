@@ -20,6 +20,7 @@ services:
   backend:
     build:
       context: ./backend
+    pull_policy: build
     environment:
       DATABASE_URL: postgresql://parkflow:parkflow@db:5432/parkflow
       PORT: 3001
@@ -33,6 +34,7 @@ services:
   frontend:
     build:
       context: ./frontend
+    pull_policy: build
     environment:
       # Browser reaches backend via the host — keep localhost:3001
       VITE_API_URL: http://localhost:3001
