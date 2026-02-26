@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 import { oauthConfig } from '@/lib/oauth'
 import { useAuthStore } from '@/store/authStore'
 import type { AppUser } from '@/types'
@@ -90,7 +90,7 @@ export function CallbackPage() {
 
         void navigate({ to: '/' })
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Authentication failed')
+        notifications.show({ message: err instanceof Error ? err.message : 'Authentication failed', color: 'red' })
         void navigate({ to: '/login' })
       }
     }

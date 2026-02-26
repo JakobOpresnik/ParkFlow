@@ -9,20 +9,14 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Select } from '@/components/ui/select'
 import { useUIStore } from '@/store/uiStore'
 import { useParkingStore } from '@/store/parkingStore'
 import { useSpots, useAssignOwner, useUpdateStatus } from '@/hooks/useSpots'
 import { useOwners, useCreateOwner } from '@/hooks/useOwners'
 import { useCreateBooking } from '@/hooks/useBookings'
 import { useAuthStore } from '@/store/authStore'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 import type { SpotStatus } from '@/types'
 
 const STATUS_LABELS: Record<SpotStatus, string> = {
@@ -64,14 +58,14 @@ export function SpotModal() {
 
   // Assign section state
   const [assignOpen, setAssignOpen] = useState(false)
-  const [selectedOwnerId, setSelectedOwnerId] = useState('')
+  const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null)
   const [createFormOpen, setCreateFormOpen] = useState(false)
   const [newName, setNewName] = useState('')
   const [newPlate, setNewPlate] = useState('')
 
   function resetLocal() {
     setAssignOpen(false)
-    setSelectedOwnerId('')
+    setSelectedOwnerId(null)
     setCreateFormOpen(false)
     setNewName('')
     setNewPlate('')
@@ -89,35 +83,40 @@ export function SpotModal() {
       { id: spot.id, status },
       {
         onSuccess: () =>
-          toast.success(
-            `Spot #${spot.number} marked as ${STATUS_LABELS[status]}`,
-          ),
+          notifications.show({
+            message: `Spot #${spot.number} marked as ${STATUS_LABELS[status]}`,
+            color: 'green',
+          }),
         onError: (err) =>
-          toast.error(
-            err instanceof Error ? err.message : 'Failed to update status',
-          ),
+          notifications.show({
+            message: err instanceof Error ? err.message : 'Failed to update status',
+            color: 'red',
+          }),
       },
     )
   }
 
   function handleAssignConfirm() {
     if (!spot || !selectedOwnerId) return
-    const ownerId = selectedOwnerId === '__unassign__' ? null : selectedOwnerId
+    const ownerId =
+      selectedOwnerId === '__unassign__' ? null : selectedOwnerId
     assignOwner.mutate(
       { id: spot.id, owner_id: ownerId },
       {
         onSuccess: () => {
-          toast.success(
-            ownerId
+          notifications.show({
+            message: ownerId
               ? `Owner assigned to spot #${spot.number}`
               : `Spot #${spot.number} unassigned`,
-          )
+            color: 'green',
+          })
           resetLocal()
         },
         onError: (err) =>
-          toast.error(
-            err instanceof Error ? err.message : 'Failed to assign owner',
-          ),
+          notifications.show({
+            message: err instanceof Error ? err.message : 'Failed to assign owner',
+            color: 'red',
+          }),
       },
     )
   }
@@ -138,22 +137,25 @@ export function SpotModal() {
             { id: spot.id, owner_id: owner.id },
             {
               onSuccess: () => {
-                toast.success(
-                  `Owner "${owner.name}" created and assigned to spot #${spot.number}`,
-                )
+                notifications.show({
+                  message: `Owner "${owner.name}" created and assigned to spot #${spot.number}`,
+                  color: 'green',
+                })
                 resetLocal()
               },
               onError: (err) =>
-                toast.error(
-                  err instanceof Error ? err.message : 'Failed to assign',
-                ),
+                notifications.show({
+                  message: err instanceof Error ? err.message : 'Failed to assign',
+                  color: 'red',
+                }),
             },
           )
         },
         onError: (err) =>
-          toast.error(
-            err instanceof Error ? err.message : 'Failed to create owner',
-          ),
+          notifications.show({
+            message: err instanceof Error ? err.message : 'Failed to create owner',
+            color: 'red',
+          }),
       },
     )
   }
@@ -162,9 +164,15 @@ export function SpotModal() {
     if (!spot) return
     createBooking.mutate(spot.id, {
       onSuccess: () =>
-        toast.success(`Spot #${spot.number} booked! Reserved for 8 hours.`),
+        notifications.show({
+          message: `Spot #${spot.number} booked! Reserved for 8 hours.`,
+          color: 'green',
+        }),
       onError: (err) =>
-        toast.error(err instanceof Error ? err.message : 'Booking failed'),
+        notifications.show({
+          message: err instanceof Error ? err.message : 'Booking failed',
+          color: 'red',
+        }),
     })
   }
 
@@ -172,6 +180,11 @@ export function SpotModal() {
 
   const isPending =
     assignOwner.isPending || updateStatus.isPending || createOwner.isPending
+
+  const ownerSelectData = owners.map((o) => ({
+    value: o.id,
+    label: o.name + (o.vehicle_plate ? ` (${o.vehicle_plate})` : ''),
+  }))
 
   return (
     <Dialog
@@ -267,11 +280,15 @@ export function SpotModal() {
                         { id: spot.id, owner_id: null },
                         {
                           onSuccess: () =>
-                            toast.success(`Spot #${spot.number} unassigned`),
+                            notifications.show({
+                              message: `Spot #${spot.number} unassigned`,
+                              color: 'green',
+                            }),
                           onError: (err) =>
-                            toast.error(
-                              err instanceof Error ? err.message : 'Failed',
-                            ),
+                            notifications.show({
+                              message: err instanceof Error ? err.message : 'Failed',
+                              color: 'red',
+                            }),
                         },
                       )
                     }}
@@ -299,30 +316,14 @@ export function SpotModal() {
                 {!createFormOpen ? (
                   <>
                     <Select
+                      data={ownerSelectData}
                       value={selectedOwnerId}
-                      onValueChange={setSelectedOwnerId}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select owner…" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {owners.map((o) => (
-                          <SelectItem key={o.id} value={o.id}>
-                            {o.name}
-                            {o.vehicle_plate && (
-                              <span className="text-muted-foreground ml-1.5">
-                                ({o.vehicle_plate})
-                              </span>
-                            )}
-                          </SelectItem>
-                        ))}
-                        {owners.length === 0 && (
-                          <SelectItem value="__empty__" disabled>
-                            No owners yet
-                          </SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
+                      onChange={setSelectedOwnerId}
+                      placeholder={
+                        owners.length === 0 ? 'No owners yet' : 'Select owner…'
+                      }
+                      disabled={owners.length === 0}
+                    />
                     <div className="flex gap-2">
                       <Button
                         size="sm"

@@ -3,7 +3,7 @@ import { ParkingCircle, LogIn } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { oauthConfig } from '@/lib/oauth'
 import { generateCodeVerifier, generateCodeChallenge } from '@/lib/pkce'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 
 export function LoginPage() {
   const [loading, setLoading] = useState(false)
@@ -30,7 +30,10 @@ export function LoginPage() {
 
       window.location.href = `${oauthConfig.authorizeUrl}?${params.toString()}`
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to start login')
+      notifications.show({
+        message: err instanceof Error ? err.message : 'Failed to start login',
+        color: 'red',
+      })
       setLoading(false)
     }
   }

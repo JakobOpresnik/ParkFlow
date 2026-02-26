@@ -23,7 +23,7 @@ import {
   useUpdateOwner,
   useDeleteOwner,
 } from '@/hooks/useOwners'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 import type { Owner } from '@/types'
 
 type OwnerFormData = Omit<Owner, 'id' | 'created_at'>
@@ -117,33 +117,29 @@ export function OwnersPage() {
 
   function handleSubmit() {
     if (!form.name?.trim()) {
-      toast.error('Name is required')
+      notifications.show({ message: 'Name is required', color: 'red' })
       return
     }
 
     if (dialogMode === 'add') {
       createOwner.mutate(form, {
         onSuccess: () => {
-          toast.success('Owner added')
+          notifications.show({ message: 'Owner added', color: 'green' })
           closeDialog()
         },
         onError: (err) =>
-          toast.error(
-            err instanceof Error ? err.message : 'Failed to create owner',
-          ),
+          notifications.show({ message: err instanceof Error ? err.message : 'Failed to create owner', color: 'red' }),
       })
     } else if (dialogMode === 'edit' && editingId) {
       updateOwner.mutate(
         { id: editingId, data: form },
         {
           onSuccess: () => {
-            toast.success('Owner updated')
+            notifications.show({ message: 'Owner updated', color: 'green' })
             closeDialog()
           },
           onError: (err) =>
-            toast.error(
-              err instanceof Error ? err.message : 'Failed to update owner',
-            ),
+            notifications.show({ message: err instanceof Error ? err.message : 'Failed to update owner', color: 'red' }),
         },
       )
     }
@@ -157,13 +153,11 @@ export function OwnersPage() {
     if (!deleteTarget) return
     deleteOwner.mutate(deleteTarget.id, {
       onSuccess: () => {
-        toast.success(`${deleteTarget.name} removed`)
+        notifications.show({ message: `${deleteTarget.name} removed`, color: 'green' })
         setDeleteTarget(null)
       },
       onError: (err) =>
-        toast.error(
-          err instanceof Error ? err.message : 'Failed to delete owner',
-        ),
+        notifications.show({ message: err instanceof Error ? err.message : 'Failed to delete owner', color: 'red' }),
     })
   }
 
