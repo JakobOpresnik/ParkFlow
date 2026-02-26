@@ -27,27 +27,32 @@ ParkFlow is a full-stack web application built for internal parking management a
 ## ✨ Features
 
 ### 🏢 Parking Management
+
 - 🗂️ **Multi-lot support** — manage multiple parking locations (floors, zones, areas) independently
 - 🔴🟢 **Real-time spot status** — each spot reflects its live state: `free`, `occupied`, or `reserved`
 - 🗺️ **SVG map overlay** — interactive parking map drawn over real CAD floor plans with zoom, pan, and pinch-to-zoom
 - ✏️ **Visual map editor** — admin tool to draw and reposition spot coordinates directly on the floor plan image, persisted to the database
 
 ### 📅 Booking System
+
 - 🖱️ Users can book free spots directly from the map or spot grid
 - ⏱️ Bookings auto-expire after 8 hours
 - 📜 Full booking history with status tracking (`active`, `cancelled`, `expired`)
 
 ### 🔧 Administration
+
 - 🛡️ **Admin panel** with full CRUD for parking lots, spots, and owners
 - 👤 **Owner assignment** — link spots to named vehicle owners with contact info and plate numbers
 - 📋 **Audit log** — every spot status change is recorded with who changed it, when, and the before/after values
 
 ### 🔐 Authentication & Access Control
+
 - 🔑 JWT-based authentication with `admin` and `user` roles
 - 🚫 Admin-only routes for all write operations
 - 🔗 OAuth (Authentik SSO) integration in progress
 
 ### 🎨 UI/UX
+
 - 🌙 Dark mode toggle
 - 📱 Mobile-first responsive design
 - 🪟 Spot detail modal with inline booking, owner info, and status management
@@ -58,28 +63,28 @@ ParkFlow is a full-stack web application built for internal parking management a
 
 ### 🖥️ Frontend (`/frontend`)
 
-| Layer | Technology |
-|---|---|
-| ⚛️ Framework | React 19 + TypeScript 5.9 |
-| ⚡ Build | Vite 7 |
-| 🎨 UI | shadcn/ui + Tailwind CSS 4 |
-| 🗃️ State | Zustand 5 |
-| 🔄 Data Fetching | TanStack Query 5 |
-| 🧭 Routing | TanStack Router 1.16 |
-| 🖼️ Icons | Lucide React |
-| 🧪 Testing | Vitest 4 |
-| 📦 Package Manager | Bun |
+| Layer              | Technology                 |
+| ------------------ | -------------------------- |
+| ⚛️ Framework       | React 19 + TypeScript 5.9       |
+| ⚡ Build           | Vite 7                          |
+| 🎨 UI              | Mantine 8 + Tailwind CSS 4      |
+| 🗃️ State           | Zustand 5                       |
+| 🔄 Data Fetching   | TanStack Query 5           |
+| 🧭 Routing         | TanStack Router 1.16       |
+| 🖼️ Icons           | Lucide React               |
+| 🧪 Testing         | Vitest 4                   |
+| 📦 Package Manager | Bun                        |
 
 ### ⚙️ Backend (`/backend`)
 
-| Layer | Technology |
-|---|---|
-| 🚂 Framework | Express 5 |
-| 🐘 Database | PostgreSQL 16 |
-| 🔒 Auth | JWT (jsonwebtoken 9) + bcryptjs 3 |
-| 🔌 DB Client | node-postgres (pg 8) |
-| 🧪 Testing | Vitest 4 + Supertest 7 |
-| 📦 Package Manager | Bun |
+| Layer              | Technology                        |
+| ------------------ | --------------------------------- |
+| 🚂 Framework       | Express 5                         |
+| 🐘 Database        | PostgreSQL 16                     |
+| 🔒 Auth            | JWT (jsonwebtoken 9) + bcryptjs 3 |
+| 🔌 DB Client       | node-postgres (pg 8)              |
+| 🧪 Testing         | Vitest 4 + Supertest 7            |
+| 📦 Package Manager | Bun                               |
 
 ---
 
@@ -127,7 +132,10 @@ parkflow/
 ### Prerequisites
 
 - 🐳 [Docker](https://docs.docker.com/get-docker/) and Docker Compose
-- Or: 🍞 [Bun](https://bun.sh/) + PostgreSQL 16 for manual setup
+
+  or
+
+- 🍞 [Bun](https://bun.sh/) + PostgreSQL 16 for manual setup
 
 ### 🐳 Docker (Recommended)
 
@@ -137,11 +145,11 @@ parkflow/
 docker compose -f docker-compose.dev.yml up
 ```
 
-| 🌐 Service | URL |
-|---|---|
-| 🖥️ Frontend | http://localhost:5173 |
+| 🌐 Service     | URL                   |
+| -------------- | --------------------- |
+| 🖥️ Frontend    | http://localhost:5173 |
 | ⚙️ Backend API | http://localhost:3001 |
-| 🐘 PostgreSQL | localhost:5432 |
+| 🐘 PostgreSQL  | localhost:5432        |
 
 **Production build:**
 
@@ -151,8 +159,8 @@ docker compose up --build
 
 Database migrations run automatically on first startup. A default admin account is seeded:
 
-| Field | Value |
-|---|---|
+| Field       | Value   |
+| ----------- | ------- |
 | 👤 Username | `admin` |
 | 🔑 Password | `admin` |
 
@@ -199,23 +207,23 @@ bun run dev        # starts on port 5173
 
 ### ⚙️ Backend (`backend/.env`)
 
-| Variable | Description | Example |
-|---|---|---|
-| `DATABASE_URL` | 🐘 PostgreSQL connection string | `postgresql://parkflow:parkflow@localhost:5432/parkflow` |
-| `PORT` | 🔌 API server port | `3001` |
-| `JWT_SECRET` | 🔒 Secret key for signing JWTs | `your-secret-here` |
-| `AUTHENTIK_USERINFO_URL` | 🔗 Authentik SSO userinfo endpoint | `https://sso.example.com/application/o/userinfo/` |
-| `AUTHENTIK_ADMIN_GROUP` | 👥 SSO group name that grants admin role | `parkflow-admins` |
+| Variable                 | Description                              | Example                                                  |
+| ------------------------ | ---------------------------------------- | -------------------------------------------------------- |
+| `DATABASE_URL`           | 🐘 PostgreSQL connection string          | `postgresql://parkflow:parkflow@localhost:5432/parkflow` |
+| `PORT`                   | 🔌 API server port                       | `3001`                                                   |
+| `JWT_SECRET`             | 🔒 Secret key for signing JWTs           | `your-secret-here`                                       |
+| `AUTHENTIK_USERINFO_URL` | 🔗 Authentik SSO userinfo endpoint       | `https://sso.example.com/application/o/userinfo/`        |
+| `AUTHENTIK_ADMIN_GROUP`  | 👥 SSO group name that grants admin role | `parkflow-admins`                                        |
 
 ### 🖥️ Frontend (`frontend/.env`)
 
-| Variable | Description | Example |
-|---|---|---|
-| `VITE_API_URL` | ⚙️ Backend base URL | `http://localhost:3001` |
-| `VITE_OAUTH_AUTHORITY` | 🔗 Authentik OAuth authority URL | `https://sso.example.com/application/o/park-flow` |
-| `VITE_OAUTH_CLIENT_ID` | 🪪 OAuth client ID | `your-client-id` |
-| `VITE_OAUTH_REDIRECT_URI` | 🔄 OAuth redirect URI | `http://localhost:5173/callback` |
-| `VITE_OAUTH_ADMIN_GROUP` | 👥 Admin group name (must match backend) | `parkflow-admins` |
+| Variable                  | Description                              | Example                                           |
+| ------------------------- | ---------------------------------------- | ------------------------------------------------- |
+| `VITE_API_URL`            | ⚙️ Backend base URL                      | `http://localhost:3001`                           |
+| `VITE_OAUTH_AUTHORITY`    | 🔗 Authentik OAuth authority URL         | `https://sso.example.com/application/o/park-flow` |
+| `VITE_OAUTH_CLIENT_ID`    | 🪪 OAuth client ID                       | `your-client-id`                                  |
+| `VITE_OAUTH_REDIRECT_URI` | 🔄 OAuth redirect URI                    | `http://localhost:5173/callback`                  |
+| `VITE_OAUTH_ADMIN_GROUP`  | 👥 Admin group name (must match backend) | `parkflow-admins`                                 |
 
 ---
 
@@ -227,51 +235,51 @@ All write endpoints require an `Authorization: Bearer <token>` header. Admin-onl
 
 ### 🅿️ Spots
 
-| Method | Endpoint | Description | Auth |
-|---|---|---|---|
-| `GET` | `/api/spots` | List all spots (filter by `?lot_id=`) | — |
-| `GET` | `/api/spots/:number` | Get single spot by number | — |
-| `POST` | `/api/spots` | Create a spot | 🛡️ Admin |
-| `PUT` | `/api/spots/:id` | Update spot details | 🛡️ Admin |
-| `DELETE` | `/api/spots/:id` | Delete a spot | 🛡️ Admin |
-| `PATCH` | `/api/spots/:id/owner` | Assign an owner to a spot | 🛡️ Admin |
-| `PATCH` | `/api/spots/:id/status` | Change spot status | 🛡️ Admin |
-| `PATCH` | `/api/spots/:id/coordinates` | Update SVG map coordinates | 🛡️ Admin |
+| Method   | Endpoint                     | Description                           | Auth     |
+| -------- | ---------------------------- | ------------------------------------- | -------- |
+| `GET`    | `/api/spots`                 | List all spots (filter by `?lot_id=`) | —        |
+| `GET`    | `/api/spots/:number`         | Get single spot by number             | —        |
+| `POST`   | `/api/spots`                 | Create a spot                         | 🛡️ Admin |
+| `PUT`    | `/api/spots/:id`             | Update spot details                   | 🛡️ Admin |
+| `DELETE` | `/api/spots/:id`             | Delete a spot                         | 🛡️ Admin |
+| `PATCH`  | `/api/spots/:id/owner`       | Assign an owner to a spot             | 🛡️ Admin |
+| `PATCH`  | `/api/spots/:id/status`      | Change spot status                    | 🛡️ Admin |
+| `PATCH`  | `/api/spots/:id/coordinates` | Update SVG map coordinates            | 🛡️ Admin |
 
 ### 👤 Owners
 
-| Method | Endpoint | Description | Auth |
-|---|---|---|---|
-| `GET` | `/api/owners` | List all owners | — |
-| `POST` | `/api/owners` | Create an owner | 🛡️ Admin |
-| `PUT` | `/api/owners/:id` | Update owner details | 🛡️ Admin |
-| `DELETE` | `/api/owners/:id` | Delete an owner | 🛡️ Admin |
+| Method   | Endpoint          | Description          | Auth     |
+| -------- | ----------------- | -------------------- | -------- |
+| `GET`    | `/api/owners`     | List all owners      | —        |
+| `POST`   | `/api/owners`     | Create an owner      | 🛡️ Admin |
+| `PUT`    | `/api/owners/:id` | Update owner details | 🛡️ Admin |
+| `DELETE` | `/api/owners/:id` | Delete an owner      | 🛡️ Admin |
 
 ### 🏢 Parking Lots
 
-| Method | Endpoint | Description | Auth |
-|---|---|---|---|
-| `GET` | `/api/lots` | List all parking lots | — |
-| `POST` | `/api/lots` | Create a lot | 🛡️ Admin |
-| `PUT` | `/api/lots/:id` | Update lot details | 🛡️ Admin |
-| `DELETE` | `/api/lots/:id` | Delete a lot | 🛡️ Admin |
+| Method   | Endpoint        | Description           | Auth     |
+| -------- | --------------- | --------------------- | -------- |
+| `GET`    | `/api/lots`     | List all parking lots | —        |
+| `POST`   | `/api/lots`     | Create a lot          | 🛡️ Admin |
+| `PUT`    | `/api/lots/:id` | Update lot details    | 🛡️ Admin |
+| `DELETE` | `/api/lots/:id` | Delete a lot          | 🛡️ Admin |
 
 ### 📅 Bookings
 
-| Method | Endpoint | Description | Auth |
-|---|---|---|---|
-| `GET` | `/api/bookings/my` | Get current user's bookings | 🔑 User |
-| `POST` | `/api/bookings` | Book a free spot | 🔑 User |
-| `PATCH` | `/api/bookings/:id/cancel` | Cancel a booking | 🔑 User |
+| Method  | Endpoint                   | Description                 | Auth    |
+| ------- | -------------------------- | --------------------------- | ------- |
+| `GET`   | `/api/bookings/my`         | Get current user's bookings | 🔑 User |
+| `POST`  | `/api/bookings`            | Book a free spot            | 🔑 User |
+| `PATCH` | `/api/bookings/:id/cancel` | Cancel a booking            | 🔑 User |
 
 ### 🔐 Auth & Audit
 
-| Method | Endpoint | Description | Auth |
-|---|---|---|---|
-| `POST` | `/api/auth/login` | Login with username + password | — |
-| `GET` | `/api/auth/me` | Get current user info | 🔑 User |
-| `GET` | `/api/changes` | Spot change audit log (filter by `?lot_id=`) | — |
-| `GET` | `/health` | Health check | — |
+| Method | Endpoint          | Description                                  | Auth    |
+| ------ | ----------------- | -------------------------------------------- | ------- |
+| `POST` | `/api/auth/login` | Login with username + password               | —       |
+| `GET`  | `/api/auth/me`    | Get current user info                        | 🔑 User |
+| `GET`  | `/api/changes`    | Spot change audit log (filter by `?lot_id=`) | —       |
+| `GET`  | `/health`         | Health check                                 | —       |
 
 ---
 
@@ -333,6 +341,7 @@ bun run format      # Prettier formatting
 ```
 
 **Enforced rules:**
+
 - 🚫 No `any` types — use proper types or `unknown` with narrowing
 - 🎨 Tailwind utility classes only — no separate CSS files
 - 💅 Prettier: `semi: false`, `singleQuote: true`, `trailingComma: all`
@@ -345,9 +354,11 @@ bun run format      # Prettier formatting
 ## 🗺️ Roadmap
 
 ### 🔄 In Progress
+
 - 🔗 OAuth (Authentik SSO) full backend integration
 
 ### 📌 Planned
+
 - 📊 **Dashboard** — occupancy ring charts, weekly usage bar chart, live activity feed
 - 📈 **Analytics page** — per-floor breakdown, utilization metrics, stacked progress bars
 - 🧠 **Smart suggestions** — scoring algorithm to recommend the best available spot (floor preference, proximity, EV/compact filters)
