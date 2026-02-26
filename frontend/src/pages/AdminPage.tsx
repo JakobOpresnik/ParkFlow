@@ -75,7 +75,7 @@ function LotForm({
           Place the image in <code>frontend/public/</code>
         </p>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-sm font-medium">
             Image width (px)
@@ -169,18 +169,29 @@ function LotsSection() {
           closeDialog()
         },
         onError: (err) =>
-          notifications.show({ message: err instanceof Error ? err.message : 'Failed to create lot', color: 'red' }),
+          notifications.show({
+            message:
+              err instanceof Error ? err.message : 'Failed to create lot',
+            color: 'red',
+          }),
       })
     } else if (dialogMode === 'edit' && editingId) {
       updateLot.mutate(
         { id: editingId, data: form },
         {
           onSuccess: () => {
-            notifications.show({ message: 'Parking lot updated', color: 'green' })
+            notifications.show({
+              message: 'Parking lot updated',
+              color: 'green',
+            })
             closeDialog()
           },
           onError: (err) =>
-            notifications.show({ message: err instanceof Error ? err.message : 'Failed to update lot', color: 'red' }),
+            notifications.show({
+              message:
+                err instanceof Error ? err.message : 'Failed to update lot',
+              color: 'red',
+            }),
         },
       )
     }
@@ -190,11 +201,17 @@ function LotsSection() {
     if (!deleteTarget) return
     deleteLot.mutate(deleteTarget.id, {
       onSuccess: () => {
-        notifications.show({ message: `"${deleteTarget.name}" deleted`, color: 'green' })
+        notifications.show({
+          message: `"${deleteTarget.name}" deleted`,
+          color: 'green',
+        })
         setDeleteTarget(null)
       },
       onError: (err) =>
-        notifications.show({ message: err instanceof Error ? err.message : 'Failed to delete lot', color: 'red' }),
+        notifications.show({
+          message: err instanceof Error ? err.message : 'Failed to delete lot',
+          color: 'red',
+        }),
     })
   }
 
@@ -332,7 +349,7 @@ function SpotForm({
 }) {
   return (
     <div className="grid gap-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-sm font-medium">Number *</label>
           <Input
@@ -432,7 +449,10 @@ function SpotsSection() {
   function handleSubmit() {
     const num = parseInt(form.number)
     if (!form.number || isNaN(num) || num < 0) {
-      notifications.show({ message: 'Number must be a positive integer', color: 'red' })
+      notifications.show({
+        message: 'Number must be a positive integer',
+        color: 'red',
+      })
       return
     }
     if (!form.lot_id) {
@@ -450,11 +470,18 @@ function SpotsSection() {
         },
         {
           onSuccess: () => {
-            notifications.show({ message: `Spot #${num} created`, color: 'green' })
+            notifications.show({
+              message: `Spot #${num} created`,
+              color: 'green',
+            })
             closeDialog()
           },
           onError: (err) =>
-            notifications.show({ message: err instanceof Error ? err.message : 'Failed to create spot', color: 'red' }),
+            notifications.show({
+              message:
+                err instanceof Error ? err.message : 'Failed to create spot',
+              color: 'red',
+            }),
         },
       )
     } else if (dialogMode === 'edit' && editingId) {
@@ -470,11 +497,18 @@ function SpotsSection() {
         },
         {
           onSuccess: () => {
-            notifications.show({ message: `Spot #${num} updated`, color: 'green' })
+            notifications.show({
+              message: `Spot #${num} updated`,
+              color: 'green',
+            })
             closeDialog()
           },
           onError: (err) =>
-            notifications.show({ message: err instanceof Error ? err.message : 'Failed to update spot', color: 'red' }),
+            notifications.show({
+              message:
+                err instanceof Error ? err.message : 'Failed to update spot',
+              color: 'red',
+            }),
         },
       )
     }
@@ -484,11 +518,17 @@ function SpotsSection() {
     if (!deleteTarget) return
     deleteSpot.mutate(deleteTarget.id, {
       onSuccess: () => {
-        notifications.show({ message: `Spot #${deleteTarget.number} deleted`, color: 'green' })
+        notifications.show({
+          message: `Spot #${deleteTarget.number} deleted`,
+          color: 'green',
+        })
         setDeleteTarget(null)
       },
       onError: (err) =>
-        notifications.show({ message: err instanceof Error ? err.message : 'Failed to delete spot', color: 'red' }),
+        notifications.show({
+          message: err instanceof Error ? err.message : 'Failed to delete spot',
+          color: 'red',
+        }),
     })
   }
 
@@ -501,7 +541,7 @@ function SpotsSection() {
           <ParkingCircle className="text-primary size-4" />
           Parking Spots
         </h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Lot filter pills */}
           <div className="flex flex-wrap gap-1">
             <button
@@ -552,7 +592,9 @@ function SpotsSection() {
                 <TableHead>Lot</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Owner</TableHead>
-                <TableHead className="w-24">Actions</TableHead>
+                <TableHead className="bg-card sticky right-0 w-[100px] text-center before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-border before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -581,7 +623,7 @@ function SpotsSection() {
                   <TableCell className="text-muted-foreground text-sm">
                     {spot.owner_name ?? '—'}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="bg-card sticky right-0 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-border before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
                     <div className="flex items-center gap-1">
                       <Button
                         size="sm"

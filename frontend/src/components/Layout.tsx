@@ -86,6 +86,7 @@ export function Layout({ children, noPadding }: LayoutProps) {
             <Link
               key={to}
               to={to}
+              title={label}
               className={linkClass}
               activeProps={{ className: activeLinkClass }}
               activeOptions={{ exact: to === '/' }}
@@ -98,10 +99,15 @@ export function Layout({ children, noPadding }: LayoutProps) {
           {/* Admin dropdown */}
           <button
             onClick={() => setAdminOpen((o) => !o)}
+            title="Admin"
             className={`${linkClass} w-full ${isAdminSection ? activeLinkClass : ''}`}
           >
             <Settings className="size-4 shrink-0" />
             <span className="hidden flex-1 text-left sm:block">Admin</span>
+            {/* Mobile: dot indicator when section active */}
+            {isAdminSection && (
+              <span className="bg-primary ml-auto size-1.5 shrink-0 rounded-full sm:hidden" />
+            )}
             <ChevronDown
               className={`hidden size-3.5 shrink-0 transition-transform sm:block ${adminOpen ? 'rotate-180' : ''}`}
             />
@@ -113,6 +119,7 @@ export function Layout({ children, noPadding }: LayoutProps) {
                 <Link
                   key={to}
                   to={to}
+                  title={label}
                   className={`${linkClass} sm:pl-4`}
                   activeProps={{ className: activeLinkClass }}
                 >
@@ -133,7 +140,7 @@ export function Layout({ children, noPadding }: LayoutProps) {
                 <p className="text-xs font-medium">{user.displayName}</p>
                 <p className="text-muted-foreground text-xs">{user.username}</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" title={`${user.displayName} (${user.username})`}>
                 <ThemeToggle />
                 <Button
                   variant="ghost"

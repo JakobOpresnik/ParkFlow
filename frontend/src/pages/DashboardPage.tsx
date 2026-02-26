@@ -63,7 +63,7 @@ function LotBar({
           style={{ width: `${freePct}%`, background: 'var(--color-spot-free)' }}
         />
       </div>
-      <div className="text-muted-foreground flex gap-4 text-xs">
+      <div className="text-muted-foreground flex flex-wrap gap-3 text-xs">
         <span className="flex items-center gap-1">
           <span className="size-2 rounded-full" style={{ background: 'var(--color-spot-free)' }} />
           {free} free
@@ -144,20 +144,20 @@ export function DashboardPage() {
 
       {/* Stat cards */}
       {isLoading ? (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="bg-muted h-24 animate-pulse rounded-lg border" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {statCards.map(({ label, value, sub, Icon, color }) => (
             <div
               key={label}
               className="bg-card flex flex-col gap-1.5 rounded-lg border p-4 shadow-sm"
             >
               <Icon className={`size-4 ${color}`} />
-              <p className="text-3xl font-bold tabular-nums">{value}</p>
+              <p className="text-2xl font-bold tabular-nums sm:text-3xl">{value}</p>
               <p className="text-sm font-medium">{label}</p>
               <p className="text-muted-foreground text-xs">{sub}</p>
             </div>
@@ -212,7 +212,7 @@ export function DashboardPage() {
                   <th className="px-4 py-2 text-left font-medium">Time</th>
                   <th className="px-4 py-2 text-left font-medium">Spot</th>
                   <th className="px-4 py-2 text-left font-medium">Change</th>
-                  <th className="px-4 py-2 text-left font-medium">Value</th>
+                  <th className="hidden px-4 py-2 text-left font-medium sm:table-cell">Value</th>
                 </tr>
               </thead>
               <tbody>
@@ -232,7 +232,7 @@ export function DashboardPage() {
                     <td className="px-4 py-2 text-sm">
                       {CHANGE_TYPE_LABEL[change.change_type] ?? change.change_type}
                     </td>
-                    <td className="text-muted-foreground px-4 py-2 text-sm">
+                    <td className="text-muted-foreground hidden px-4 py-2 text-sm sm:table-cell">
                       {change.old_value ?? '—'}
                       {' → '}
                       {change.new_value ?? '—'}

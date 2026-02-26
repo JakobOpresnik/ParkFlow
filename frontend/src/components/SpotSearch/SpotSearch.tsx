@@ -77,11 +77,11 @@ export function SpotSearch() {
             className="bg-card hover:bg-accent/50 flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors"
           >
             <MapPin className="text-muted-foreground size-4 shrink-0" />
-            <span className="font-medium">#{found.number}</span>
+            <span className="font-medium shrink-0">#{found.number}</span>
             {found.label && (
-              <span className="text-muted-foreground">{found.label}</span>
+              <span className="text-muted-foreground min-w-0 truncate">{found.label}</span>
             )}
-            <Badge className={`ml-auto ${STATUS_BADGE[found.status]}`}>
+            <Badge className={`ml-auto shrink-0 ${STATUS_BADGE[found.status]}`}>
               {STATUS_LABELS[found.status]}
             </Badge>
           </button>

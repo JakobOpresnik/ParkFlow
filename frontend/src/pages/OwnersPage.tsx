@@ -128,7 +128,11 @@ export function OwnersPage() {
           closeDialog()
         },
         onError: (err) =>
-          notifications.show({ message: err instanceof Error ? err.message : 'Failed to create owner', color: 'red' }),
+          notifications.show({
+            message:
+              err instanceof Error ? err.message : 'Failed to create owner',
+            color: 'red',
+          }),
       })
     } else if (dialogMode === 'edit' && editingId) {
       updateOwner.mutate(
@@ -139,7 +143,11 @@ export function OwnersPage() {
             closeDialog()
           },
           onError: (err) =>
-            notifications.show({ message: err instanceof Error ? err.message : 'Failed to update owner', color: 'red' }),
+            notifications.show({
+              message:
+                err instanceof Error ? err.message : 'Failed to update owner',
+              color: 'red',
+            }),
         },
       )
     }
@@ -153,11 +161,18 @@ export function OwnersPage() {
     if (!deleteTarget) return
     deleteOwner.mutate(deleteTarget.id, {
       onSuccess: () => {
-        notifications.show({ message: `${deleteTarget.name} removed`, color: 'green' })
+        notifications.show({
+          message: `${deleteTarget.name} removed`,
+          color: 'green',
+        })
         setDeleteTarget(null)
       },
       onError: (err) =>
-        notifications.show({ message: err instanceof Error ? err.message : 'Failed to delete owner', color: 'red' }),
+        notifications.show({
+          message:
+            err instanceof Error ? err.message : 'Failed to delete owner',
+          color: 'red',
+        }),
     })
   }
 
@@ -196,7 +211,9 @@ export function OwnersPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Plate</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
+                <TableHead className="bg-card sticky right-0 w-[100px] text-center before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-border before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -212,7 +229,7 @@ export function OwnersPage() {
                   <TableCell className="font-mono text-sm">
                     {owner.vehicle_plate ?? '—'}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="bg-card sticky right-0 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-border before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
                     <div className="flex items-center gap-1">
                       <Button
                         size="sm"

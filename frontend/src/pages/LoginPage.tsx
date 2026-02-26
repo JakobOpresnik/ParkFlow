@@ -39,8 +39,8 @@ export function LoginPage() {
   }
 
   return (
-    <div className="bg-muted/40 flex min-h-screen items-center justify-center p-4">
-      <div className="bg-card w-full max-w-sm rounded-xl border p-8 shadow-md">
+    <div className="bg-muted/40 flex min-h-screen items-center justify-center overflow-y-auto p-4">
+      <div className="bg-card w-full max-w-sm rounded-xl border p-6 shadow-md sm:p-8">
         <div className="mb-6 flex flex-col items-center gap-2">
           <ParkingCircle className="text-primary size-10" />
           <h1 className="text-xl font-semibold">ParkFlow</h1>

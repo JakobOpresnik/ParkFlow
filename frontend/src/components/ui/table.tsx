@@ -7,8 +7,25 @@ function Table({
   children,
   ...props
 }: React.ComponentProps<'table'>) {
+  const ref = React.useRef<HTMLDivElement>(null)
+  const [overflows, setOverflows] = React.useState(false)
+
+  React.useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const check = () => setOverflows(el.scrollWidth > el.clientWidth)
+    check()
+    const obs = new ResizeObserver(check)
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
   return (
-    <div className="relative w-full overflow-x-auto">
+    <div
+      ref={ref}
+      data-overflow={overflows ? 'true' : undefined}
+      className="group relative w-full overflow-x-auto"
+    >
       <MantineTable
         className={cn('w-full caption-bottom text-sm', className)}
         {...(props as Record<string, unknown>)}

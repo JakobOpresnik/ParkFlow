@@ -195,20 +195,20 @@ export function SpotModal() {
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            <span className="text-2xl font-bold">#{spot.number}</span>
+          <DialogTitle className="flex min-w-0 items-center gap-3">
+            <span className="text-2xl font-bold shrink-0">#{spot.number}</span>
             {spot.label && (
-              <span className="text-muted-foreground text-base font-normal">
+              <span className="text-muted-foreground min-w-0 truncate text-base font-normal">
                 {spot.label}
               </span>
             )}
-            <Badge className={`ml-auto ${STATUS_BADGE[spot.status]}`}>
+            <Badge className={`ml-auto shrink-0 ${STATUS_BADGE[spot.status]}`}>
               {STATUS_LABELS[spot.status]}
             </Badge>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-5 py-1">
+        <div className="max-h-[70vh] space-y-5 overflow-y-auto py-1 pr-1">
           {/* Floor */}
           <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <MapPin className="size-3.5" />
@@ -242,7 +242,7 @@ export function SpotModal() {
             <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
               Change status
             </p>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {ALL_STATUSES.map((s) => (
                 <Button
                   key={s}
@@ -356,7 +356,7 @@ export function SpotModal() {
                       value={newPlate}
                       onChange={(e) => setNewPlate(e.target.value)}
                     />
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
                         disabled={!newName.trim() || isPending}

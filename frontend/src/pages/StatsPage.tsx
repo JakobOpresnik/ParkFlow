@@ -192,7 +192,7 @@ export function StatsPage() {
       {!isLoading && total > 0 && (
         <>
           {/* Summary cards */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {segments.map((seg) => (
               <div
                 key={seg.label}
@@ -202,7 +202,7 @@ export function StatsPage() {
                   className="h-1 w-10 rounded-full"
                   style={{ background: `var(${seg.colorVar})` }}
                 />
-                <p className="text-3xl font-bold tabular-nums">{seg.pct}%</p>
+                <p className="text-2xl font-bold tabular-nums sm:text-3xl">{seg.pct}%</p>
                 <p className="text-muted-foreground text-sm">{seg.label}</p>
                 <p className="text-xs font-medium">
                   {seg.count} / {total} spots

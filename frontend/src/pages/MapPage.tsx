@@ -254,7 +254,7 @@ export function MapPage() {
 
       {/* ── Grid view ────────────────────────────────────────────── */}
       {!isMapMode && (
-        <div className="absolute inset-0 overflow-y-auto p-4 pt-22">
+        <div className="absolute inset-0 overflow-y-auto p-4 pt-20 sm:pt-16">
           {isLoading ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {Array.from({ length: 10 }).map((_, i) => (
@@ -275,7 +275,7 @@ export function MapPage() {
       )}
 
       {/* ── Top-left: lot selector — always visible ──────────────── */}
-      <div className="absolute top-3 left-3 z-20">
+      <div className="absolute top-3 left-3 z-20 max-w-[calc(100vw-96px)]">
         <div
           className={`flex flex-wrap gap-1 rounded-xl p-1.5 ${
             isMapMode
