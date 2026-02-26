@@ -49,14 +49,16 @@ export function LoginPage() {
           </p>
         </div>
 
-        <Button
-          className="w-full gap-2"
-          disabled={loading}
-          onClick={() => void handleLogin()}
-        >
-          <LogIn className="size-4" />
-          {loading ? 'Redirecting…' : 'Sign in with SSO'}
-        </Button>
+        <div className="flex justify-center">
+          <Button
+            className="gap-2"
+            disabled={loading}
+            onClick={() => void handleLogin()}
+          >
+            <LogIn className="size-4" />
+            {loading ? 'Redirecting…' : 'Sign in with SSO'}
+          </Button>
+        </div>
       </div>
     </div>
   )
