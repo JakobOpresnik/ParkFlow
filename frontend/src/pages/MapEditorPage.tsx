@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { Pencil, MousePointer, Trash2, RotateCcw, X, Save } from 'lucide-react'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useLots } from '@/hooks/useLots'
@@ -566,7 +566,7 @@ export function MapEditorPage() {
             },
             onError: (err) => {
               setSaveStatus('idle')
-              toast.error(err instanceof Error ? err.message : 'Save failed')
+              notifications.show({ message: err instanceof Error ? err.message : 'Save failed', color: 'red' })
             },
           },
         )
@@ -628,12 +628,12 @@ export function MapEditorPage() {
   async function handleSaveToSpot(spotId: string, relCoords: SpotCoordinates) {
     try {
       await patchCoords.mutateAsync({ id: spotId, coordinates: relCoords })
-      toast.success('Coordinates saved')
+      notifications.show({ message: 'Coordinates saved', color: 'green' })
       setPendingRect(null)
       setSelectedSpotId(spotId)
       setMode('select')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to save')
+      notifications.show({ message: err instanceof Error ? err.message : 'Failed to save', color: 'red' })
     }
   }
 
@@ -650,12 +650,12 @@ export function MapEditorPage() {
         lot_id: activeLotId,
       })
       await patchCoords.mutateAsync({ id: spot.id, coordinates: relCoords })
-      toast.success(`Spot #${number} created`)
+      notifications.show({ message: `Spot #${number} created`, color: 'green' })
       setPendingRect(null)
       setSelectedSpotId(spot.id)
       setMode('select')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create spot')
+      notifications.show({ message: err instanceof Error ? err.message : 'Failed to create spot', color: 'red' })
     }
   }
 
@@ -663,10 +663,10 @@ export function MapEditorPage() {
     if (!selectedSpotId) return
     try {
       await patchCoords.mutateAsync({ id: selectedSpotId, coordinates: null })
-      toast.success('Coordinates removed')
+      notifications.show({ message: 'Coordinates removed', color: 'green' })
       setSelectedSpotId(null)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to remove')
+      notifications.show({ message: err instanceof Error ? err.message : 'Failed to remove', color: 'red' })
     }
   }
 

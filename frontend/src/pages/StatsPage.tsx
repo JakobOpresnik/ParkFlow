@@ -1,13 +1,7 @@
 import { useState } from 'react'
 import { useSpots } from '@/hooks/useSpots'
 import { useLots } from '@/hooks/useLots'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Select } from '@/components/ui/select'
 import type { SpotStatus } from '@/types'
 
 // ─── Donut chart ─────────────────────────────────────────────────────────────
@@ -173,19 +167,15 @@ export function StatsPage() {
 
         {/* Lot filter */}
         {!isLoading && lots.length > 0 && (
-          <Select value={selectedLotId} onValueChange={setSelectedLotId}>
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="All floors" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">All floors</SelectItem>
-              {lots.map((lot) => (
-                <SelectItem key={lot.id} value={lot.id}>
-                  {lot.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Select
+            value={selectedLotId}
+            onChange={(v) => v && setSelectedLotId(v)}
+            data={[
+              { value: '__all__', label: 'All floors' },
+              ...lots.map((lot) => ({ value: lot.id, label: lot.name })),
+            ]}
+            placeholder="All floors"
+          />
         )}
       </div>
 

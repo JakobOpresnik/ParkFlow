@@ -29,7 +29,7 @@ import {
   useUpdateSpot,
   useDeleteSpot,
 } from '@/hooks/useSpots'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 import type { ParkingLot, Spot, SpotStatus } from '@/types'
 
 // ─── Lot management ────────────────────────────────────────────────────────────
@@ -159,32 +159,28 @@ function LotsSection() {
 
   function handleSubmit() {
     if (!form.name.trim()) {
-      toast.error('Name is required')
+      notifications.show({ message: 'Name is required', color: 'red' })
       return
     }
     if (dialogMode === 'add') {
       createLot.mutate(form, {
         onSuccess: () => {
-          toast.success('Parking lot added')
+          notifications.show({ message: 'Parking lot added', color: 'green' })
           closeDialog()
         },
         onError: (err) =>
-          toast.error(
-            err instanceof Error ? err.message : 'Failed to create lot',
-          ),
+          notifications.show({ message: err instanceof Error ? err.message : 'Failed to create lot', color: 'red' }),
       })
     } else if (dialogMode === 'edit' && editingId) {
       updateLot.mutate(
         { id: editingId, data: form },
         {
           onSuccess: () => {
-            toast.success('Parking lot updated')
+            notifications.show({ message: 'Parking lot updated', color: 'green' })
             closeDialog()
           },
           onError: (err) =>
-            toast.error(
-              err instanceof Error ? err.message : 'Failed to update lot',
-            ),
+            notifications.show({ message: err instanceof Error ? err.message : 'Failed to update lot', color: 'red' }),
         },
       )
     }
@@ -194,13 +190,11 @@ function LotsSection() {
     if (!deleteTarget) return
     deleteLot.mutate(deleteTarget.id, {
       onSuccess: () => {
-        toast.success(`"${deleteTarget.name}" deleted`)
+        notifications.show({ message: `"${deleteTarget.name}" deleted`, color: 'green' })
         setDeleteTarget(null)
       },
       onError: (err) =>
-        toast.error(
-          err instanceof Error ? err.message : 'Failed to delete lot',
-        ),
+        notifications.show({ message: err instanceof Error ? err.message : 'Failed to delete lot', color: 'red' }),
     })
   }
 
@@ -438,11 +432,11 @@ function SpotsSection() {
   function handleSubmit() {
     const num = parseInt(form.number)
     if (!form.number || isNaN(num) || num < 0) {
-      toast.error('Number must be a positive integer')
+      notifications.show({ message: 'Number must be a positive integer', color: 'red' })
       return
     }
     if (!form.lot_id) {
-      toast.error('Parking lot is required')
+      notifications.show({ message: 'Parking lot is required', color: 'red' })
       return
     }
 
@@ -456,13 +450,11 @@ function SpotsSection() {
         },
         {
           onSuccess: () => {
-            toast.success(`Spot #${num} created`)
+            notifications.show({ message: `Spot #${num} created`, color: 'green' })
             closeDialog()
           },
           onError: (err) =>
-            toast.error(
-              err instanceof Error ? err.message : 'Failed to create spot',
-            ),
+            notifications.show({ message: err instanceof Error ? err.message : 'Failed to create spot', color: 'red' }),
         },
       )
     } else if (dialogMode === 'edit' && editingId) {
@@ -478,13 +470,11 @@ function SpotsSection() {
         },
         {
           onSuccess: () => {
-            toast.success(`Spot #${num} updated`)
+            notifications.show({ message: `Spot #${num} updated`, color: 'green' })
             closeDialog()
           },
           onError: (err) =>
-            toast.error(
-              err instanceof Error ? err.message : 'Failed to update spot',
-            ),
+            notifications.show({ message: err instanceof Error ? err.message : 'Failed to update spot', color: 'red' }),
         },
       )
     }
@@ -494,13 +484,11 @@ function SpotsSection() {
     if (!deleteTarget) return
     deleteSpot.mutate(deleteTarget.id, {
       onSuccess: () => {
-        toast.success(`Spot #${deleteTarget.number} deleted`)
+        notifications.show({ message: `Spot #${deleteTarget.number} deleted`, color: 'green' })
         setDeleteTarget(null)
       },
       onError: (err) =>
-        toast.error(
-          err instanceof Error ? err.message : 'Failed to delete spot',
-        ),
+        notifications.show({ message: err instanceof Error ? err.message : 'Failed to delete spot', color: 'red' }),
     })
   }
 
