@@ -57,6 +57,9 @@ export interface Spot {
   owner_email: string | null
   owner_phone: string | null
   owner_vehicle_plate: string | null
+  // joined from bookings table (active booking for this spot, if any)
+  active_booking_id: string | null
+  active_booking_user_id: string | null
 }
 
 export type SpotChangeType =

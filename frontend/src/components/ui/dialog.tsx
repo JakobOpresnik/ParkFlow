@@ -56,7 +56,7 @@ function DialogContent({
       {showCloseButton && (
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+          className="text-muted-foreground hover:bg-muted hover:text-foreground absolute top-3.5 right-3.5 flex size-8 items-center justify-center rounded-lg transition-colors focus:outline-none"
         >
           <XIcon className="size-4" />
           <span className="sr-only">Close</span>

@@ -20,9 +20,12 @@ const SPOT_SELECT = `
     o.email         AS owner_email,
     o.phone         AS owner_phone,
     o.vehicle_plate AS owner_vehicle_plate,
-    o.notes         AS owner_notes
+    o.notes         AS owner_notes,
+    b.id            AS active_booking_id,
+    b.user_id       AS active_booking_user_id
   FROM spots s
   LEFT JOIN owners o ON s.owner_id = o.id
+  LEFT JOIN bookings b ON b.spot_id = s.id AND b.status = 'active'
 `
 
 // BE-1: GET /api/spots — all spots, optionally filtered by ?lot_id=
