@@ -14,16 +14,20 @@ services:
   backend-test:
     image: node:22-alpine
     working_dir: /app
+    stdin_open: true
+    tty: true
     environment:
       NODE_ENV: test
       FORCE_COLOR: '1'
+      CHOKIDAR_USEPOLLING: 'true'
+      CHOKIDAR_INTERVAL: '250'
       DATABASE_URL: postgresql://parkflow:parkflow@db-test:5432/parkflow_test
       JWT_SECRET: test-secret
     volumes:
       - ./backend:/app
       - backend-test-node-modules:/app/node_modules
     command: >
-      sh -lc "npm install -g bun && bun install --frozen-lockfile && bunx vitest run --reporter=verbose"
+      sh -lc "npm install -g bun && bun install --frozen-lockfile && bun run test:watch"
     depends_on:
       db-test:
         condition: service_healthy
