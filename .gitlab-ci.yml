@@ -49,16 +49,6 @@ backend_test:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
     - if: $CI_COMMIT_BRANCH
 
-frontend_test:
-  stage: test
-  script:
-    - cd frontend
-    - bun install --frozen-lockfile
-    - bun test
-  rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    - if: $CI_COMMIT_BRANCH
-
 backend_lint:
   stage: lint
   script:

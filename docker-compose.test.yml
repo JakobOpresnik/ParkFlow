@@ -1,0 +1,32 @@
+services:
+  db-test:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: parkflow
+      POSTGRES_PASSWORD: parkflow
+      POSTGRES_DB: parkflow_test
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U parkflow -d parkflow_test']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend-test:
+    image: node:22-alpine
+    working_dir: /app
+    environment:
+      NODE_ENV: test
+      FORCE_COLOR: '1'
+      DATABASE_URL: postgresql://parkflow:parkflow@db-test:5432/parkflow_test
+      JWT_SECRET: test-secret
+    volumes:
+      - ./backend:/app
+      - backend-test-node-modules:/app/node_modules
+    command: >
+      sh -lc "npm install -g bun && bun install --frozen-lockfile && bunx vitest run --reporter=verbose"
+    depends_on:
+      db-test:
+        condition: service_healthy
+
+volumes:
+  backend-test-node-modules:
