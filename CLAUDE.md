@@ -79,7 +79,7 @@
 ### When working in /frontend
 
 - Package manager: **Bun** (never npm/yarn/pnpm)
-- **Always run `bun run fix` (in /frontend/package.json) after making any code changes to the frontend** — this runs the linter in fix mode and the formatter together
+- **Always run `bun run fix` (from `/frontend/package.json`) after making any code changes to the frontend** — this runs the linter in fix mode and the formatter together
 
 ### When working in /jan
 
