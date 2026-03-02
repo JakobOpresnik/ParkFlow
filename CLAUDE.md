@@ -76,6 +76,11 @@
 - Mobile-first design — test on mobile viewport first
 - Never hardcode secrets — use .env files
 
+### When working in /frontend
+
+- Package manager: **Bun** (never npm/yarn/pnpm)
+- **Always run `bun run fix` after making any code changes** — this runs the linter in fix mode and the formatter together
+
 ### When working in /jan
 
 - Package manager: **Bun** (never npm/yarn/pnpm)
