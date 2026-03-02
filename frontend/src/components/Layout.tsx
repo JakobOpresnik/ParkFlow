@@ -98,7 +98,7 @@ export function Layout({ children, noPadding }: LayoutProps) {
           <button
             onClick={() => setAdminOpen((o) => !o)}
             title="Admin"
-            className={`${linkClass} w-full ${isAdminSection ? activeLinkClass : ''}`}
+            className={`${linkClass} w-full cursor-pointer ${isAdminSection ? activeLinkClass : ''}`}
           >
             <Settings className="size-4 shrink-0" />
             <span className="hidden flex-1 text-left sm:block">Admin</span>
