@@ -1,13 +1,31 @@
-FROM node:22-alpine
+FROM node:22-alpine AS build
 
 RUN npm install -g bun
 
 WORKDIR /app
 
+ARG VITE_API_URL
+ARG VITE_OAUTH_AUTHORITY
+ARG VITE_OAUTH_CLIENT_ID
+ARG VITE_OAUTH_REDIRECT_URI
+ARG VITE_OAUTH_ADMIN_GROUP
+
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_OAUTH_AUTHORITY=$VITE_OAUTH_AUTHORITY
+ENV VITE_OAUTH_CLIENT_ID=$VITE_OAUTH_CLIENT_ID
+ENV VITE_OAUTH_REDIRECT_URI=$VITE_OAUTH_REDIRECT_URI
+ENV VITE_OAUTH_ADMIN_GROUP=$VITE_OAUTH_ADMIN_GROUP
+
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
 COPY . .
+RUN bun run build
+
+FROM nginx:1.27-alpine
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 3000
-CMD ["bun", "run", "dev"]
+CMD ["nginx", "-g", "daemon off;"]

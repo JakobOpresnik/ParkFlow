@@ -1,0 +1,101 @@
+include:
+  - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/gitlab-ci-local@~latest
+  - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/secret-detection@~latest
+    inputs:
+      stage: security
+  - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/trivy@~latest
+    inputs:
+      stage: security
+      repository: true
+  - project: 'pub/gitlab-ci-templates'
+    ref: main
+    file: '/templates/docker-multi-build.yml'
+    inputs:
+      stage: build
+      buildList:
+        - IMAGE_NAME: backend
+          CONTEXT_PATH: backend
+          DOCKER_FILE: backend/Dockerfile
+        - IMAGE_NAME: frontend
+          CONTEXT_PATH: frontend
+          DOCKER_FILE: frontend/Dockerfile
+
+stages:
+  - security
+  - test
+  - lint
+  - build
+
+variables:
+  # Dependency-Track integration used by trivy template job `repo_sbom_upload`.
+  # Set these in GitLab CI/CD variables (project/group):
+  # - DEPENDENCY_TRACK_API_URL (example: https://dependency-track.example.com/api/v1/bom)
+  # - DEPENDENCY_TRACK_API_KEY
+  # - DEPENDENCY_TRACK_PROJECT_ID (UUID)
+  MATHEO_DT_API: $DEPENDENCY_TRACK_API_URL
+  MATHEO_DT_API_KEY: $DEPENDENCY_TRACK_API_KEY
+  DT_PROJECT_ID: $DEPENDENCY_TRACK_PROJECT_ID
+
+default:
+  image: oven/bun:1.2.22
+
+backend_test:
+  stage: test
+  script:
+    - cd backend
+    - bun install --frozen-lockfile
+    - bun test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH
+
+frontend_test:
+  stage: test
+  script:
+    - cd frontend
+    - bun install --frozen-lockfile
+    - bun test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH
+
+backend_lint:
+  stage: lint
+  script:
+    - cd backend
+    - bun install --frozen-lockfile
+    - bunx tsc -p tsconfig.json --noEmit
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH
+
+frontend_lint:
+  stage: lint
+  script:
+    - cd frontend
+    - bun install --frozen-lockfile
+    - bun run lint
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH
+
+compose_dockerfile_guard:
+  stage: lint
+  script:
+    - grep -q 'dockerfile: Dockerfile.dev' docker-compose.dev.yml
+    - test "$(grep -c 'dockerfile: Dockerfile.dev' docker-compose.dev.yml)" -eq 2
+    - grep -q 'dockerfile: Dockerfile' docker-compose.yml
+    - test "$(grep -c 'dockerfile: Dockerfile' docker-compose.yml)" -eq 2
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH
+
+frontend_build:
+  stage: build
+  script:
+    - cd frontend
+    - bun install --frozen-lockfile
+    - bun run build
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH
