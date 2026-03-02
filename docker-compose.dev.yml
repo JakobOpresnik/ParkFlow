@@ -19,6 +19,7 @@ services:
   backend:
     build:
       context: ./backend
+    pull_policy: build
     command: bun run dev
     environment:
       DATABASE_URL: postgresql://parkflow:parkflow@db:5432/parkflow
@@ -36,6 +37,7 @@ services:
   frontend:
     build:
       context: ./frontend
+    pull_policy: build
     command: bun run dev --host 0.0.0.0 --port 3000
     environment:
       VITE_API_URL: http://localhost:3001
