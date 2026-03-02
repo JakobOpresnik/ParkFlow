@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "fix": "bun run lint:fix && bun run format",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest"
