@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS parking_lots (
 -- Seed 3 default lots with deterministic UUIDs
 INSERT INTO parking_lots (id, name, sort_order, image_filename) VALUES
   ('10000000-0000-0000-0000-000000000001', 'Zunaj',           0, 'parking-map-outside.png'),
-  ('10000000-0000-0000-0000-000000000002', '1. nadstropje',   1, 'parking-map-floor1.png'),
-  ('10000000-0000-0000-0000-000000000003', '2. nadstropje',   2, 'parking-map-floor2.png')
+  ('10000000-0000-0000-0000-000000000002', '1. nadstropje',   1, 'klet_1.svg'),
+  ('10000000-0000-0000-0000-000000000003', '2. nadstropje',   2, 'klet_2.svg')
 ON CONFLICT (id) DO NOTHING;
 
 -- Add lot_id to spots
