@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { Pencil, MousePointer, Trash2, RotateCcw, X, Save } from 'lucide-react'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useLots } from '@/hooks/useLots'
@@ -516,6 +516,7 @@ export function MapEditorPage() {
   } | null>(null)
   const [pendingRect, setPendingRect] = useState<PendingRect | null>(null)
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null)
+  const [imageError, setImageError] = useState(false)
 
   // Auto-save
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
@@ -526,6 +527,12 @@ export function MapEditorPage() {
 
   const activeLotId = selectedLotId ?? lots[0]?.id ?? null
   const activeLot = lots.find((l) => l.id === activeLotId) ?? null
+  // Reset image error state whenever the active lot (and thus image URL) changes
+  const prevLotIdRef = useRef<string | null>(null)
+  if (prevLotIdRef.current !== activeLotId) {
+    prevLotIdRef.current = activeLotId
+    if (imageError) setImageError(false)
+  }
 
   const imgW = activeLot?.image_width ?? 792
   const imgH = activeLot?.image_height ?? 612
@@ -559,7 +566,10 @@ export function MapEditorPage() {
             },
             onError: (err) => {
               setSaveStatus('idle')
-              toast.error(err instanceof Error ? err.message : 'Save failed')
+              notifications.show({
+                message: err instanceof Error ? err.message : 'Save failed',
+                color: 'red',
+              })
             },
           },
         )
@@ -621,12 +631,15 @@ export function MapEditorPage() {
   async function handleSaveToSpot(spotId: string, relCoords: SpotCoordinates) {
     try {
       await patchCoords.mutateAsync({ id: spotId, coordinates: relCoords })
-      toast.success('Coordinates saved')
+      notifications.show({ message: 'Coordinates saved', color: 'green' })
       setPendingRect(null)
       setSelectedSpotId(spotId)
       setMode('select')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to save')
+      notifications.show({
+        message: err instanceof Error ? err.message : 'Failed to save',
+        color: 'red',
+      })
     }
   }
 
@@ -643,12 +656,15 @@ export function MapEditorPage() {
         lot_id: activeLotId,
       })
       await patchCoords.mutateAsync({ id: spot.id, coordinates: relCoords })
-      toast.success(`Spot #${number} created`)
+      notifications.show({ message: `Spot #${number} created`, color: 'green' })
       setPendingRect(null)
       setSelectedSpotId(spot.id)
       setMode('select')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create spot')
+      notifications.show({
+        message: err instanceof Error ? err.message : 'Failed to create spot',
+        color: 'red',
+      })
     }
   }
 
@@ -656,10 +672,13 @@ export function MapEditorPage() {
     if (!selectedSpotId) return
     try {
       await patchCoords.mutateAsync({ id: selectedSpotId, coordinates: null })
-      toast.success('Coordinates removed')
+      notifications.show({ message: 'Coordinates removed', color: 'green' })
       setSelectedSpotId(null)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to remove')
+      notifications.show({
+        message: err instanceof Error ? err.message : 'Failed to remove',
+        color: 'red',
+      })
     }
   }
 
@@ -758,11 +777,51 @@ export function MapEditorPage() {
                 setDragCurrent(null)
               }}
             >
-              <image
-                href={`/${activeLot.image_filename}`}
-                width={imgW}
-                height={imgH}
-              />
+              {activeLot.image_filename && !imageError ? (
+                <image
+                  href={`/${activeLot.image_filename}`}
+                  width={imgW}
+                  height={imgH}
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <>
+                  <rect width={imgW} height={imgH} fill="#f1f5f9" />
+                  <text
+                    x={imgW / 2}
+                    y={imgH / 2 - 16}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize={32}
+                    fill="#94a3b8"
+                    className="pointer-events-none"
+                  >
+                    🗺
+                  </text>
+                  <text
+                    x={imgW / 2}
+                    y={imgH / 2 + 24}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize={26}
+                    fill="#94a3b8"
+                    className="pointer-events-none"
+                  >
+                    No floor plan uploaded
+                  </text>
+                  <text
+                    x={imgW / 2}
+                    y={imgH / 2 + 52}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize={20}
+                    fill="#cbd5e1"
+                    className="pointer-events-none"
+                  >
+                    Upload an image via the Admin page to get started
+                  </text>
+                </>
+              )}
 
               {/* Mapped spots — DB coords are relative; convert to viewBox for rendering */}
               {mappedSpots.map((spot) => {

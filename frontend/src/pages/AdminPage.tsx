@@ -29,7 +29,7 @@ import {
   useUpdateSpot,
   useDeleteSpot,
 } from '@/hooks/useSpots'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 import type { ParkingLot, Spot, SpotStatus } from '@/types'
 
 // ─── Lot management ────────────────────────────────────────────────────────────
@@ -75,7 +75,7 @@ function LotForm({
           Place the image in <code>frontend/public/</code>
         </p>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-sm font-medium">
             Image width (px)
@@ -159,32 +159,39 @@ function LotsSection() {
 
   function handleSubmit() {
     if (!form.name.trim()) {
-      toast.error('Name is required')
+      notifications.show({ message: 'Name is required', color: 'red' })
       return
     }
     if (dialogMode === 'add') {
       createLot.mutate(form, {
         onSuccess: () => {
-          toast.success('Parking lot added')
+          notifications.show({ message: 'Parking lot added', color: 'green' })
           closeDialog()
         },
         onError: (err) =>
-          toast.error(
-            err instanceof Error ? err.message : 'Failed to create lot',
-          ),
+          notifications.show({
+            message:
+              err instanceof Error ? err.message : 'Failed to create lot',
+            color: 'red',
+          }),
       })
     } else if (dialogMode === 'edit' && editingId) {
       updateLot.mutate(
         { id: editingId, data: form },
         {
           onSuccess: () => {
-            toast.success('Parking lot updated')
+            notifications.show({
+              message: 'Parking lot updated',
+              color: 'green',
+            })
             closeDialog()
           },
           onError: (err) =>
-            toast.error(
-              err instanceof Error ? err.message : 'Failed to update lot',
-            ),
+            notifications.show({
+              message:
+                err instanceof Error ? err.message : 'Failed to update lot',
+              color: 'red',
+            }),
         },
       )
     }
@@ -194,13 +201,17 @@ function LotsSection() {
     if (!deleteTarget) return
     deleteLot.mutate(deleteTarget.id, {
       onSuccess: () => {
-        toast.success(`"${deleteTarget.name}" deleted`)
+        notifications.show({
+          message: `"${deleteTarget.name}" deleted`,
+          color: 'green',
+        })
         setDeleteTarget(null)
       },
       onError: (err) =>
-        toast.error(
-          err instanceof Error ? err.message : 'Failed to delete lot',
-        ),
+        notifications.show({
+          message: err instanceof Error ? err.message : 'Failed to delete lot',
+          color: 'red',
+        }),
     })
   }
 
@@ -338,7 +349,7 @@ function SpotForm({
 }) {
   return (
     <div className="grid gap-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-sm font-medium">Number *</label>
           <Input
@@ -438,11 +449,14 @@ function SpotsSection() {
   function handleSubmit() {
     const num = parseInt(form.number)
     if (!form.number || isNaN(num) || num < 0) {
-      toast.error('Number must be a positive integer')
+      notifications.show({
+        message: 'Number must be a positive integer',
+        color: 'red',
+      })
       return
     }
     if (!form.lot_id) {
-      toast.error('Parking lot is required')
+      notifications.show({ message: 'Parking lot is required', color: 'red' })
       return
     }
 
@@ -456,13 +470,18 @@ function SpotsSection() {
         },
         {
           onSuccess: () => {
-            toast.success(`Spot #${num} created`)
+            notifications.show({
+              message: `Spot #${num} created`,
+              color: 'green',
+            })
             closeDialog()
           },
           onError: (err) =>
-            toast.error(
-              err instanceof Error ? err.message : 'Failed to create spot',
-            ),
+            notifications.show({
+              message:
+                err instanceof Error ? err.message : 'Failed to create spot',
+              color: 'red',
+            }),
         },
       )
     } else if (dialogMode === 'edit' && editingId) {
@@ -478,13 +497,18 @@ function SpotsSection() {
         },
         {
           onSuccess: () => {
-            toast.success(`Spot #${num} updated`)
+            notifications.show({
+              message: `Spot #${num} updated`,
+              color: 'green',
+            })
             closeDialog()
           },
           onError: (err) =>
-            toast.error(
-              err instanceof Error ? err.message : 'Failed to update spot',
-            ),
+            notifications.show({
+              message:
+                err instanceof Error ? err.message : 'Failed to update spot',
+              color: 'red',
+            }),
         },
       )
     }
@@ -494,13 +518,17 @@ function SpotsSection() {
     if (!deleteTarget) return
     deleteSpot.mutate(deleteTarget.id, {
       onSuccess: () => {
-        toast.success(`Spot #${deleteTarget.number} deleted`)
+        notifications.show({
+          message: `Spot #${deleteTarget.number} deleted`,
+          color: 'green',
+        })
         setDeleteTarget(null)
       },
       onError: (err) =>
-        toast.error(
-          err instanceof Error ? err.message : 'Failed to delete spot',
-        ),
+        notifications.show({
+          message: err instanceof Error ? err.message : 'Failed to delete spot',
+          color: 'red',
+        }),
     })
   }
 
@@ -513,7 +541,7 @@ function SpotsSection() {
           <ParkingCircle className="text-primary size-4" />
           Parking Spots
         </h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Lot filter pills */}
           <div className="flex flex-wrap gap-1">
             <button
@@ -564,13 +592,15 @@ function SpotsSection() {
                 <TableHead>Lot</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Owner</TableHead>
-                <TableHead className="w-24">Actions</TableHead>
+                <TableHead className="bg-card before:bg-border sticky right-0 w-[100px] text-center before:absolute before:inset-y-0 before:left-0 before:w-px before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {displayedSpots.map((spot) => (
+              {displayedSpots.map((spot, index) => (
                 <TableRow key={spot.id}>
-                  <TableCell className="font-semibold">{spot.number}</TableCell>
+                  <TableCell className="font-semibold">{index + 1}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {spot.label ?? '—'}
                   </TableCell>
@@ -593,7 +623,7 @@ function SpotsSection() {
                   <TableCell className="text-muted-foreground text-sm">
                     {spot.owner_name ?? '—'}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="bg-card before:bg-border sticky right-0 before:absolute before:inset-y-0 before:left-0 before:w-px before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
                     <div className="flex items-center gap-1">
                       <Button
                         size="sm"

@@ -96,9 +96,7 @@ export const ParkingMap = forwardRef<ParkingMapHandle, ParkingMapProps>(
 
     function containerCenter(): { x: number; y: number } {
       const rect = containerRef.current?.getBoundingClientRect()
-      return rect
-        ? { x: rect.width / 2, y: rect.height / 2 }
-        : { x: 0, y: 0 }
+      return rect ? { x: rect.width / 2, y: rect.height / 2 } : { x: 0, y: 0 }
     }
 
     useImperativeHandle(ref, () => ({

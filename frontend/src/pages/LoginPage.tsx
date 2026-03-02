@@ -3,7 +3,7 @@ import { ParkingCircle, LogIn } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { oauthConfig } from '@/lib/oauth'
 import { generateCodeVerifier, generateCodeChallenge } from '@/lib/pkce'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 
 export function LoginPage() {
   const [loading, setLoading] = useState(false)
@@ -30,14 +30,17 @@ export function LoginPage() {
 
       window.location.href = `${oauthConfig.authorizeUrl}?${params.toString()}`
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to start login')
+      notifications.show({
+        message: err instanceof Error ? err.message : 'Failed to start login',
+        color: 'red',
+      })
       setLoading(false)
     }
   }
 
   return (
-    <div className="bg-muted/40 flex min-h-screen items-center justify-center p-4">
-      <div className="bg-card w-full max-w-sm rounded-xl border p-8 shadow-md">
+    <div className="bg-muted/40 flex min-h-screen items-center justify-center overflow-y-auto p-4">
+      <div className="bg-card w-full max-w-sm rounded-xl border p-6 shadow-md sm:p-8">
         <div className="mb-6 flex flex-col items-center gap-2">
           <ParkingCircle className="text-primary size-10" />
           <h1 className="text-xl font-semibold">ParkFlow</h1>
@@ -46,14 +49,16 @@ export function LoginPage() {
           </p>
         </div>
 
-        <Button
-          className="w-full"
-          disabled={loading}
-          onClick={() => void handleLogin()}
-        >
-          <LogIn className="mr-2 size-4" />
-          {loading ? 'Redirecting…' : 'Sign in with SSO'}
-        </Button>
+        <div className="flex justify-center">
+          <Button
+            className="gap-2"
+            disabled={loading}
+            onClick={() => void handleLogin()}
+          >
+            <LogIn className="size-4" />
+            {loading ? 'Redirecting…' : 'Sign in with SSO'}
+          </Button>
+        </div>
       </div>
     </div>
   )

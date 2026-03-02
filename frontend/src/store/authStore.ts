@@ -57,8 +57,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         const user: AppUser = {
           id: userinfo.sub,
           username: userinfo.preferred_username ?? userinfo.sub,
-          displayName: userinfo.name ?? userinfo.preferred_username ?? userinfo.sub,
-          role: userinfo.groups?.includes(oauthConfig.adminGroup) ? 'admin' : 'user',
+          displayName:
+            userinfo.name ?? userinfo.preferred_username ?? userinfo.sub,
+          role: userinfo.groups?.includes(oauthConfig.adminGroup)
+            ? 'admin'
+            : 'user',
         }
 
         set({ user, isLoading: false })

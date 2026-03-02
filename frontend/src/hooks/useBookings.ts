@@ -3,7 +3,7 @@ import { api } from '@/api'
 import { useAuthStore } from '@/store/authStore'
 
 export function useMyBookings() {
-  const token = useAuthStore((s) => s.token)
+  const token = useAuthStore((s) => s.accessToken)
   return useQuery({
     queryKey: ['bookings', 'my'],
     queryFn: api.getMyBookings,

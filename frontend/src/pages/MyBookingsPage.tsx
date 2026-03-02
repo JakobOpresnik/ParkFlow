@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useMyBookings, useCancelBooking } from '@/hooks/useBookings'
 import { useAuthStore } from '@/store/authStore'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 import type { Booking, BookingStatus } from '@/types'
 
 const STATUS_BADGE: Record<BookingStatus, string> = {
@@ -45,9 +45,13 @@ function BookingCard({ booking }: BookingCardProps) {
 
   function handleCancel() {
     cancelBooking.mutate(booking.id, {
-      onSuccess: () => toast.success('Booking cancelled'),
+      onSuccess: () =>
+        notifications.show({ message: 'Booking cancelled', color: 'green' }),
       onError: (err) =>
-        toast.error(err instanceof Error ? err.message : 'Failed to cancel'),
+        notifications.show({
+          message: err instanceof Error ? err.message : 'Failed to cancel',
+          color: 'red',
+        }),
     })
   }
 
@@ -101,11 +105,11 @@ function BookingCard({ booking }: BookingCardProps) {
           <Button
             size="sm"
             variant="ghost"
-            className="text-destructive hover:text-destructive shrink-0"
+            className="text-destructive hover:text-destructive shrink-0 gap-2"
             disabled={cancelBooking.isPending}
             onClick={handleCancel}
           >
-            <XCircle className="mr-1 size-4" />
+            <XCircle className="size-4" />
             Cancel
           </Button>
         )}

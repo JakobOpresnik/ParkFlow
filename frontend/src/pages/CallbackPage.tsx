@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 import { oauthConfig } from '@/lib/oauth'
 import { useAuthStore } from '@/store/authStore'
 import type { AppUser } from '@/types'
@@ -78,11 +78,16 @@ export function CallbackPage() {
         const user: AppUser = {
           id: userinfo.sub,
           username: userinfo.preferred_username ?? userinfo.sub,
-          displayName: userinfo.name ?? userinfo.preferred_username ?? userinfo.sub,
-          role: userinfo.groups?.includes(oauthConfig.adminGroup) ? 'admin' : 'user',
+          displayName:
+            userinfo.name ?? userinfo.preferred_username ?? userinfo.sub,
+          role: userinfo.groups?.includes(oauthConfig.adminGroup)
+            ? 'admin'
+            : 'user',
         }
 
-        useAuthStore.getState().setAuth(user, tokens.access_token, tokens.id_token)
+        useAuthStore
+          .getState()
+          .setAuth(user, tokens.access_token, tokens.id_token)
 
         // Clean up session storage
         sessionStorage.removeItem('oauth_state')
@@ -90,7 +95,10 @@ export function CallbackPage() {
 
         void navigate({ to: '/' })
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Authentication failed')
+        notifications.show({
+          message: err instanceof Error ? err.message : 'Authentication failed',
+          color: 'red',
+        })
         void navigate({ to: '/login' })
       }
     }

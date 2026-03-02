@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useRouterState } from '@tanstack/react-router'
 import {
   Map,
   Users,
@@ -10,18 +10,25 @@ import {
   Loader2,
   Settings,
   PenLine,
+  ChevronDown,
+  LayoutDashboard,
+  User,
 } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { useAuthStore } from '@/store/authStore'
 import { Button } from '@/components/ui/button'
 
-const navItems = [
+const topNavItems = [
   { to: '/', label: 'Map', Icon: Map },
-  { to: '/owners', label: 'Owners', Icon: Users },
+  { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
   { to: '/stats', label: 'Statistics', Icon: BarChart2 },
   { to: '/my-bookings', label: 'My Bookings', Icon: Calendar },
-  { to: '/admin', label: 'Admin', Icon: Settings },
+]
+
+const adminSubItems = [
+  { to: '/admin', label: 'Parking', Icon: ParkingCircle },
+  { to: '/owners', label: 'Owners', Icon: Users },
   { to: '/map-editor', label: 'Map Editor', Icon: PenLine },
 ]
 
@@ -34,6 +41,13 @@ export function Layout({ children, noPadding }: LayoutProps) {
   const user = useAuthStore((s) => s.user)
   const isLoading = useAuthStore((s) => s.isLoading)
   const logout = useAuthStore((s) => s.logout)
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+
+  const isAdminSection =
+    pathname === '/admin' ||
+    pathname === '/owners' ||
+    pathname === '/map-editor'
+  const [adminOpen, setAdminOpen] = useState(isAdminSection)
 
   if (isLoading) {
     return (
@@ -46,6 +60,11 @@ export function Layout({ children, noPadding }: LayoutProps) {
   function handleLogout() {
     logout()
   }
+
+  const linkClass =
+    'text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-3 rounded-md px-2 py-2.5 text-sm transition-colors sm:px-3'
+  const activeLinkClass =
+    'bg-primary/10 text-primary font-medium hover:bg-primary/10 hover:text-primary'
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -61,32 +80,78 @@ export function Layout({ children, noPadding }: LayoutProps) {
 
         {/* Nav */}
         <nav className="flex flex-1 flex-col gap-0.5 p-2 sm:p-3">
-          {navItems.map(({ to, label, Icon }) => (
+          {topNavItems.map(({ to, label, Icon }) => (
             <Link
               key={to}
               to={to}
-              className="text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-3 rounded-md px-2 py-2.5 text-sm transition-colors sm:px-3"
-              activeProps={{
-                className:
-                  'bg-primary/10 text-primary font-medium hover:bg-primary/10 hover:text-primary',
-              }}
+              title={label}
+              className={linkClass}
+              activeProps={{ className: activeLinkClass }}
               activeOptions={{ exact: to === '/' }}
             >
               <Icon className="size-4 shrink-0" />
               <span className="hidden sm:block">{label}</span>
             </Link>
           ))}
+
+          {/* Admin dropdown */}
+          <button
+            onClick={() => setAdminOpen((o) => !o)}
+            title="Admin"
+            className={`${linkClass} w-full cursor-pointer ${isAdminSection ? activeLinkClass : ''}`}
+          >
+            <Settings className="size-4 shrink-0" />
+            <span className="hidden flex-1 text-left sm:block">Admin</span>
+            {/* Mobile: dot indicator when section active */}
+            {isAdminSection && (
+              <span className="bg-primary ml-auto size-1.5 shrink-0 rounded-full sm:hidden" />
+            )}
+            <ChevronDown
+              className={`hidden size-3.5 shrink-0 transition-transform sm:block ${adminOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
+
+          {adminOpen && (
+            <div className="ml-2 flex flex-col gap-0.5 sm:ml-3">
+              {adminSubItems.map(({ to, label, Icon }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  title={label}
+                  className={`${linkClass} sm:pl-4`}
+                  activeProps={{ className: activeLinkClass }}
+                >
+                  <Icon className="size-3.5 shrink-0" />
+                  <span className="hidden sm:block">{label}</span>
+                </Link>
+              ))}
+            </div>
+          )}
         </nav>
 
         {/* Bottom — user info + logout / login */}
         <div className="border-t p-2 sm:p-3">
           {user ? (
             <div className="space-y-2">
-              <div className="hidden sm:block">
+              <Link
+                to="/profile"
+                className="hover:bg-muted -mx-1 hidden rounded-md px-1 py-1 sm:block"
+                title="View profile"
+              >
                 <p className="text-xs font-medium">{user.displayName}</p>
                 <p className="text-muted-foreground text-xs">{user.username}</p>
-              </div>
-              <div className="flex items-center gap-2">
+              </Link>
+              <div
+                className="flex items-center justify-between"
+                title={`${user.displayName} (${user.username})`}
+              >
+                <Link
+                  to="/profile"
+                  className="text-muted-foreground hover:bg-muted flex size-8 items-center justify-center rounded-md transition-colors sm:hidden"
+                  title="Profile"
+                >
+                  <User className="size-4" />
+                </Link>
                 <ThemeToggle />
                 <Button
                   variant="ghost"

@@ -7,6 +7,7 @@ import {
   redirect,
 } from '@tanstack/react-router'
 import { MapPage } from '@/pages/MapPage'
+import { DashboardPage } from '@/pages/DashboardPage'
 import { OwnersPage } from '@/pages/OwnersPage'
 import { StatsPage } from '@/pages/StatsPage'
 import { MyBookingsPage } from '@/pages/MyBookingsPage'
@@ -14,6 +15,7 @@ import { LoginPage } from '@/pages/LoginPage'
 import { CallbackPage } from '@/pages/CallbackPage'
 import { AdminPage } from '@/pages/AdminPage'
 import { MapEditorPage } from '@/pages/MapEditorPage'
+import { ProfilePage } from '@/pages/ProfilePage'
 import { Layout } from '@/components/Layout'
 import { useAuthStore, authInitPromise } from '@/store/authStore'
 
@@ -70,6 +72,12 @@ const mapRoute = createRoute({
   component: MapPage,
 })
 
+const dashboardRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/dashboard',
+  component: DashboardPage,
+})
+
 const ownersRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/owners',
@@ -100,16 +108,24 @@ const mapEditorRoute = createRoute({
   component: MapEditorPage,
 })
 
+const profileRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/profile',
+  component: ProfilePage,
+})
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   callbackRoute,
   mapLayoutRoute.addChildren([mapRoute]),
   layoutRoute.addChildren([
+    dashboardRoute,
     ownersRoute,
     statsRoute,
     myBookingsRoute,
     adminRoute,
     mapEditorRoute,
+    profileRoute,
   ]),
 ])
 

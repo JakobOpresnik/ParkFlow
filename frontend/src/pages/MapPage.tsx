@@ -21,6 +21,7 @@ import { useSpots } from '@/hooks/useSpots'
 import { useLots } from '@/hooks/useLots'
 import { useParkingStore } from '@/store/parkingStore'
 import { useUIStore } from '@/store/uiStore'
+import { usePrefsStore } from '@/store/prefsStore'
 import type { ParkingLot, Spot, SpotStatus } from '@/types'
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
@@ -46,7 +47,7 @@ function MapLegend() {
 
 // ─── Stat cards (sidebar) ─────────────────────────────────────────────────────
 
-function StatCards({ spots }: { spots: Spot[] }) {
+function StatCards({ spots }: { readonly spots: Spot[] }) {
   const total = spots.length
   const free = spots.filter((s) => s.status === 'free').length
   const occupied = spots.filter((s) => s.status === 'occupied').length
@@ -83,10 +84,10 @@ function OverlayBtn({
   children,
   active,
 }: {
-  onClick: () => void
-  title: string
-  children: React.ReactNode
-  active?: boolean
+  readonly onClick: () => void
+  readonly title: string
+  readonly children: React.ReactNode
+  readonly active?: boolean
 }) {
   return (
     <button
@@ -131,15 +132,21 @@ export function MapPage() {
   const mapViewMode = useUIStore((s) => s.mapViewMode)
   const setMapViewMode = useUIStore((s) => s.setMapViewMode)
 
+  const preferredLotId = usePrefsStore((s) => s.preferredLotId)
+
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
-  // Auto-select first lot
+  // Auto-select preferred lot (or first lot as fallback) when arriving at map
   useEffect(() => {
     if (lots.length > 0 && selectedLotId === null) {
-      setSelectedLotId(lots[0].id)
+      const preferred =
+        preferredLotId !== null
+          ? lots.find((l) => l.id === preferredLotId)
+          : null
+      setSelectedLotId(preferred ? preferred.id : lots[0].id)
     }
-  }, [lots, selectedLotId, setSelectedLotId])
+  }, [lots, selectedLotId, preferredLotId, setSelectedLotId])
 
   // Fullscreen change listener
   useEffect(() => {
@@ -184,8 +191,8 @@ export function MapPage() {
   return (
     <div
       ref={containerRef}
-      className="relative h-full w-full overflow-hidden"
-      style={BLUEPRINT_STYLE}
+      className={`relative h-full w-full overflow-hidden ${!isMapMode ? 'bg-muted/40' : ''}`}
+      style={isMapMode ? BLUEPRINT_STYLE : undefined}
     >
       {/* ── Map — centered with aspect ratio ─────────────────────── */}
       {isMapMode && (
@@ -254,18 +261,18 @@ export function MapPage() {
 
       {/* ── Grid view ────────────────────────────────────────────── */}
       {!isMapMode && (
-        <div className="absolute inset-0 overflow-y-auto p-4 pt-16">
+        <div className="absolute inset-0 overflow-y-auto p-4 pt-20 sm:pt-16">
           {isLoading ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {Array.from({ length: 10 }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-20 animate-pulse rounded-lg bg-white/10"
+                  className="bg-muted h-20 animate-pulse rounded-lg"
                 />
               ))}
             </div>
           ) : lotSpots.length === 0 ? (
-            <div className="flex h-32 items-center justify-center text-white/60">
+            <div className="text-muted-foreground flex h-32 items-center justify-center">
               <p className="text-sm">No spots in this lot</p>
             </div>
           ) : (
@@ -275,12 +282,22 @@ export function MapPage() {
       )}
 
       {/* ── Top-left: lot selector — always visible ──────────────── */}
-      <div className="absolute top-3 left-3 z-20">
-        <div className="flex flex-wrap gap-1 rounded-xl bg-black/40 p-1.5 backdrop-blur-sm">
+      <div className="absolute top-3 left-3 z-20 max-w-[calc(100vw-96px)]">
+        <div
+          className={`flex flex-wrap gap-1 rounded-xl p-1.5 ${
+            isMapMode
+              ? 'bg-black/40 backdrop-blur-sm'
+              : 'bg-card border shadow-sm'
+          }`}
+        >
           {isLoading ? (
             <>
-              <div className="h-9 w-20 animate-pulse rounded-lg bg-white/10" />
-              <div className="h-9 w-24 animate-pulse rounded-lg bg-white/10" />
+              <div
+                className={`h-9 w-20 animate-pulse rounded-lg ${isMapMode ? 'bg-white/10' : 'bg-muted'}`}
+              />
+              <div
+                className={`h-9 w-24 animate-pulse rounded-lg ${isMapMode ? 'bg-white/10' : 'bg-muted'}`}
+              />
             </>
           ) : (
             lots.map((lot) => (
@@ -288,9 +305,13 @@ export function MapPage() {
                 key={lot.id}
                 onClick={() => handleLotSelect(lot)}
                 className={`flex min-h-9 items-center rounded-lg px-3 py-1 text-xs font-medium transition-colors ${
-                  activeLot?.id === lot.id
-                    ? 'bg-white text-blue-950'
-                    : 'text-white/80 hover:bg-white/10 hover:text-white'
+                  isMapMode
+                    ? activeLot?.id === lot.id
+                      ? 'bg-white text-blue-950'
+                      : 'text-white/80 hover:bg-white/10 hover:text-white'
+                    : activeLot?.id === lot.id
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
               >
                 {lot.name}
@@ -312,28 +333,22 @@ export function MapPage() {
         </div>
       </div>
 
-      {/* ── Top-right: sidebar toggle + view mode toggle ────────── */}
-      <div className="absolute top-3 right-3 z-20 flex flex-col items-end gap-2">
-        {/* Sidebar toggle */}
-        <div className="rounded-xl bg-black/40 p-1 backdrop-blur-sm">
-          <OverlayBtn
-            onClick={() => setSidebarOpen((v) => !v)}
-            title="Toggle sidebar"
-            active={sidebarOpen}
-          >
-            <PanelRight className="size-5" />
-          </OverlayBtn>
-        </div>
-
-        {/* View mode toggle — horizontal segmented pill */}
-        <div className="flex gap-0.5 rounded-xl bg-black/40 p-1 backdrop-blur-sm">
+      {/* ── Top-right: view mode toggle ─────────────────────────── */}
+      <div className="absolute top-3 right-3 z-20">
+        <div
+          className={`flex gap-0.5 rounded-xl p-1 ${
+            isMapMode
+              ? 'bg-black/40 backdrop-blur-sm'
+              : 'bg-card border shadow-sm'
+          }`}
+        >
           <button
             onClick={() => setMapViewMode('map')}
             title="Map view"
             className={`flex min-h-11 min-w-15 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-colors ${
               isMapMode
                 ? 'bg-white/20 text-white'
-                : 'text-white/60 hover:bg-white/10 hover:text-white'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             }`}
           >
             <Map className="size-4 shrink-0" />
@@ -344,7 +359,7 @@ export function MapPage() {
             title="Grid view"
             className={`flex min-h-11 min-w-15 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-colors ${
               !isMapMode
-                ? 'bg-white/20 text-white'
+                ? 'bg-accent text-foreground'
                 : 'text-white/60 hover:bg-white/10 hover:text-white'
             }`}
           >
@@ -354,9 +369,19 @@ export function MapPage() {
         </div>
       </div>
 
-      {/* ── Bottom-right: zoom + fullscreen (map mode only) ──────── */}
+      {/* ── Bottom-right: sidebar toggle + zoom + fullscreen (map mode only) ──────── */}
       {isMapMode && (
         <div className="absolute right-3 bottom-3 z-20 flex flex-col gap-2">
+          {/* Sidebar toggle */}
+          <div className="rounded-xl bg-black/40 p-1 backdrop-blur-sm">
+            <OverlayBtn
+              onClick={() => setSidebarOpen((v) => !v)}
+              title="Toggle sidebar"
+              active={sidebarOpen}
+            >
+              <PanelRight className="size-5" />
+            </OverlayBtn>
+          </div>
           <div className="flex flex-col rounded-xl bg-black/40 p-1 backdrop-blur-sm">
             <OverlayBtn
               onClick={() => mapRef.current?.zoomIn()}
