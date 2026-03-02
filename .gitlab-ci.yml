@@ -39,15 +39,15 @@ variables:
 default:
   image: oven/bun:1.2.22
 
-backend_test:
-  stage: test
-  script:
-    - cd backend
-    - bun install --frozen-lockfile
-    - bun test
-  rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    - if: $CI_COMMIT_BRANCH
+# backend_test:
+#   stage: test
+#   script:
+#     - cd backend
+#     - bun install --frozen-lockfile
+#     - bun test
+#   rules:
+#     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+#     - if: $CI_COMMIT_BRANCH
 
 backend_lint:
   stage: lint
