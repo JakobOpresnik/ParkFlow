@@ -82,10 +82,11 @@ frontend_lint:
 compose_dockerfile_guard:
   stage: lint
   script:
-    - grep -q 'dockerfile: Dockerfile.dev' docker-compose.dev.yml
-    - test "$(grep -c 'dockerfile: Dockerfile.dev' docker-compose.dev.yml)" -eq 2
-    - grep -q 'dockerfile: Dockerfile' docker-compose.yml
-    - test "$(grep -c 'dockerfile: Dockerfile' docker-compose.yml)" -eq 2
+    - |
+      grep -q 'dockerfile: Dockerfile.dev' docker-compose.dev.yml
+      test "$(grep -c 'dockerfile: Dockerfile.dev' docker-compose.dev.yml)" -eq 2
+      grep -q 'dockerfile: Dockerfile' docker-compose.yml
+      test "$(grep -c 'dockerfile: Dockerfile' docker-compose.yml)" -eq 2
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
     - if: $CI_COMMIT_BRANCH
