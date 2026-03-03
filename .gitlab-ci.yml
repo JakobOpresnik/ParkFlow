@@ -39,15 +39,19 @@ variables:
 default:
   image: oven/bun:1.2.22
 
-# backend_test:
-#   stage: test
-#   script:
-#     - cd backend
-#     - bun install --frozen-lockfile
-#     - bun test
-#   rules:
-#     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-#     - if: $CI_COMMIT_BRANCH
+backend_test:
+  stage: test
+  variables:
+    NODE_ENV: test
+    DATABASE_URL: postgresql://localhost:5432/postgres
+    JWT_SECRET: test-secret
+  script:
+    - cd backend
+    - bun install --frozen-lockfile
+    - bun run test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH
 
 backend_lint:
   stage: lint
