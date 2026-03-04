@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
-import { useSpots } from '@/hooks/useSpots'
+
 import { usePresence } from '@/hooks/usePresence'
-import { PRESENCE_STATUSES } from '@/types'
+import { useSpots } from '@/hooks/useSpots'
 import type { PresenceStatus, Spot } from '@/types'
+import { PRESENCE_STATUSES } from '@/types'
 
 const ABSENT_STATUSES = new Set<PresenceStatus>(
   PRESENCE_STATUSES.filter((s) => s !== 'in_office'),

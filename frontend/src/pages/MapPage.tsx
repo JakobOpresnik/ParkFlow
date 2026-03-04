@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from 'react'
 import {
   AlertCircle,
   LayoutGrid,
@@ -12,17 +11,19 @@ import {
   RotateCcw,
   X,
 } from 'lucide-react'
-import { ParkingMap } from '@/components/ParkingMap/ParkingMap'
+import { useEffect, useRef, useState } from 'react'
+
 import type { ParkingMapHandle } from '@/components/ParkingMap/ParkingMap'
+import { ParkingMap } from '@/components/ParkingMap/ParkingMap'
 import { SpotGrid } from '@/components/SpotGrid/SpotGrid'
-import { SpotSearch } from '@/components/SpotSearch/SpotSearch'
 import { SpotModal } from '@/components/SpotModal/SpotModal'
+import { SpotSearch } from '@/components/SpotSearch/SpotSearch'
+import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
 import { useLots } from '@/hooks/useLots'
 import { useParkingStore } from '@/store/parkingStore'
-import { useUIStore } from '@/store/uiStore'
 import { usePrefsStore } from '@/store/prefsStore'
+import { useUIStore } from '@/store/uiStore'
 import type { ParkingLot, Spot, SpotStatus } from '@/types'
-import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
 
@@ -148,7 +149,7 @@ export function MapPage() {
         preferredLotId !== null
           ? lots.find((l) => l.id === preferredLotId)
           : null
-      setSelectedLotId(preferred ? preferred.id : lots[0].id)
+      setSelectedLotId(preferred ? preferred.id : (lots[0]?.id ?? null))
     }
   }, [lots, selectedLotId, preferredLotId, setSelectedLotId])
 
@@ -160,6 +161,24 @@ export function MapPage() {
     document.addEventListener('fullscreenchange', onFsChange)
     return () => document.removeEventListener('fullscreenchange', onFsChange)
   }, [])
+
+  // Arrow key lot navigation
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (lots.length < 2) return
+      const idx = lots.findIndex((l) => l.id === selectedLotId)
+      const next =
+        e.key === 'ArrowRight'
+          ? lots[(idx + 1) % lots.length]
+          : lots[(idx - 1 + lots.length) % lots.length]
+      if (next) setSelectedLotId(next.id)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [lots, selectedLotId, setSelectedLotId])
 
   const isLoading = spotsLoading || lotsLoading
   const activeLot = lots.find((l) => l.id === selectedLotId) ?? lots[0] ?? null
@@ -195,7 +214,7 @@ export function MapPage() {
   return (
     <div
       ref={containerRef}
-      className={`relative h-full w-full overflow-hidden ${!isMapMode ? 'bg-muted/40' : ''}`}
+      className={`relative h-full w-full overflow-hidden ${isMapMode ? '' : 'bg-muted/40'}`}
       style={isMapMode ? BLUEPRINT_STYLE : undefined}
     >
       {/* ── Map — centered with aspect ratio ─────────────────────── */}
@@ -265,7 +284,7 @@ export function MapPage() {
 
       {/* ── Grid view ────────────────────────────────────────────── */}
       {!isMapMode && (
-        <div className="absolute inset-0 overflow-y-auto p-4 pt-20 sm:pt-16">
+        <div className="absolute inset-0 overflow-y-auto p-4 pt-24 sm:pt-20">
           {isLoading ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {Array.from({ length: 10 }).map((_, i) => (
@@ -324,10 +343,10 @@ export function MapPage() {
                   const free = ls.filter((s) => s.status === 'free').length
                   return ls.length > 0 ? (
                     <span
-                      className={`ml-1.5 size-1.5 rounded-full ${STATUS_DOT['free']} ${
+                      className={`ml-3 size-1.5 cursor-pointer rounded-full ${free === 0 ? STATUS_DOT['occupied'] : STATUS_DOT['free']} ${
                         activeLot?.id === lot.id ? 'opacity-100' : 'opacity-70'
                       }`}
-                      title={`${free} free`}
+                      title={free === 0 ? 'No free spots' : `${free} free`}
                     />
                   ) : null
                 })()}
@@ -338,7 +357,7 @@ export function MapPage() {
       </div>
 
       {/* ── Top-right: view mode toggle ─────────────────────────── */}
-      <div className="absolute top-3 right-3 z-20">
+      <div className="absolute top-3 right-8 z-20">
         <div
           className={`flex gap-0.5 rounded-xl p-1 ${
             isMapMode
@@ -426,6 +445,7 @@ export function MapPage() {
       {/* ── Sidebar backdrop (mobile tap-to-close) ──────────────── */}
       {sidebarOpen && (
         <div
+          role="presentation"
           className="absolute inset-0 z-20 bg-black/30 sm:hidden"
           onClick={() => setSidebarOpen(false)}
         />

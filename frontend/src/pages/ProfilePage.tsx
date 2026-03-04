@@ -1,26 +1,27 @@
+import { Link } from '@tanstack/react-router'
 import {
-  User,
-  CalendarCheck,
-  XCircle,
-  Clock,
-  MapPin,
-  Calendar,
-  ShieldCheck,
-  Hash,
   Bell,
   BellOff,
+  Calendar,
+  CalendarCheck,
+  Clock,
+  Hash,
+  MapPin,
   ParkingCircle,
+  ShieldCheck,
   TrendingUp,
+  User,
+  XCircle,
 } from 'lucide-react'
+
 import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
 import { Select } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { useMyBookings } from '@/hooks/useBookings'
 import { useLots } from '@/hooks/useLots'
 import { useAuthStore } from '@/store/authStore'
-import { usePrefsStore } from '@/store/prefsStore'
 import { useParkingStore } from '@/store/parkingStore'
-import { Link } from '@tanstack/react-router'
+import { usePrefsStore } from '@/store/prefsStore'
 import type { Booking, BookingStatus } from '@/types'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -30,7 +31,7 @@ function getInitials(name: string): string {
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
+    .map((w) => w[0]!.toUpperCase())
     .join('')
 }
 

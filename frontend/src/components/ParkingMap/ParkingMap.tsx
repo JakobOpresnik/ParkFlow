@@ -1,4 +1,5 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
+
 import type { ParkingLot, Spot, SpotCoordinates } from '@/types'
 
 const STATUS_FILL: Record<string, string> = {

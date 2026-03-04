@@ -1,14 +1,16 @@
+import { notifications } from '@mantine/notifications'
+import { Layers, ParkingCircle, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Layers, ParkingCircle } from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import {
   Table,
   TableBody,
@@ -18,18 +20,17 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
-  useLots,
   useCreateLot,
-  useUpdateLot,
   useDeleteLot,
+  useLots,
+  useUpdateLot,
 } from '@/hooks/useLots'
 import {
-  useSpots,
   useCreateSpot,
-  useUpdateSpot,
   useDeleteSpot,
+  useSpots,
+  useUpdateSpot,
 } from '@/hooks/useSpots'
-import { notifications } from '@mantine/notifications'
 import type { ParkingLot, Spot, SpotStatus } from '@/types'
 
 // ─── Lot management ────────────────────────────────────────────────────────────
@@ -55,16 +56,25 @@ function LotForm({
   return (
     <div className="grid gap-3">
       <div>
-        <label className="mb-1 block text-sm font-medium">Name *</label>
+        <label htmlFor="lot-name" className="mb-1 block text-sm font-medium">
+          Name *
+        </label>
         <Input
+          id="lot-name"
           value={value.name}
           onChange={(e) => onChange({ ...value, name: e.target.value })}
           placeholder="e.g. Zunaj"
         />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium">Image filename</label>
+        <label
+          htmlFor="lot-image-filename"
+          className="mb-1 block text-sm font-medium"
+        >
+          Image filename
+        </label>
         <Input
+          id="lot-image-filename"
           value={value.image_filename}
           onChange={(e) =>
             onChange({ ...value, image_filename: e.target.value })
@@ -77,10 +87,14 @@ function LotForm({
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-sm font-medium">
+          <label
+            htmlFor="lot-image-width"
+            className="mb-1 block text-sm font-medium"
+          >
             Image width (px)
           </label>
           <Input
+            id="lot-image-width"
             type="number"
             value={value.image_width}
             onChange={(e) =>
@@ -92,10 +106,14 @@ function LotForm({
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium">
+          <label
+            htmlFor="lot-image-height"
+            className="mb-1 block text-sm font-medium"
+          >
             Image height (px)
           </label>
           <Input
+            id="lot-image-height"
             type="number"
             value={value.image_height}
             onChange={(e) =>

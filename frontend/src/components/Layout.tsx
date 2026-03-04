@@ -1,23 +1,24 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
-  Map,
-  Users,
-  ParkingCircle,
   BarChart2,
   Calendar,
-  LogIn,
-  LogOut,
-  Loader2,
-  Settings,
-  PenLine,
   ChevronDown,
   LayoutDashboard,
+  Loader2,
+  LogIn,
+  LogOut,
+  Map,
+  ParkingCircle,
+  PenLine,
+  Settings,
   User,
+  Users,
 } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
+
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { useAuthStore } from '@/store/authStore'
 import { Button } from '@/components/ui/button'
+import { useAuthStore } from '@/store/authStore'
 
 const topNavItems = [
   { to: '/', label: 'Map', Icon: Map },

@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { notifications } from '@mantine/notifications'
 import { useNavigate } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
-import { notifications } from '@mantine/notifications'
+import { useEffect, useRef } from 'react'
+
 import { oauthConfig } from '@/lib/oauth'
 import { useAuthStore } from '@/store/authStore'
 import type { AppUser } from '@/types'

@@ -1,7 +1,8 @@
+import { MapPin, Search } from 'lucide-react'
 import { useState } from 'react'
-import { Search, MapPin } from 'lucide-react'
-import { Input } from '@/components/ui/input'
+
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { useSpots } from '@/hooks/useSpots'
 import { useParkingStore } from '@/store/parkingStore'
 import { useUIStore } from '@/store/uiStore'
