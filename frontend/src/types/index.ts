@@ -60,6 +60,7 @@ export interface Spot {
   // joined from bookings table (active booking for this spot, if any)
   active_booking_id: string | null
   active_booking_user_id: string | null
+  active_booking_reserved_by: string | null
 }
 
 export type SpotChangeType =

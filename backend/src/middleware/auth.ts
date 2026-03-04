@@ -3,6 +3,7 @@ import type { Request, Response, NextFunction } from 'express'
 export interface AuthPayload {
   userId: string
   username: string
+  displayName: string
   role: string
 }
 
@@ -43,12 +44,14 @@ export async function requireAuth(
     const userinfo = (await userinfoRes.json()) as {
       sub: string
       preferred_username?: string
+      name?: string
       groups?: string[]
     }
 
     req.user = {
       userId: userinfo.sub,
       username: userinfo.preferred_username ?? userinfo.sub,
+      displayName: userinfo.name ?? userinfo.preferred_username ?? userinfo.sub,
       role: userinfo.groups?.includes(ADMIN_GROUP) ? 'admin' : 'user',
     }
 

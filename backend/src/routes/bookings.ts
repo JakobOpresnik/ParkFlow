@@ -94,10 +94,10 @@ router.post('/', requireAuth, async (req, res, next) => {
         spot_id,
       ])
       const booking = await client.query(
-        `INSERT INTO bookings (user_id, spot_id, expires_at)
-         VALUES ($1, $2, now() + interval '8 hours')
+        `INSERT INTO bookings (user_id, spot_id, expires_at, reserved_by)
+         VALUES ($1, $2, now() + interval '8 hours', $3)
          RETURNING id, status, booked_at, expires_at, ended_at`,
-        [req.user!.userId, spot_id],
+        [req.user!.userId, spot_id, req.user!.displayName],
       )
       await client.query('COMMIT')
 
