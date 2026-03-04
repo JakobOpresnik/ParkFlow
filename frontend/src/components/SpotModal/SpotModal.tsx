@@ -1,31 +1,31 @@
-import { useState } from 'react'
+import { notifications } from '@mantine/notifications'
 import {
-  Car,
-  User,
-  MapPin,
+  ArrowRightLeft,
   CalendarCheck,
-  Plus,
-  X,
+  Car,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
-  Lock,
-  CheckCircle2,
-  XCircle,
   Clock,
-  ArrowRightLeft,
+  Lock,
+  MapPin,
+  Plus,
+  User,
+  X,
+  XCircle,
 } from 'lucide-react'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
-import { Badge } from '@/components/ui/badge'
+import { useState } from 'react'
+
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
-import { useUIStore } from '@/store/uiStore'
-import { useParkingStore } from '@/store/parkingStore'
-import { useSpots, useAssignOwner, useUpdateStatus } from '@/hooks/useSpots'
-import { useOwners, useCreateOwner } from '@/hooks/useOwners'
-import { useCreateBooking, useCancelBooking } from '@/hooks/useBookings'
+import { useCancelBooking, useCreateBooking } from '@/hooks/useBookings'
+import { useCreateOwner, useOwners } from '@/hooks/useOwners'
+import { useAssignOwner, useSpots, useUpdateStatus } from '@/hooks/useSpots'
 import { useAuthStore } from '@/store/authStore'
-import { notifications } from '@mantine/notifications'
+import { useParkingStore } from '@/store/parkingStore'
+import { useUIStore } from '@/store/uiStore'
 import type { SpotStatus } from '@/types'
 
 const STATUS_LABELS: Record<SpotStatus, string> = {
@@ -281,7 +281,9 @@ export function SpotModal() {
         ? canCancelThisBooking
           ? 'You have reserved this spot.'
           : 'This spot has already been reserved.'
-        : 'This spot is currently in use.'
+        : spot.owner_name
+          ? 'This spot is currently in use by the owner.'
+          : 'This spot is currently in use.'
 
   return (
     <Dialog
@@ -296,20 +298,15 @@ export function SpotModal() {
           <p className="text-muted-foreground mb-2 text-xs font-medium tracking-widest uppercase">
             Parking Spot
           </p>
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <h2 className="text-3xl font-bold tracking-tight">
-                #{spot.number}
-              </h2>
-              {spot.label && (
-                <p className="text-muted-foreground mt-0.5 truncate text-sm">
-                  {spot.label}
-                </p>
-              )}
-            </div>
-            <Badge color={STATUS_COLOR[spot.status]} className="mt-1 shrink-0">
-              {STATUS_LABELS[spot.status]}
-            </Badge>
+          <div className="min-w-0">
+            <h2 className="text-3xl font-bold tracking-tight">
+              #{spot.number}
+            </h2>
+            {spot.label && (
+              <p className="text-muted-foreground mt-0.5 truncate text-sm">
+                {spot.label}
+              </p>
+            )}
           </div>
         </div>
 
@@ -336,99 +333,54 @@ export function SpotModal() {
           <div className="divide-y rounded-lg border">
             <div className="flex items-center gap-3 px-4 py-3">
               <MapPin className="text-muted-foreground size-4 shrink-0" />
-              <span className="text-muted-foreground w-10 shrink-0 text-sm">
+              <span className="text-muted-foreground width-14 w-14 shrink-0 text-sm">
                 Floor
               </span>
               <span className="text-sm font-medium">{spot.floor}</span>
             </div>
             <div className="flex items-start gap-3 px-4 py-3">
               <User className="text-muted-foreground mt-0.5 size-4 shrink-0" />
-              <span className="text-muted-foreground w-10 shrink-0 text-sm">
-                Owner
+              <span className="text-muted-foreground w-14 shrink-0 text-sm">
+                {spot.owner_name?.includes('/') ? 'Owners' : 'Owner'}
               </span>
               {spot.owner_name ? (
                 <div className="min-w-0">
-                  <p className="text-sm leading-snug font-medium">
-                    {spot.owner_name}
-                  </p>
+                  {spot.owner_name.split('/').map((name) => (
+                    <p key={name} className="text-sm leading-snug font-medium">
+                      {name.trim()}
+                    </p>
+                  ))}
                   {spot.owner_vehicle_plate && (
                     <p className="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-xs">
                       <Car className="size-3" />
                       {spot.owner_vehicle_plate}
                     </p>
                   )}
+                  {spot.status === 'reserved' &&
+                    spot.active_booking_reserved_by &&
+                    spot.active_booking_reserved_by !== spot.owner_name && (
+                      <p className="mt-1 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                        <Clock className="size-3 shrink-0" />
+                        Reserved by {spot.active_booking_reserved_by}
+                      </p>
+                    )}
                 </div>
               ) : (
-                <span className="text-muted-foreground text-sm italic">
-                  Unassigned
-                </span>
+                <div className="min-w-0">
+                  <span className="text-muted-foreground text-sm italic">
+                    Unassigned
+                  </span>
+                  {spot.status === 'reserved' &&
+                    spot.active_booking_reserved_by && (
+                      <p className="mt-1 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                        <Clock className="size-3 shrink-0" />
+                        Reserved by {spot.active_booking_reserved_by}
+                      </p>
+                    )}
+                </div>
               )}
             </div>
           </div>
-
-          {/* ── CTA section ─────────────────────────────────────── */}
-
-          {/* Free spot: reserve (or move reservation here) */}
-          {spot.status === 'free' && user && (
-            <div className="space-y-2">
-              <Button
-                className="h-11 w-full gap-2 text-[15px] font-semibold"
-                disabled={bookingPending}
-                onClick={handleBook}
-              >
-                {myReservedElsewhere ? (
-                  <>
-                    <ArrowRightLeft className="size-5" />
-                    Move to This Spot
-                  </>
-                ) : (
-                  <>
-                    <CalendarCheck className="size-5" />
-                    Reserve Parking Spot
-                  </>
-                )}
-              </Button>
-              {myReservedElsewhere && (
-                <p className="text-muted-foreground text-center text-xs">
-                  Spot #{myReservedElsewhere.number} reservation will be
-                  cancelled
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Free spot, not logged in */}
-          {spot.status === 'free' && !user && (
-            <div className="flex items-center gap-3 rounded-lg border border-dashed px-4 py-3">
-              <Lock className="text-muted-foreground size-4 shrink-0" />
-              <p className="text-muted-foreground text-sm">
-                Sign in to reserve this spot
-              </p>
-            </div>
-          )}
-
-          {/* Reserved — user can cancel (their own booking, or admin cancelling any) */}
-          {spot.status === 'reserved' && canCancelThisBooking && (
-            <Button
-              variant="outline"
-              className="text-destructive border-destructive/25 hover:bg-destructive/5 hover:text-destructive h-11 w-full gap-2 text-[15px] font-semibold"
-              disabled={bookingPending}
-              onClick={handleCancelBooking}
-            >
-              <X className="size-5" />
-              Cancel Reservation
-            </Button>
-          )}
-
-          {/* Occupied, or reserved by someone else */}
-          {(spot.status === 'occupied' ||
-            (spot.status === 'reserved' && !canCancelThisBooking)) && (
-            <div className="text-muted-foreground flex items-center justify-center rounded-lg border border-dashed py-3 text-sm">
-              {spot.status === 'occupied'
-                ? 'Spot unavailable — currently occupied'
-                : 'Spot unavailable — already reserved'}
-            </div>
-          )}
 
           {/* Management accordion (logged-in users) */}
           {user && (
@@ -477,7 +429,7 @@ export function SpotModal() {
                   <div>
                     <div className="mb-2.5 flex items-center justify-between">
                       <p className="text-muted-foreground text-xs font-medium tracking-widest uppercase">
-                        Owner
+                        {spot.owner_name?.includes('/') ? 'Owners' : 'Owner'}
                       </p>
                       <div className="flex gap-1">
                         {spot.owner_id && (
@@ -595,6 +547,80 @@ export function SpotModal() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          <div className="bg-border -mx-6 h-px" />
+
+          {/* ── CTA ─────────────────────────────────────────────── */}
+
+          {/* Free spot: reserve (or move reservation here) */}
+          {spot.status === 'free' && user && (
+            <div className="space-y-2">
+              <Button
+                className="h-11 w-full gap-2 text-[15px] font-semibold"
+                style={{
+                  display: 'flex',
+                  justifySelf: 'stretch',
+                }}
+                disabled={bookingPending}
+                onClick={handleBook}
+              >
+                {myReservedElsewhere ? (
+                  <>
+                    <ArrowRightLeft className="size-5" />
+                    Move to This Spot
+                  </>
+                ) : (
+                  <>
+                    <CalendarCheck className="size-5" />
+                    Reserve Parking Spot
+                  </>
+                )}
+              </Button>
+              {myReservedElsewhere && (
+                <p className="text-muted-foreground text-center text-xs">
+                  Spot #{myReservedElsewhere.number} reservation will be
+                  cancelled
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Free spot, not logged in */}
+          {spot.status === 'free' && !user && (
+            <div className="flex items-center gap-3 rounded-lg border border-dashed px-4 py-3">
+              <Lock className="text-muted-foreground size-4 shrink-0" />
+              <p className="text-muted-foreground text-sm">
+                Sign in to reserve this spot
+              </p>
+            </div>
+          )}
+
+          {/* Reserved — user can cancel (their own booking, or admin cancelling any) */}
+          {spot.status === 'reserved' && canCancelThisBooking && (
+            <Button
+              variant="outline"
+              className="text-destructive border-destructive/25 hover:bg-destructive/5 hover:text-destructive h-11 w-full gap-2 text-[15px] font-semibold"
+              style={{
+                display: 'flex',
+                justifySelf: 'stretch',
+              }}
+              disabled={bookingPending}
+              onClick={handleCancelBooking}
+            >
+              <X className="size-5" />
+              Cancel Reservation
+            </Button>
+          )}
+
+          {/* Occupied, or reserved by someone else */}
+          {(spot.status === 'occupied' ||
+            (spot.status === 'reserved' && !canCancelThisBooking)) && (
+            <div className="text-muted-foreground flex items-center justify-center rounded-lg border border-dashed py-3 text-sm">
+              {spot.status === 'occupied'
+                ? 'Spot unavailable — currently occupied'
+                : 'Spot unavailable — already reserved'}
             </div>
           )}
         </div>
