@@ -103,15 +103,14 @@ export function SpotModal() {
   }
 
   // Spot the current user has reserved elsewhere (for auto-cancel on new reserve)
-  const myReservedElsewhere =
-    user
-      ? allSpots.find(
-          (s) =>
-            s.active_booking_user_id === user.id &&
-            s.active_booking_id !== null &&
-            s.id !== spot?.id,
-        )
-      : undefined
+  const myReservedElsewhere = user
+    ? allSpots.find(
+        (s) =>
+          s.active_booking_user_id === user.id &&
+          s.active_booking_id !== null &&
+          s.id !== spot?.id,
+      )
+    : undefined
 
   // Whether the logged-in user (or admin) can cancel this spot's active booking
   const canCancelThisBooking =
@@ -293,7 +292,7 @@ export function SpotModal() {
     >
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md sm:p-0">
         {/* ── Header ──────────────────────────────────────────── */}
-        <div className="px-6 pt-6 pb-5 pr-14">
+        <div className="px-6 pt-6 pr-14 pb-5">
           <p className="text-muted-foreground mb-2 text-xs font-medium tracking-widest uppercase">
             Parking Spot
           </p>
@@ -325,7 +324,7 @@ export function SpotModal() {
             <span className={banner.text}>{banner.icon}</span>
             <div>
               <p
-                className={`text-sm font-semibold leading-snug ${banner.text}`}
+                className={`text-sm leading-snug font-semibold ${banner.text}`}
               >
                 {STATUS_LABELS[spot.status]}
               </p>
@@ -349,7 +348,7 @@ export function SpotModal() {
               </span>
               {spot.owner_name ? (
                 <div className="min-w-0">
-                  <p className="text-sm font-medium leading-snug">
+                  <p className="text-sm leading-snug font-medium">
                     {spot.owner_name}
                   </p>
                   {spot.owner_vehicle_plate && (
@@ -449,7 +448,7 @@ export function SpotModal() {
               </button>
 
               {managementExpanded && (
-                <div className="space-y-5 border-t px-4 pb-4 pt-4">
+                <div className="space-y-5 border-t px-4 pt-4 pb-4">
                   {/* Change status */}
                   <div>
                     <p className="text-muted-foreground mb-2.5 text-xs font-medium tracking-widest uppercase">
@@ -465,9 +464,7 @@ export function SpotModal() {
                           disabled={s === spot.status || isPending}
                           onClick={() => handleStatusChange(s)}
                           className={
-                            s === spot.status
-                              ? 'cursor-default opacity-40'
-                              : ''
+                            s === spot.status ? 'cursor-default opacity-40' : ''
                           }
                         >
                           {STATUS_LABELS[s]}

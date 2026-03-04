@@ -17,12 +17,12 @@ import type { ParkingMapHandle } from '@/components/ParkingMap/ParkingMap'
 import { SpotGrid } from '@/components/SpotGrid/SpotGrid'
 import { SpotSearch } from '@/components/SpotSearch/SpotSearch'
 import { SpotModal } from '@/components/SpotModal/SpotModal'
-import { useSpots } from '@/hooks/useSpots'
 import { useLots } from '@/hooks/useLots'
 import { useParkingStore } from '@/store/parkingStore'
 import { useUIStore } from '@/store/uiStore'
 import { usePrefsStore } from '@/store/prefsStore'
 import type { ParkingLot, Spot, SpotStatus } from '@/types'
+import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
 
@@ -120,7 +120,11 @@ export function MapPage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<ParkingMapHandle>(null)
 
-  const { data: allSpots = [], isLoading: spotsLoading, isError } = useSpots()
+  const {
+    data: allSpots = [],
+    isLoading: spotsLoading,
+    isError,
+  } = useEffectiveSpots()
   const { data: lots = [], isLoading: lotsLoading } = useLots()
 
   const selectedLotId = useParkingStore((s) => s.selectedLotId)

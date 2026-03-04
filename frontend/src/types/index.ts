@@ -81,6 +81,23 @@ export interface SpotChange {
   lot_name: string | null
 }
 
+export const PRESENCE_STATUSES = [
+  'in_office',
+  'remote',
+  'sick',
+  'care',
+  'vacation',
+  'no_entry',
+] as const
+
+export type PresenceStatus = (typeof PRESENCE_STATUSES)[number]
+
+export interface EmployeePresence {
+  user_id: number
+  name: string
+  status: PresenceStatus
+}
+
 export type LabelPosition = 'top' | 'bottom' | 'left' | 'right'
 
 export interface SpotCoordinates {

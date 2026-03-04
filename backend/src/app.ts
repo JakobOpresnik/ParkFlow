@@ -8,6 +8,7 @@ import authRouter from './routes/auth.js'
 import bookingsRouter from './routes/bookings.js'
 import lotsRouter from './routes/lots.js'
 import changesRouter from './routes/changes.js'
+import presenceRouter from './routes/presence.js'
 
 export function createApp() {
   const app = express()
@@ -36,6 +37,7 @@ export function createApp() {
   app.use('/api/bookings', bookingsRouter)
   app.use('/api/lots', lotsRouter)
   app.use('/api/changes', changesRouter)
+  app.use('/api/presence', presenceRouter)
 
   app.use(errorHandler)
 
