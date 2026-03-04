@@ -2,7 +2,7 @@
 
 > 🚗 Smart parking management for multi-lot facilities — real-time spot tracking, booking, and administration.
 
-ParkFlow is a full-stack web application built for internal parking management at facilities with multiple lots. It provides a live SVG map overlay on CAD floor plans, a booking system, role-based administration, and a full audit log.
+ParkFlow is a full-stack web application built for internal parking management at facilities with multiple lots. It provides a live SVG map overlay on CAD floor plans, a booking system, role-based administration, a full audit log, and real-time presence-aware spot availability driven by the Abelium timesheet system.
 
 ---
 
@@ -39,6 +39,12 @@ ParkFlow is a full-stack web application built for internal parking management a
 - ⏱️ Bookings auto-expire after 8 hours
 - 📜 Full booking history with status tracking (`active`, `cancelled`, `expired`)
 
+### 🗓️ Timesheet Integration
+
+- 🔗 **Presence-aware availability** — spot statuses are automatically adjusted based on employee presence data fetched from the Abelium timesheet system
+- 🏠 If a spot's owner is marked `remote`, `sick`, `care`, or `vacation`, their reserved spot is shown as **free** on the map without modifying the database
+- 📅 Presence data is fetched for today's date; the frontend merges it with spot data client-side via `useEffectiveSpots`
+
 ### 🔧 Administration
 
 - 🛡️ **Admin panel** with full CRUD for parking lots, spots, and owners
@@ -47,9 +53,16 @@ ParkFlow is a full-stack web application built for internal parking management a
 
 ### 🔐 Authentication & Access Control
 
-- 🔑 JWT-based authentication with `admin` and `user` roles
+- 🔑 **Authentik SSO** — OAuth 2.0 with PKCE flow; no username/password stored locally
+- 🪪 Bearer tokens (JWT) issued by Authentik, validated server-side against the Authentik userinfo endpoint
+- 👑 **Admin role** — granted to users who are members of the configured Authentik group (`AUTHENTIK_ADMIN_GROUP`)
 - 🚫 Admin-only routes for all write operations
-- 🔗 OAuth (Authentik SSO) integration in progress
+
+### 📊 Dashboard & Analytics
+
+- 📈 **Dashboard** — occupancy overview, weekly usage bar chart, live activity feed
+- 📉 **Analytics / Stats page** — per-floor breakdown, utilization metrics, stacked progress bars
+- 👤 **Profile page** — user preferences, attendance stats, active booking summary
 
 ### 🎨 UI/UX
 
@@ -63,17 +76,17 @@ ParkFlow is a full-stack web application built for internal parking management a
 
 ### 🖥️ Frontend (`/frontend`)
 
-| Layer              | Technology                 |
-| ------------------ | -------------------------- |
-| ⚛️ Framework       | React 19 + TypeScript 5.9       |
-| ⚡ Build           | Vite 7                          |
-| 🎨 UI              | Mantine 8 + Tailwind CSS 4      |
-| 🗃️ State           | Zustand 5                       |
-| 🔄 Data Fetching   | TanStack Query 5           |
-| 🧭 Routing         | TanStack Router 1.16       |
-| 🖼️ Icons           | Lucide React               |
-| 🧪 Testing         | Vitest 4                   |
-| 📦 Package Manager | Bun                        |
+| Layer              | Technology                                              |
+| ------------------ | ------------------------------------------------------- |
+| ⚛️ Framework       | React 19 + TypeScript 5.9                               |
+| ⚡ Build           | Vite 7                                                  |
+| 🎨 UI              | shadcn/ui + Mantine 8 (notifications) + Tailwind CSS 4  |
+| 🗃️ State           | Zustand 5                                               |
+| 🔄 Data Fetching   | TanStack Query 5                                        |
+| 🧭 Routing         | TanStack Router 1.16                                    |
+| 🖼️ Icons           | Lucide React                                            |
+| 🧪 Testing         | Vitest 4                                                |
+| 📦 Package Manager | Bun                                                     |
 
 ### ⚙️ Backend (`/backend`)
 
@@ -81,7 +94,7 @@ ParkFlow is a full-stack web application built for internal parking management a
 | ------------------ | --------------------------------- |
 | 🚂 Framework       | Express 5                         |
 | 🐘 Database        | PostgreSQL 16                     |
-| 🔒 Auth            | JWT (jsonwebtoken 9) + bcryptjs 3 |
+| 🔒 Auth            | Authentik SSO (OAuth 2.0 / PKCE)  |
 | 🔌 DB Client       | node-postgres (pg 8)              |
 | 🧪 Testing         | Vitest 4 + Supertest 7            |
 | 📦 Package Manager | Bun                               |
@@ -100,7 +113,7 @@ parkflow/
 │   │   │   ├── SpotGrid/       # Responsive spot card grid
 │   │   │   ├── SpotModal/      # Spot detail + booking modal
 │   │   │   └── ui/             # shadcn/ui primitives
-│   │   ├── hooks/              # React Query hooks (useSpots, useBookings, …)
+│   │   ├── hooks/              # React Query hooks (useSpots, useBookings, useEffectiveSpots, …)
 │   │   ├── pages/              # Route-level page components
 │   │   ├── store/              # Zustand state (auth, UI, lot selection)
 │   │   └── types/              # Shared TypeScript interfaces
@@ -110,8 +123,8 @@ parkflow/
 │
 ├── ⚙️  backend/                    # Express REST API
 │   ├── src/
-│   │   ├── routes/             # Route handlers (spots, owners, lots, bookings, auth, changes)
-│   │   ├── middleware/         # JWT auth, error handler
+│   │   ├── routes/             # Route handlers (spots, owners, lots, bookings, auth, changes, presence)
+│   │   ├── middleware/         # Auth, error handler
 │   │   ├── db/                 # pg connection pool
 │   │   └── __tests__/          # Vitest + Supertest test suites
 │   ├── migrations/             # Ordered SQL migration files (auto-run on startup)
@@ -157,14 +170,9 @@ docker compose -f docker-compose.dev.yml up
 docker compose up --build
 ```
 
-Database migrations run automatically on first startup. A default admin account is seeded:
+Database migrations run automatically on first startup.
 
-| Field       | Value   |
-| ----------- | ------- |
-| 👤 Username | `admin` |
-| 🔑 Password | `admin` |
-
-> ⚠️ Change the admin password immediately after first login in a production environment.
+> ℹ️ Login is handled via Authentik SSO. Configure the OAuth environment variables before starting (see [🔑 Environment Variables](#-environment-variables)).
 
 ---
 
@@ -190,7 +198,7 @@ Ensure a PostgreSQL 16 instance is running and accessible via the `DATABASE_URL`
 ```bash
 cd backend
 bun install
-bun run dev        # starts on port 3001, runs migrations automatically
+bun dev        # starts on port 3001, runs migrations automatically
 ```
 
 **4. Run the frontend**
@@ -198,7 +206,7 @@ bun run dev        # starts on port 3001, runs migrations automatically
 ```bash
 cd frontend
 bun install
-bun run dev        # starts on port 5173
+bun dev        # starts on port 5173
 ```
 
 ---
@@ -207,13 +215,13 @@ bun run dev        # starts on port 5173
 
 ### ⚙️ Backend (`backend/.env`)
 
-| Variable                 | Description                              | Example                                                  |
-| ------------------------ | ---------------------------------------- | -------------------------------------------------------- |
-| `DATABASE_URL`           | 🐘 PostgreSQL connection string          | `postgresql://parkflow:parkflow@localhost:5432/parkflow` |
-| `PORT`                   | 🔌 API server port                       | `3001`                                                   |
-| `JWT_SECRET`             | 🔒 Secret key for signing JWTs           | `your-secret-here`                                       |
-| `AUTHENTIK_USERINFO_URL` | 🔗 Authentik SSO userinfo endpoint       | `https://sso.example.com/application/o/userinfo/`        |
-| `AUTHENTIK_ADMIN_GROUP`  | 👥 SSO group name that grants admin role | `parkflow-admins`                                        |
+| Variable                 | Description                                             | Example                                                  |
+| ------------------------ | ------------------------------------------------------- | -------------------------------------------------------- |
+| `DATABASE_URL`           | 🐘 PostgreSQL connection string                         | `postgresql://parkflow:parkflow@localhost:5432/parkflow` |
+| `PORT`                   | 🔌 API server port                                      | `3001`                                                   |
+| `AUTHENTIK_USERINFO_URL` | 🔗 Authentik userinfo endpoint for token validation     | `https://sso.example.com/application/o/userinfo/`        |
+| `AUTHENTIK_ADMIN_GROUP`  | 👥 Authentik group name that grants admin role          | `parkflow-admins`                                        |
+| `TIMESHEET_API_URL`      | 🗓️ Abelium timesheet API base URL                       | `https://timesheet.abelium.com/api`                      |
 
 ### 🖥️ Frontend (`frontend/.env`)
 
@@ -274,24 +282,29 @@ All write endpoints require an `Authorization: Bearer <token>` header. Admin-onl
 
 ### 🔐 Auth & Audit
 
-| Method | Endpoint          | Description                                  | Auth    |
-| ------ | ----------------- | -------------------------------------------- | ------- |
-| `POST` | `/api/auth/login` | Login with username + password               | —       |
-| `GET`  | `/api/auth/me`    | Get current user info                        | 🔑 User |
-| `GET`  | `/api/changes`    | Spot change audit log (filter by `?lot_id=`) | —       |
-| `GET`  | `/health`         | Health check                                 | —       |
+| Method | Endpoint       | Description                                  | Auth    |
+| ------ | -------------- | -------------------------------------------- | ------- |
+| `GET`  | `/api/auth/me` | Get current user info (validates SSO token)  | 🔑 User |
+| `GET`  | `/api/changes` | Spot change audit log (filter by `?lot_id=`) | —       |
+| `GET`  | `/health`      | Health check                                 | —       |
+
+### 🗓️ Presence (Timesheet)
+
+| Method | Endpoint        | Description                                                                    | Auth |
+| ------ | --------------- | ------------------------------------------------------------------------------ | ---- |
+| `GET`  | `/api/presence` | Fetch employee presence from Abelium timesheet for `?date=YYYY-MM-DD` (defaults to today) | — |
 
 ---
 
 ## 🗄️ Database Schema
 
-Seven PostgreSQL tables managed via ordered SQL migrations in `backend/migrations/`:
+Six PostgreSQL tables managed via ordered SQL migrations in `backend/migrations/`:
 
 ```
 👤  owners          — Vehicle owners linked to reserved spots
 🅿️  spots           — Individual parking spots with status and coordinates
 🏢  parking_lots    — Multi-lot groupings (floors, zones)
-🔑  app_users       — Application users with hashed passwords and roles
+🔑  app_users       — Application users (synced from Authentik on first login)
 📅  bookings        — Parking reservations with auto-expiry
 📋  spot_changes    — Full audit log of every spot status change
 ```
@@ -335,9 +348,10 @@ bun test
 Both `frontend/` and `backend/` share the same standards:
 
 ```bash
-bun run lint        # ESLint check
+bun lint            # ESLint check  (equivalent to: bun run lint)
 bun run lint:fix    # Auto-fix lint issues
 bun run format      # Prettier formatting
+bun run fix         # lint:fix + format in one step (frontend only)
 ```
 
 **Enforced rules:**
@@ -348,22 +362,18 @@ bun run format      # Prettier formatting
 - 📝 Conventional commits: `feat:`, `fix:`, `chore:`, `refactor:`
 - 📱 Mobile-first design
 - 🔒 No hardcoded secrets — use `.env` files
+- ♿ Accessibility enforced via `eslint-plugin-jsx-a11y` (frontend)
+- 📦 Import order enforced via `eslint-plugin-simple-import-sort` (frontend)
 
 ---
 
 ## 🗺️ Roadmap
 
-### 🔄 In Progress
-
-- 🔗 OAuth (Authentik SSO) full backend integration
-
 ### 📌 Planned
 
-- 📊 **Dashboard** — occupancy ring charts, weekly usage bar chart, live activity feed
-- 📈 **Analytics page** — per-floor breakdown, utilization metrics, stacked progress bars
 - 🧠 **Smart suggestions** — scoring algorithm to recommend the best available spot (floor preference, proximity, EV/compact filters)
 - 🔥 **Heatmap view** — historical occupancy overlay on the SVG floor map
-- 👤 **Profile page** — user preferences, attendance stats, vehicle settings
+- 🔔 **Notification system** — in-app alerts for booking expiry and spot availability changes
 
 ---
 
@@ -371,5 +381,5 @@ bun run format      # Prettier formatting
 
 1. 🌿 Branch from `main` using a descriptive branch name
 2. 📝 Follow the conventional commit format (`feat:`, `fix:`, etc.)
-3. ✅ Run `bun run lint` and `bun test` before opening a PR
+3. ✅ Run `bun lint` and `bun test` before opening a PR
 4. 🎯 Target `main` for pull requests
