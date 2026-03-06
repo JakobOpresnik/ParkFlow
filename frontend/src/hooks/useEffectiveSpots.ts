@@ -33,9 +33,13 @@ export function useEffectiveSpots(date: string) {
       }
     }
 
-    return spots.map((spot) => {
-      // Active bookings only apply to today's view — other dates use presence-based status.
-      if (spot.status === 'reserved' && isToday) return spot
+    const processed = spots.map((spot) => {
+      // Preserve reserved status when there's an active booking for the selected date.
+      // For today: always keep reserved. For other dates: keep if expires_at falls on that date.
+      const bookingIsForDate =
+        spot.active_booking_expires_at?.slice(0, 10) === date
+      if (spot.status === 'reserved' && (isToday || bookingIsForDate))
+        return spot
 
       // No owner → presence has no effect; reset any non-today reservation to free.
       if (spot.owner_name === null) {
@@ -54,9 +58,37 @@ export function useEffectiveSpots(date: string) {
 
       return {
         ...spot,
-        status: presenceStatus === 'in_office' ? 'occupied' : ('free' as const),
+        status:
+          presenceStatus === 'in_office'
+            ? ('occupied' as const)
+            : ('free' as const),
       }
     })
+
+    // Deduplicate: a spot with bookings on multiple days produces multiple rows.
+    // Keep the entry whose booking matches the selected date; fall back to reserved > other.
+    const byId = new Map<string, Spot>()
+    for (const spot of processed) {
+      const existing = byId.get(spot.id)
+      if (!existing) {
+        byId.set(spot.id, spot)
+        continue
+      }
+      const existingForDate =
+        existing.active_booking_expires_at?.slice(0, 10) === date
+      const newForDate = spot.active_booking_expires_at?.slice(0, 10) === date
+      if (newForDate && !existingForDate) {
+        byId.set(spot.id, spot)
+      } else if (
+        !newForDate &&
+        !existingForDate &&
+        spot.status === 'reserved' &&
+        existing.status !== 'reserved'
+      ) {
+        byId.set(spot.id, spot)
+      }
+    }
+    return Array.from(byId.values())
   }, [spotsQuery.data, presenceQuery.data, date])
 
   return { ...spotsQuery, data }

@@ -69,6 +69,7 @@ describe("POST /api/bookings", () => {
         .fn()
         .mockResolvedValueOnce({}) // BEGIN
         .mockResolvedValueOnce({}) // UPDATE bookings (cancel old)
+        .mockResolvedValueOnce({ rows: [] }) // SELECT other active bookings
         .mockResolvedValueOnce({}) // UPDATE spots (free old spot)
         .mockResolvedValueOnce({}), // COMMIT
       release: vi.fn(),
@@ -218,6 +219,7 @@ describe("PATCH /api/bookings/:id/cancel", () => {
         .fn()
         .mockResolvedValueOnce({}) // BEGIN
         .mockResolvedValueOnce({}) // UPDATE bookings
+        .mockResolvedValueOnce({ rows: [] }) // SELECT remaining active bookings
         .mockResolvedValueOnce({}) // UPDATE spots
         .mockResolvedValueOnce({}), // COMMIT
       release: vi.fn(),

@@ -17,6 +17,7 @@ async function expireStaleBookings(): Promise<void> {
     UPDATE spots
     SET status = 'free'
     WHERE id IN (SELECT spot_id FROM expired)
+      AND id NOT IN (SELECT spot_id FROM bookings WHERE status = 'active')
   `);
 }
 
@@ -56,8 +57,9 @@ router.post("/", requireAuth, async (req, res, next) => {
   try {
     await expireStaleBookings();
 
-    const { spot_id, expires_at } = req.body as {
+    const { spot_id, starts_at, expires_at } = req.body as {
       spot_id?: string;
+      starts_at?: string;
       expires_at?: string;
     };
     if (!spot_id) {
@@ -74,10 +76,13 @@ router.post("/", requireAuth, async (req, res, next) => {
       return;
     }
 
-    // Auto-cancel any existing active booking for this user before creating a new one
+    // Auto-cancel existing active booking for this user only if it's on the same day
+    // as the new booking — reservations on other days must not be affected.
     const existing = await pool.query(
-      `SELECT b.id, b.spot_id FROM bookings b WHERE b.user_id = $1 AND b.status = 'active'`,
-      [req.user!.userId],
+      `SELECT b.id, b.spot_id FROM bookings b
+       WHERE b.user_id = $1 AND b.status = 'active'
+         AND b.expires_at::date = $2::date`,
+      [req.user!.userId, expiresAt.toISOString()],
     );
     if (existing.rows.length > 0) {
       const old = existing.rows[0] as { id: string; spot_id: string };
@@ -88,10 +93,17 @@ router.post("/", requireAuth, async (req, res, next) => {
           `UPDATE bookings SET status = 'cancelled', ended_at = now() WHERE id = $1`,
           [old.id],
         );
-        await cancelClient.query(
-          `UPDATE spots SET status = 'free' WHERE id = $1`,
-          [old.spot_id],
+        // Only free the spot if no other active bookings remain for it
+        const otherActive = await cancelClient.query(
+          `SELECT id FROM bookings WHERE spot_id = $1 AND status = 'active' AND id != $2 LIMIT 1`,
+          [old.spot_id, old.id],
         );
+        if (otherActive.rows.length === 0) {
+          await cancelClient.query(
+            `UPDATE spots SET status = 'free' WHERE id = $1`,
+            [old.spot_id],
+          );
+        }
         await cancelClient.query("COMMIT");
       } catch (err) {
         await cancelClient.query("ROLLBACK");
@@ -121,10 +133,20 @@ router.post("/", requireAuth, async (req, res, next) => {
     };
     let isBookable = spotRow.status === "free";
 
+    // A spot reserved for a DIFFERENT day is available for the target date
+    if (!isBookable && spotRow.status === "reserved") {
+      const conflict = await pool.query(
+        `SELECT id FROM bookings
+         WHERE spot_id = $1 AND status = 'active' AND expires_at::date = $2::date`,
+        [spot_id, expiresAt.toISOString()],
+      );
+      isBookable = conflict.rows.length === 0;
+    }
+
     if (!isBookable && spotRow.status === "occupied" && spotRow.owner_name) {
-      const today = new Date().toISOString().slice(0, 10);
-      const presence = await fetchWeekPresence(today);
-      isBookable = isOwnerAbsent(presence, spotRow.owner_name, today);
+      const targetDate = expiresAt.toISOString().slice(0, 10);
+      const presence = await fetchWeekPresence(targetDate);
+      isBookable = isOwnerAbsent(presence, spotRow.owner_name, targetDate);
     }
 
     if (!isBookable) {
@@ -139,13 +161,15 @@ router.post("/", requireAuth, async (req, res, next) => {
       await client.query(`UPDATE spots SET status = 'reserved' WHERE id = $1`, [
         spot_id,
       ]);
+      const startsAt = starts_at ? new Date(starts_at) : null;
       const booking = await client.query(
-        `INSERT INTO bookings (user_id, spot_id, expires_at, reserved_by)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id, status, booked_at, expires_at, ended_at`,
+        `INSERT INTO bookings (user_id, spot_id, starts_at, expires_at, reserved_by)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, status, booked_at, starts_at, expires_at, ended_at`,
         [
           req.user!.userId,
           spot_id,
+          startsAt ? startsAt.toISOString() : null,
           expiresAt.toISOString(),
           req.user!.displayName,
         ],
@@ -171,6 +195,71 @@ router.post("/", requireAuth, async (req, res, next) => {
     } finally {
       client.release();
     }
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/bookings/:id/times — update reservation interval
+router.patch("/:id/times", requireAuth, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { starts_at, expires_at } = req.body as {
+      starts_at?: string;
+      expires_at?: string;
+    };
+    if (!starts_at && !expires_at) {
+      res
+        .status(400)
+        .json({ error: "At least one of starts_at or expires_at is required" });
+      return;
+    }
+
+    const bookingResult = await pool.query(
+      `SELECT id, user_id, spot_id, status, starts_at, expires_at FROM bookings WHERE id = $1`,
+      [id],
+    );
+    if (bookingResult.rows.length === 0) {
+      res.status(404).json({ error: "Booking not found" });
+      return;
+    }
+    const booking = bookingResult.rows[0];
+
+    if (booking.user_id !== req.user!.userId && req.user!.role !== "admin") {
+      res.status(403).json({ error: "Not your booking" });
+      return;
+    }
+    if (booking.status !== "active") {
+      res.status(409).json({ error: "Booking is not active" });
+      return;
+    }
+
+    const newStartsAt = starts_at ? new Date(starts_at) : null;
+    const newExpiresAt = expires_at ? new Date(expires_at) : null;
+
+    if (newStartsAt && isNaN(newStartsAt.getTime())) {
+      res.status(400).json({ error: "Invalid starts_at" });
+      return;
+    }
+    if (newExpiresAt && isNaN(newExpiresAt.getTime())) {
+      res.status(400).json({ error: "Invalid expires_at" });
+      return;
+    }
+
+    const result = await pool.query(
+      `UPDATE bookings
+       SET starts_at  = COALESCE($1, starts_at),
+           expires_at = COALESCE($2, expires_at)
+       WHERE id = $3
+       RETURNING id, status, booked_at, starts_at, expires_at, ended_at`,
+      [
+        newStartsAt ? newStartsAt.toISOString() : null,
+        newExpiresAt ? newExpiresAt.toISOString() : null,
+        id,
+      ],
+    );
+
+    res.json(result.rows[0]);
   } catch (err) {
     next(err);
   }
@@ -209,9 +298,16 @@ router.patch("/:id/cancel", requireAuth, async (req, res, next) => {
         `UPDATE bookings SET status = 'cancelled', ended_at = now() WHERE id = $1`,
         [id],
       );
-      await client.query(`UPDATE spots SET status = 'free' WHERE id = $1`, [
-        booking.spot_id,
-      ]);
+      // Only free the spot if this was its last active booking
+      const remaining = await client.query(
+        `SELECT id FROM bookings WHERE spot_id = $1 AND status = 'active' AND id != $2 LIMIT 1`,
+        [booking.spot_id, id],
+      );
+      if (remaining.rows.length === 0) {
+        await client.query(`UPDATE spots SET status = 'free' WHERE id = $1`, [
+          booking.spot_id,
+        ]);
+      }
       await client.query("COMMIT");
     } catch (err) {
       await client.query("ROLLBACK");

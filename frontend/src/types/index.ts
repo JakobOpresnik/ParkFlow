@@ -61,6 +61,7 @@ export interface Spot {
   active_booking_id: string | null
   active_booking_user_id: string | null
   active_booking_reserved_by: string | null
+  active_booking_starts_at: string | null
   active_booking_expires_at: string | null
 }
 

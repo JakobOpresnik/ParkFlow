@@ -25,6 +25,7 @@ const SPOT_SELECT = `
     b.id            AS active_booking_id,
     b.user_id       AS active_booking_user_id,
     b.reserved_by   AS active_booking_reserved_by,
+    b.starts_at     AS active_booking_starts_at,
     b.expires_at    AS active_booking_expires_at
   FROM spots s
   LEFT JOIN owners o ON s.owner_id = o.id
@@ -199,12 +200,9 @@ router.patch("/:id/coordinates", async (req, res, next) => {
         typeof height !== "number" ||
         typeof rotation !== "number"
       ) {
-        res
-          .status(400)
-          .json({
-            error:
-              "coordinates must have numeric x, y, width, height, rotation",
-          });
+        res.status(400).json({
+          error: "coordinates must have numeric x, y, width, height, rotation",
+        });
         return;
       }
     }

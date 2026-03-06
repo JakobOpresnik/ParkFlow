@@ -23,6 +23,25 @@ export function useCreateBooking() {
   })
 }
 
+export function useUpdateBookingTimes() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      id,
+      starts_at,
+      expires_at,
+    }: {
+      id: string
+      starts_at: string
+      expires_at: string
+    }) => api.updateBookingTimes(id, { starts_at, expires_at }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['spots'] })
+      void qc.invalidateQueries({ queryKey: ['bookings'] })
+    },
+  })
+}
+
 export function useCancelBooking() {
   const qc = useQueryClient()
   return useMutation({
