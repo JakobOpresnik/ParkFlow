@@ -1,13 +1,15 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { RouterProvider } from '@tanstack/react-router'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import './index.css'
+
 import { MantineProvider } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { RouterProvider } from '@tanstack/react-router'
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+
 import { theme } from '@/lib/theme'
 import { router } from '@/routeTree.gen.tsx'
 import { useAuthStore } from '@/store/authStore'
-import './index.css'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,7 +29,7 @@ if (!root) throw new Error('Root element not found')
 createRoot(root).render(
   <StrictMode>
     <MantineProvider theme={theme} defaultColorScheme="auto">
-      <Notifications />
+      <Notifications position="top-right" autoClose={2000} />
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
       </QueryClientProvider>

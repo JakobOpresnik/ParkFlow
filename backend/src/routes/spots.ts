@@ -22,7 +22,8 @@ const SPOT_SELECT = `
     o.vehicle_plate AS owner_vehicle_plate,
     o.notes         AS owner_notes,
     b.id            AS active_booking_id,
-    b.user_id       AS active_booking_user_id
+    b.user_id       AS active_booking_user_id,
+    b.reserved_by   AS active_booking_reserved_by
   FROM spots s
   LEFT JOIN owners o ON s.owner_id = o.id
   LEFT JOIN bookings b ON b.spot_id = s.id AND b.status = 'active'

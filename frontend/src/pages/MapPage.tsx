@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
 import {
   AlertCircle,
+  CalendarDays,
   LayoutGrid,
   Map,
   MapPin,
@@ -12,16 +12,18 @@ import {
   RotateCcw,
   X,
 } from 'lucide-react'
-import { ParkingMap } from '@/components/ParkingMap/ParkingMap'
+import { useEffect, useRef, useState } from 'react'
+
 import type { ParkingMapHandle } from '@/components/ParkingMap/ParkingMap'
+import { ParkingMap } from '@/components/ParkingMap/ParkingMap'
 import { SpotGrid } from '@/components/SpotGrid/SpotGrid'
-import { SpotSearch } from '@/components/SpotSearch/SpotSearch'
 import { SpotModal } from '@/components/SpotModal/SpotModal'
-import { useSpots } from '@/hooks/useSpots'
+import { SpotSearch } from '@/components/SpotSearch/SpotSearch'
+import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
 import { useLots } from '@/hooks/useLots'
 import { useParkingStore } from '@/store/parkingStore'
-import { useUIStore } from '@/store/uiStore'
 import { usePrefsStore } from '@/store/prefsStore'
+import { useUIStore } from '@/store/uiStore'
 import type { ParkingLot, Spot, SpotStatus } from '@/types'
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
@@ -102,6 +104,29 @@ function OverlayBtn({
   )
 }
 
+// ─── Week utilities ───────────────────────────────────────────────────────────
+
+function getWeekDays(referenceDate: string): string[] {
+  // Returns YYYY-MM-DD for Mon–Fri of the week containing referenceDate
+  const ref = new Date(referenceDate + 'T12:00:00')
+  const dow = ref.getDay() // 0=Sun, 1=Mon, …, 6=Sat
+  const monday = new Date(ref)
+  monday.setDate(ref.getDate() - (dow === 0 ? 6 : dow - 1))
+  return Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    return d.toISOString().slice(0, 10)
+  })
+}
+
+function formatDayLabel(dateStr: string): { short: string; num: number } {
+  const d = new Date(dateStr + 'T12:00:00')
+  return {
+    short: d.toLocaleDateString('en', { weekday: 'short' }),
+    num: d.getDate(),
+  }
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const BLUEPRINT_STYLE: React.CSSProperties = {
@@ -120,7 +145,16 @@ export function MapPage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<ParkingMapHandle>(null)
 
-  const { data: allSpots = [], isLoading: spotsLoading, isError } = useSpots()
+  const today = new Date().toISOString().slice(0, 10)
+  const selectedDate = useUIStore((s) => s.selectedDate)
+  const setSelectedDate = useUIStore((s) => s.setSelectedDate)
+  const weekDays = getWeekDays(today)
+
+  const {
+    data: allSpots = [],
+    isLoading: spotsLoading,
+    isError,
+  } = useEffectiveSpots(selectedDate)
   const { data: lots = [], isLoading: lotsLoading } = useLots()
 
   const selectedLotId = useParkingStore((s) => s.selectedLotId)
@@ -136,6 +170,8 @@ export function MapPage() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  // 0 = lot row, 1 = weekday row
+  const [keyNavRow, setKeyNavRow] = useState(0)
 
   // Auto-select preferred lot (or first lot as fallback) when arriving at map
   useEffect(() => {
@@ -144,7 +180,7 @@ export function MapPage() {
         preferredLotId !== null
           ? lots.find((l) => l.id === preferredLotId)
           : null
-      setSelectedLotId(preferred ? preferred.id : lots[0].id)
+      setSelectedLotId(preferred ? preferred.id : (lots[0]?.id ?? null))
     }
   }, [lots, selectedLotId, preferredLotId, setSelectedLotId])
 
@@ -156,6 +192,56 @@ export function MapPage() {
     document.addEventListener('fullscreenchange', onFsChange)
     return () => document.removeEventListener('fullscreenchange', onFsChange)
   }, [])
+
+  // Arrow key navigation: Up/Down switches between lot row and weekday row;
+  // Left/Right navigates within the active row.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setKeyNavRow(0)
+        return
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setKeyNavRow(1)
+        return
+      }
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+
+      if (keyNavRow === 0) {
+        // Navigate lots
+        if (lots.length < 2) return
+        const idx = lots.findIndex((l) => l.id === selectedLotId)
+        const next =
+          e.key === 'ArrowRight'
+            ? lots[(idx + 1) % lots.length]
+            : lots[(idx - 1 + lots.length) % lots.length]
+        if (next) setSelectedLotId(next.id)
+      } else {
+        // Navigate weekdays
+        const idx = weekDays.indexOf(selectedDate)
+        const nextIdx =
+          e.key === 'ArrowRight'
+            ? (idx + 1) % weekDays.length
+            : (idx - 1 + weekDays.length) % weekDays.length
+        setSelectedDate(weekDays[nextIdx] ?? selectedDate)
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [
+    keyNavRow,
+    lots,
+    selectedLotId,
+    setSelectedLotId,
+    weekDays,
+    selectedDate,
+    setSelectedDate,
+  ])
 
   const isLoading = spotsLoading || lotsLoading
   const activeLot = lots.find((l) => l.id === selectedLotId) ?? lots[0] ?? null
@@ -191,7 +277,7 @@ export function MapPage() {
   return (
     <div
       ref={containerRef}
-      className={`relative h-full w-full overflow-hidden ${!isMapMode ? 'bg-muted/40' : ''}`}
+      className={`relative h-full w-full overflow-hidden ${isMapMode ? '' : 'bg-muted/40'}`}
       style={isMapMode ? BLUEPRINT_STYLE : undefined}
     >
       {/* ── Map — centered with aspect ratio ─────────────────────── */}
@@ -261,7 +347,7 @@ export function MapPage() {
 
       {/* ── Grid view ────────────────────────────────────────────── */}
       {!isMapMode && (
-        <div className="absolute inset-0 overflow-y-auto p-4 pt-20 sm:pt-16">
+        <div className="absolute inset-0 overflow-y-auto p-4 pt-44 sm:pt-40">
           {isLoading ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {Array.from({ length: 10 }).map((_, i) => (
@@ -281,60 +367,143 @@ export function MapPage() {
         </div>
       )}
 
-      {/* ── Top-left: lot selector — always visible ──────────────── */}
+      {/* ── Top-left: lot selector + week day strip ──────────────── */}
       <div className="absolute top-3 left-3 z-20 max-w-[calc(100vw-96px)]">
         <div
-          className={`flex flex-wrap gap-1 rounded-xl p-1.5 ${
+          className={`flex flex-col gap-1 rounded-xl p-1.5 ${
             isMapMode
               ? 'bg-black/40 backdrop-blur-sm'
               : 'bg-card border shadow-sm'
           }`}
         >
-          {isLoading ? (
-            <>
-              <div
-                className={`h-9 w-20 animate-pulse rounded-lg ${isMapMode ? 'bg-white/10' : 'bg-muted'}`}
-              />
-              <div
-                className={`h-9 w-24 animate-pulse rounded-lg ${isMapMode ? 'bg-white/10' : 'bg-muted'}`}
-              />
-            </>
-          ) : (
-            lots.map((lot) => (
-              <button
-                key={lot.id}
-                onClick={() => handleLotSelect(lot)}
-                className={`flex min-h-9 items-center rounded-lg px-3 py-1 text-xs font-medium transition-colors ${
-                  isMapMode
-                    ? activeLot?.id === lot.id
-                      ? 'bg-white text-blue-950'
-                      : 'text-white/80 hover:bg-white/10 hover:text-white'
-                    : activeLot?.id === lot.id
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                {lot.name}
-                {(() => {
-                  const ls = allSpots.filter((s) => s.lot_id === lot.id)
-                  const free = ls.filter((s) => s.status === 'free').length
-                  return ls.length > 0 ? (
-                    <span
-                      className={`ml-1.5 size-1.5 rounded-full ${STATUS_DOT['free']} ${
-                        activeLot?.id === lot.id ? 'opacity-100' : 'opacity-70'
-                      }`}
-                      title={`${free} free`}
-                    />
-                  ) : null
-                })()}
-              </button>
-            ))
+          {/* Row 1: lot tabs */}
+          <div
+            className={`flex flex-wrap gap-1 rounded-lg transition-shadow ${
+              keyNavRow === 0
+                ? isMapMode
+                  ? 'ring-1 ring-white/40'
+                  : 'ring-1 ring-primary/50'
+                : ''
+            }`}
+          >
+            {isLoading ? (
+              <>
+                <div
+                  className={`h-9 w-20 animate-pulse rounded-lg ${isMapMode ? 'bg-white/10' : 'bg-muted'}`}
+                />
+                <div
+                  className={`h-9 w-24 animate-pulse rounded-lg ${isMapMode ? 'bg-white/10' : 'bg-muted'}`}
+                />
+              </>
+            ) : (
+              lots.map((lot) => (
+                <button
+                  key={lot.id}
+                  onClick={() => handleLotSelect(lot)}
+                  className={`flex min-h-9 items-center rounded-lg px-3 py-1 text-xs font-medium transition-colors ${
+                    isMapMode
+                      ? activeLot?.id === lot.id
+                        ? 'bg-white text-blue-950'
+                        : 'text-white/80 hover:bg-white/10 hover:text-white'
+                      : activeLot?.id === lot.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                >
+                  {lot.name}
+                  {(() => {
+                    const ls = allSpots.filter((s) => s.lot_id === lot.id)
+                    const free = ls.filter((s) => s.status === 'free').length
+                    return ls.length > 0 ? (
+                      <span
+                        className={`ml-3 size-1.5 cursor-pointer rounded-full ${free === 0 ? STATUS_DOT['occupied'] : STATUS_DOT['free']} ${
+                          activeLot?.id === lot.id
+                            ? 'opacity-100'
+                            : 'opacity-70'
+                        }`}
+                        title={free === 0 ? 'No free spots' : `${free} free`}
+                      />
+                    ) : null
+                  })()}
+                </button>
+              ))
+            )}
+          </div>
+
+          {/* Divider */}
+          <div
+            className={`-mx-0.5 h-px ${isMapMode ? 'bg-white/15' : 'bg-border'}`}
+          />
+
+          {/* Row 2: Mon–Fri day strip */}
+          <div
+            className={`flex gap-0.5 rounded-lg transition-shadow ${
+              keyNavRow === 1
+                ? isMapMode
+                  ? 'ring-1 ring-white/40'
+                  : 'ring-1 ring-primary/50'
+                : ''
+            }`}
+          >
+            {weekDays.map((date) => {
+              const { short, num } = formatDayLabel(date)
+              const isToday = date === today
+              const isSelected = date === selectedDate
+              return (
+                <button
+                  key={date}
+                  onClick={() => setSelectedDate(date)}
+                  title={date}
+                  className={`flex flex-1 flex-col items-center rounded-lg px-2 py-1.5 transition-colors ${
+                    isMapMode
+                      ? isSelected
+                        ? 'bg-white/20 text-white'
+                        : 'text-white/70 hover:bg-white/10 hover:text-white'
+                      : isSelected
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                >
+                  <span className="text-[10px] leading-none font-medium tracking-wide uppercase">
+                    {short}
+                  </span>
+                  <span className="mt-0.5 text-sm leading-none font-bold tabular-nums">
+                    {num}
+                  </span>
+                  <span
+                    className={`mt-1 size-1 rounded-full transition-colors ${
+                      isToday
+                        ? isSelected
+                          ? isMapMode
+                            ? 'bg-white'
+                            : 'bg-primary-foreground'
+                          : isMapMode
+                            ? 'bg-white/60'
+                            : 'bg-primary'
+                        : 'invisible'
+                    }`}
+                  />
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Row 3: projection note (non-today only) */}
+          {selectedDate !== today && (
+            <div
+              className={`flex items-center gap-1.5 px-1 text-[10px] ${
+                isMapMode ? 'text-white/50' : 'text-muted-foreground'
+              }`}
+            >
+              <CalendarDays className="size-3 shrink-0" />
+              Projected · based on scheduled attendance
+            </div>
           )}
         </div>
       </div>
 
       {/* ── Top-right: view mode toggle ─────────────────────────── */}
-      <div className="absolute top-3 right-3 z-20">
+      <div className="absolute top-3 right-8 z-20">
         <div
           className={`flex gap-0.5 rounded-xl p-1 ${
             isMapMode
@@ -422,6 +591,7 @@ export function MapPage() {
       {/* ── Sidebar backdrop (mobile tap-to-close) ──────────────── */}
       {sidebarOpen && (
         <div
+          role="presentation"
           className="absolute inset-0 z-20 bg-black/30 sm:hidden"
           onClick={() => setSidebarOpen(false)}
         />

@@ -1,9 +1,10 @@
-import { Calendar, Clock, MapPin, XCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { useMyBookings, useCancelBooking } from '@/hooks/useBookings'
-import { useAuthStore } from '@/store/authStore'
 import { notifications } from '@mantine/notifications'
+import { Calendar, Clock, MapPin, XCircle } from 'lucide-react'
+
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { useCancelBooking, useMyBookings } from '@/hooks/useBookings'
+import { useAuthStore } from '@/store/authStore'
 import type { Booking, BookingStatus } from '@/types'
 
 const STATUS_BADGE: Record<BookingStatus, string> = {

@@ -1,6 +1,7 @@
 import type {
   AppUser,
   Booking,
+  EmployeePresence,
   Owner,
   ParkingLot,
   Spot,
@@ -132,4 +133,10 @@ export const api = {
     request<{ ok: boolean }>(`/api/bookings/${id}/cancel`, {
       method: 'PATCH',
     }),
+
+  // Presence (proxied from Abelium timesheet)
+  getPresence: (date: string) =>
+    request<EmployeePresence[]>(
+      `/api/presence?date=${encodeURIComponent(date)}`,
+    ),
 }

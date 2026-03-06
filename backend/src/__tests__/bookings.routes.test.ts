@@ -60,18 +60,54 @@ describe('POST /api/bookings', () => {
     expect(res.body.error).toMatch(/spot_id/)
   })
 
-  it('returns 409 when user already has an active booking', async () => {
+  it('auto-cancels existing booking and creates new one', async () => {
+    const cancelMockClient = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({}) // UPDATE bookings (cancel old)
+        .mockResolvedValueOnce({}) // UPDATE spots (free old spot)
+        .mockResolvedValueOnce({}), // COMMIT
+      release: vi.fn(),
+    }
+    const bookMockClient = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({}) // UPDATE spots (reserve new)
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 'booking-2',
+              status: 'active',
+              booked_at: new Date().toISOString(),
+              expires_at: new Date(Date.now() + 8 * 3600 * 1000).toISOString(),
+              ended_at: null,
+            },
+          ],
+        }) // INSERT booking
+        .mockResolvedValueOnce({}), // COMMIT
+      release: vi.fn(),
+    }
+
     mockQuery
       .mockResolvedValueOnce({ rows: [] }) // expire stale
-      .mockResolvedValueOnce({ rows: [{ id: 'existing-booking' }] }) // active booking check
+      .mockResolvedValueOnce({ rows: [{ id: 'old-booking', spot_id: 'spot-2' }] }) // existing booking
+      .mockResolvedValueOnce({ rows: [{ id: 'spot-1', status: 'free', owner_name: null }] }) // spot check
+      .mockResolvedValueOnce({ rows: [{ number: 5, label: 'A5', floor: 'P1' }] }) // spot info
+
+    mockConnect
+      .mockResolvedValueOnce(cancelMockClient)
+      .mockResolvedValueOnce(bookMockClient)
 
     const res = await request(app)
       .post('/api/bookings')
       .set('Authorization', AUTH_HEADER)
       .send({ spot_id: 'spot-1' })
 
-    expect(res.status).toBe(409)
-    expect(res.body.error).toMatch(/already have an active booking/)
+    expect(res.status).toBe(201)
+    expect(res.body.status).toBe('active')
+    expect(cancelMockClient.release).toHaveBeenCalled()
   })
 
   it('returns 409 when spot is not free', async () => {

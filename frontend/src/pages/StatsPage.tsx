@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { useSpots } from '@/hooks/useSpots'
-import { useLots } from '@/hooks/useLots'
+
 import { Select } from '@/components/ui/select'
+import { useLots } from '@/hooks/useLots'
+import { useSpots } from '@/hooks/useSpots'
 import type { SpotStatus } from '@/types'
 
 // ─── Donut chart ─────────────────────────────────────────────────────────────

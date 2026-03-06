@@ -1,14 +1,16 @@
+import { notifications } from '@mantine/notifications'
+import { Pencil, Plus, Trash2, Users } from 'lucide-react'
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Users } from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import {
   Table,
   TableBody,
@@ -18,12 +20,11 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
-  useOwners,
   useCreateOwner,
-  useUpdateOwner,
   useDeleteOwner,
+  useOwners,
+  useUpdateOwner,
 } from '@/hooks/useOwners'
-import { notifications } from '@mantine/notifications'
 import type { Owner } from '@/types'
 
 type OwnerFormData = Omit<Owner, 'id' | 'created_at'>

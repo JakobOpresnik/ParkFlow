@@ -1,18 +1,19 @@
-import { Badge } from '@/components/ui/badge'
-import { useUIStore } from '@/store/uiStore'
+import { Clock, User } from 'lucide-react'
+
 import { useParkingStore } from '@/store/parkingStore'
+import { useUIStore } from '@/store/uiStore'
 import type { Spot, SpotStatus } from '@/types'
 
-const STATUS_COLOR: Record<SpotStatus, string> = {
-  free: 'green',
-  occupied: 'red',
-  reserved: 'yellow',
+const STATUS_ACCENT: Record<SpotStatus, string> = {
+  free: 'bg-spot-free',
+  occupied: 'bg-spot-occupied',
+  reserved: 'bg-spot-reserved',
 }
 
-const STATUS_BORDER: Record<SpotStatus, string> = {
-  free: 'border-l-spot-free',
-  occupied: 'border-l-spot-occupied',
-  reserved: 'border-l-spot-reserved',
+const STATUS_TEXT: Record<SpotStatus, string> = {
+  free: 'text-spot-free',
+  occupied: 'text-spot-occupied',
+  reserved: 'text-spot-reserved',
 }
 
 const STATUS_LABELS: Record<SpotStatus, string> = {
@@ -22,7 +23,7 @@ const STATUS_LABELS: Record<SpotStatus, string> = {
 }
 
 interface SpotGridProps {
-  spots: Spot[]
+  readonly spots: readonly Spot[]
 }
 
 export function SpotGrid({ spots }: SpotGridProps) {
@@ -37,25 +38,67 @@ export function SpotGrid({ spots }: SpotGridProps) {
   if (spots.length === 0) return null
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
       {spots.map((spot) => (
         <button
           key={spot.id}
           onClick={() => handleClick(spot)}
-          className={`bg-card hover:bg-accent/50 flex flex-col gap-1 rounded-lg border border-l-4 p-3 text-left shadow-sm transition-colors ${STATUS_BORDER[spot.status]}`}
+          className="bg-card group relative cursor-pointer overflow-hidden rounded-xl border text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
         >
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-lg font-bold">#{spot.number}</span>
-            <Badge className="text-xs" color={STATUS_COLOR[spot.status]}>
+          {/* Colored top accent strip */}
+          <div
+            className={`absolute inset-x-0 top-0 h-1 ${STATUS_ACCENT[spot.status]}`}
+          />
+
+          {/* Header: number + status */}
+          <div className="flex items-start justify-between px-4 pt-3 pb-2">
+            <div>
+              <p className="text-muted-foreground mb-0.5 text-[10px] font-medium tracking-widest uppercase">
+                Spot
+              </p>
+              <p className="text-2xl leading-none font-bold tracking-tight">
+                #{spot.number}
+              </p>
+              {spot.label && (
+                <p className="text-muted-foreground mt-0.5 text-xs">
+                  {spot.label}
+                </p>
+              )}
+            </div>
+            <span
+              className={`mt-1 text-xs font-semibold ${STATUS_TEXT[spot.status]}`}
+            >
               {STATUS_LABELS[spot.status]}
-            </Badge>
+            </span>
           </div>
-          {spot.label && (
-            <span className="text-muted-foreground text-xs">{spot.label}</span>
-          )}
-          <span className="text-muted-foreground mt-1 truncate text-xs">
-            {spot.owner_name ?? 'Free'}
-          </span>
+
+          {/* Divider + owner row */}
+          <div className="border-t px-4 py-2.5">
+            <div className="flex items-start gap-2">
+              <User className="text-muted-foreground mt-0.5 size-3.5 shrink-0" />
+              <div className="min-w-0">
+                {spot.owner_name ? (
+                  spot.owner_name.split('/').map((name) => (
+                    <p key={name} className="text-muted-foreground text-xs">
+                      {name.trim()}
+                    </p>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground text-xs italic">
+                    Unassigned
+                  </p>
+                )}
+                {spot.status === 'reserved' &&
+                  spot.active_booking_reserved_by &&
+                  spot.active_booking_reserved_by !== spot.owner_name && (
+                    <p className="text-spot-reserved mt-0.5 flex items-center gap-1 text-xs">
+                      <Clock className="size-3 shrink-0" />
+                      {spot.active_booking_reserved_by}
+                    </p>
+                  )}
+              </div>
+            </div>
+          </div>
         </button>
       ))}
     </div>

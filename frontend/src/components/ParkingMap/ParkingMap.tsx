@@ -1,4 +1,5 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
+
 import type { ParkingLot, Spot, SpotCoordinates } from '@/types'
 
 const STATUS_FILL: Record<string, string> = {
@@ -341,7 +342,7 @@ export const ParkingMap = forwardRef<ParkingMapHandle, ParkingMapProps>(
 
         {/* Unmapped spots notice */}
         {spotsWithCoords.length < spots.length && (
-          <div className="absolute right-3 bottom-16 rounded px-2 py-1 text-xs text-amber-300 backdrop-blur-sm">
+          <div className="absolute bottom-3 left-3 rounded px-2 py-1 text-xs text-amber-300 backdrop-blur-sm">
             {spots.length - spotsWithCoords.length} spot(s) unmapped
           </div>
         )}

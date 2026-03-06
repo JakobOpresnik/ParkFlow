@@ -1,10 +1,11 @@
-import { useState, useRef, useCallback } from 'react'
-import { Pencil, MousePointer, Trash2, RotateCcw, X, Save } from 'lucide-react'
 import { notifications } from '@mantine/notifications'
+import { MousePointer, Pencil, RotateCcw, Save, Trash2, X } from 'lucide-react'
+import { useCallback, useRef, useState } from 'react'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useLots } from '@/hooks/useLots'
-import { useSpots, usePatchCoordinates, useCreateSpot } from '@/hooks/useSpots'
+import { useCreateSpot, usePatchCoordinates, useSpots } from '@/hooks/useSpots'
 import type { LabelPosition, ParkingLot, Spot, SpotCoordinates } from '@/types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -370,6 +371,7 @@ function PendingPanel({
               {unmappedSpots.map((s) => (
                 <option key={s.id} value={s.id}>
                   #{s.number} {s.label ? `— ${s.label}` : ''}
+                  {s.owner_name ? ` · ${s.owner_name}` : ''}
                 </option>
               ))}
             </select>
@@ -543,9 +545,7 @@ export function MapEditorPage() {
       s.coordinates !== null && typeof s.coordinates.x === 'number',
   )
   const unmappedSpots = lotSpots.filter(
-    (s) =>
-      !s.coordinates ||
-      typeof (s.coordinates as SpotCoordinates).x !== 'number',
+    (s) => !s.coordinates || typeof s.coordinates.x !== 'number',
   )
 
   const selectedSpot = mappedSpots.find((s) => s.id === selectedSpotId) ?? null

@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { pool } from '../db/pool.js'
 import { requireAuth } from '../middleware/auth.js'
+import { fetchWeekPresence, isOwnerAbsent } from '../lib/presence.js'
 
 const router = Router()
 
@@ -60,28 +61,60 @@ router.post('/', requireAuth, async (req, res, next) => {
       return
     }
 
-    // One active booking per user
+    // Auto-cancel any existing active booking for this user before creating a new one
     const existing = await pool.query(
-      `SELECT id FROM bookings WHERE user_id = $1 AND status = 'active'`,
+      `SELECT b.id, b.spot_id FROM bookings b WHERE b.user_id = $1 AND b.status = 'active'`,
       [req.user!.userId],
     )
     if (existing.rows.length > 0) {
-      res.status(409).json({
-        error: 'You already have an active booking. Cancel it first.',
-      })
-      return
+      const old = existing.rows[0] as { id: string; spot_id: string }
+      const cancelClient = await pool.connect()
+      try {
+        await cancelClient.query('BEGIN')
+        await cancelClient.query(
+          `UPDATE bookings SET status = 'cancelled', ended_at = now() WHERE id = $1`,
+          [old.id],
+        )
+        await cancelClient.query(
+          `UPDATE spots SET status = 'free' WHERE id = $1`,
+          [old.spot_id],
+        )
+        await cancelClient.query('COMMIT')
+      } catch (err) {
+        await cancelClient.query('ROLLBACK')
+        throw err
+      } finally {
+        cancelClient.release()
+      }
     }
 
-    // Spot must be free
+    // Spot must be free (either in DB, or effectively free because owner is absent today)
     const spotResult = await pool.query(
-      'SELECT id, status FROM spots WHERE id = $1',
+      `SELECT s.id, s.status, o.name AS owner_name
+       FROM spots s
+       LEFT JOIN owners o ON s.owner_id = o.id
+       WHERE s.id = $1`,
       [spot_id],
     )
     if (spotResult.rows.length === 0) {
       res.status(404).json({ error: 'Spot not found' })
       return
     }
-    if (spotResult.rows[0].status !== 'free') {
+
+    const spotRow = spotResult.rows[0] as {
+      id: string
+      status: string
+      owner_name: string | null
+    }
+    let isBookable = spotRow.status === 'free'
+
+    if (!isBookable && spotRow.status === 'occupied' && spotRow.owner_name) {
+      const today = new Date().toISOString().slice(0, 10)
+      const presence = await fetchWeekPresence(today)
+      isBookable = isOwnerAbsent(presence, spotRow.owner_name, today)
+    }
+
+    if (!isBookable) {
       res.status(409).json({ error: 'Spot is not available for booking' })
       return
     }
@@ -94,10 +127,10 @@ router.post('/', requireAuth, async (req, res, next) => {
         spot_id,
       ])
       const booking = await client.query(
-        `INSERT INTO bookings (user_id, spot_id, expires_at)
-         VALUES ($1, $2, now() + interval '8 hours')
+        `INSERT INTO bookings (user_id, spot_id, expires_at, reserved_by)
+         VALUES ($1, $2, now() + interval '8 hours', $3)
          RETURNING id, status, booked_at, expires_at, ended_at`,
-        [req.user!.userId, spot_id],
+        [req.user!.userId, spot_id, req.user!.displayName],
       )
       await client.query('COMMIT')
 

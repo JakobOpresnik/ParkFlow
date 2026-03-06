@@ -60,6 +60,7 @@ export interface Spot {
   // joined from bookings table (active booking for this spot, if any)
   active_booking_id: string | null
   active_booking_user_id: string | null
+  active_booking_reserved_by: string | null
 }
 
 export type SpotChangeType =
@@ -79,6 +80,28 @@ export interface SpotChange {
   spot_label: string | null
   spot_lot_id: string | null
   lot_name: string | null
+}
+
+export const PRESENCE_STATUSES = [
+  'in_office',
+  'remote',
+  'sick',
+  'care',
+  'vacation',
+  'no_entry',
+] as const
+
+export type PresenceStatus = (typeof PRESENCE_STATUSES)[number]
+
+export interface PresenceDayEntry {
+  date: string
+  status: PresenceStatus
+}
+
+export interface EmployeePresence {
+  user_id: number
+  name: string
+  week: PresenceDayEntry[]
 }
 
 export type LabelPosition = 'top' | 'bottom' | 'left' | 'right'

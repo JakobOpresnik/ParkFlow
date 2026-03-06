@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import type { AppUser } from '@/types'
+
 import { oauthConfig } from '@/lib/oauth'
+import type { AppUser } from '@/types'
 
 const ACCESS_TOKEN_KEY = 'pf_access_token'
 const ID_TOKEN_KEY = 'pf_id_token'

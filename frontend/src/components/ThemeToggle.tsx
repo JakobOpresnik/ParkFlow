@@ -1,5 +1,6 @@
-import { Moon, Sun } from 'lucide-react'
 import { useMantineColorScheme } from '@mantine/core'
+import { Moon, Sun } from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
 
 export function ThemeToggle() {

@@ -1,9 +1,10 @@
+import { notifications } from '@mantine/notifications'
+import { LogIn, ParkingCircle } from 'lucide-react'
 import { useState } from 'react'
-import { ParkingCircle, LogIn } from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
 import { oauthConfig } from '@/lib/oauth'
-import { generateCodeVerifier, generateCodeChallenge } from '@/lib/pkce'
-import { notifications } from '@mantine/notifications'
+import { generateCodeChallenge, generateCodeVerifier } from '@/lib/pkce'
 
 export function LoginPage() {
   const [loading, setLoading] = useState(false)

@@ -6,18 +6,19 @@ import {
   Outlet,
   redirect,
 } from '@tanstack/react-router'
-import { MapPage } from '@/pages/MapPage'
-import { DashboardPage } from '@/pages/DashboardPage'
-import { OwnersPage } from '@/pages/OwnersPage'
-import { StatsPage } from '@/pages/StatsPage'
-import { MyBookingsPage } from '@/pages/MyBookingsPage'
-import { LoginPage } from '@/pages/LoginPage'
-import { CallbackPage } from '@/pages/CallbackPage'
-import { AdminPage } from '@/pages/AdminPage'
-import { MapEditorPage } from '@/pages/MapEditorPage'
-import { ProfilePage } from '@/pages/ProfilePage'
+
 import { Layout } from '@/components/Layout'
-import { useAuthStore, authInitPromise } from '@/store/authStore'
+import { AdminPage } from '@/pages/AdminPage'
+import { CallbackPage } from '@/pages/CallbackPage'
+import { DashboardPage } from '@/pages/DashboardPage'
+import { LoginPage } from '@/pages/LoginPage'
+import { MapEditorPage } from '@/pages/MapEditorPage'
+import { MapPage } from '@/pages/MapPage'
+import { MyBookingsPage } from '@/pages/MyBookingsPage'
+import { OwnersPage } from '@/pages/OwnersPage'
+import { ProfilePage } from '@/pages/ProfilePage'
+import { StatsPage } from '@/pages/StatsPage'
+import { authInitPromise, useAuthStore } from '@/store/authStore'
 
 async function requireAuth() {
   await authInitPromise

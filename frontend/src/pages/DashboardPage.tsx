@@ -1,7 +1,8 @@
-import { ParkingCircle, CheckCircle2, Clock, Activity } from 'lucide-react'
-import { useSpots } from '@/hooks/useSpots'
-import { useLots } from '@/hooks/useLots'
+import { Activity, CheckCircle2, Clock, ParkingCircle } from 'lucide-react'
+
 import { useChanges } from '@/hooks/useChanges'
+import { useLots } from '@/hooks/useLots'
+import { useSpots } from '@/hooks/useSpots'
 import type { SpotStatus } from '@/types'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -162,7 +163,7 @@ export function DashboardPage() {
       {/* Stat cards */}
       {isLoading ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
+          {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
               className="bg-muted h-24 animate-pulse rounded-lg border"
