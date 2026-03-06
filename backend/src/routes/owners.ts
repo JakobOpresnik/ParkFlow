@@ -1,32 +1,33 @@
-import { Router } from 'express'
-import { pool } from '../db/pool.js'
+import { Router } from "express";
 
-const router = Router()
+import { pool } from "../db/pool.js";
+
+const router = Router();
 
 // BE-5: GET /api/owners — list all owners ordered by name
-router.get('/', async (_req, res, next) => {
+router.get("/", async (_req, res, next) => {
   try {
-    const result = await pool.query('SELECT * FROM owners ORDER BY name')
-    res.json(result.rows)
+    const result = await pool.query("SELECT * FROM owners ORDER BY name");
+    res.json(result.rows);
   } catch (err) {
-    next(err)
+    next(err);
   }
-})
+});
 
 // BE-6: POST /api/owners — create new owner, validate required name
-router.post('/', async (req, res, next) => {
+router.post("/", async (req, res, next) => {
   try {
     const { name, email, phone, vehicle_plate, notes } = req.body as {
-      name: string
-      email?: string
-      phone?: string
-      vehicle_plate?: string
-      notes?: string
-    }
+      name: string;
+      email?: string;
+      phone?: string;
+      vehicle_plate?: string;
+      notes?: string;
+    };
 
-    if (!name || typeof name !== 'string' || name.trim() === '') {
-      res.status(400).json({ error: 'name is required' })
-      return
+    if (!name || typeof name !== "string" || name.trim() === "") {
+      res.status(400).json({ error: "name is required" });
+      return;
     }
 
     const result = await pool.query(
@@ -35,30 +36,39 @@ router.post('/', async (req, res, next) => {
       VALUES ($1, $2, $3, $4, $5)
       RETURNING *
     `,
-      [name.trim(), email ?? null, phone ?? null, vehicle_plate ?? null, notes ?? null],
-    )
+      [
+        name.trim(),
+        email ?? null,
+        phone ?? null,
+        vehicle_plate ?? null,
+        notes ?? null,
+      ],
+    );
 
-    res.status(201).json(result.rows[0])
+    res.status(201).json(result.rows[0]);
   } catch (err) {
-    next(err)
+    next(err);
   }
-})
+});
 
 // BE-7: PUT /api/owners/:id — update owner data
-router.put('/:id', async (req, res, next) => {
+router.put("/:id", async (req, res, next) => {
   try {
-    const { id } = req.params
+    const { id } = req.params;
     const { name, email, phone, vehicle_plate, notes } = req.body as {
-      name?: string
-      email?: string
-      phone?: string
-      vehicle_plate?: string
-      notes?: string
-    }
+      name?: string;
+      email?: string;
+      phone?: string;
+      vehicle_plate?: string;
+      notes?: string;
+    };
 
-    if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
-      res.status(400).json({ error: 'name cannot be empty' })
-      return
+    if (
+      name !== undefined &&
+      (typeof name !== "string" || name.trim() === "")
+    ) {
+      res.status(400).json({ error: "name cannot be empty" });
+      return;
     }
 
     const result = await pool.query(
@@ -81,35 +91,38 @@ router.put('/:id', async (req, res, next) => {
         notes ?? null,
         id,
       ],
-    )
+    );
 
     if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Owner not found' })
-      return
+      res.status(404).json({ error: "Owner not found" });
+      return;
     }
 
-    res.json(result.rows[0])
+    res.json(result.rows[0]);
   } catch (err) {
-    next(err)
+    next(err);
   }
-})
+});
 
 // BE-8: DELETE /api/owners/:id — delete owner (spot owner_id becomes null via FK)
-router.delete('/:id', async (req, res, next) => {
+router.delete("/:id", async (req, res, next) => {
   try {
-    const { id } = req.params
+    const { id } = req.params;
 
-    const result = await pool.query('DELETE FROM owners WHERE id = $1 RETURNING id', [id])
+    const result = await pool.query(
+      "DELETE FROM owners WHERE id = $1 RETURNING id",
+      [id],
+    );
 
     if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Owner not found' })
-      return
+      res.status(404).json({ error: "Owner not found" });
+      return;
     }
 
-    res.status(200).json({ ok: true })
+    res.status(200).json({ ok: true });
   } catch (err) {
-    next(err)
+    next(err);
   }
-})
+});
 
-export default router
+export default router;

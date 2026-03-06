@@ -9,6 +9,8 @@ import {
   Clock,
   Lock,
   MapPin,
+  Minus,
+  Pencil,
   Plus,
   User,
   X,
@@ -20,14 +22,50 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
-import { useCancelBooking, useCreateBooking } from '@/hooks/useBookings'
+import {
+  useCancelBooking,
+  useCreateBooking,
+  useUpdateBookingTimes,
+} from '@/hooks/useBookings'
 import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
 import { useCreateOwner, useOwners } from '@/hooks/useOwners'
 import { useAssignOwner, useUpdateStatus } from '@/hooks/useSpots'
 import { useAuthStore } from '@/store/authStore'
 import { useParkingStore } from '@/store/parkingStore'
+import { usePrefsStore } from '@/store/prefsStore'
 import { useUIStore } from '@/store/uiStore'
 import type { SpotStatus } from '@/types'
+
+import { ReservationTimer } from '../ReservationTimer'
+
+// ─── Booking time helpers ──────────────────────────────────────────────────────
+
+function formatDuration(hours: number): string {
+  const h = Math.floor(hours)
+  const m = Math.round((hours - h) * 60)
+  if (h === 0) return `${m}m`
+  if (m === 0) return `${h}h`
+  return `${h}h ${m}m`
+}
+
+/** Computes expires_at from the user's arrival time + chosen duration for a specific date. */
+function computeExpiresAt(
+  arrivalTime: string,
+  durationHours: number,
+  targetDate: string,
+): Date {
+  const [hh, mm] = arrivalTime.split(':').map(Number)
+  const arrival = new Date(targetDate + 'T12:00:00')
+  arrival.setHours(hh ?? 9, mm ?? 0, 0, 0)
+  return new Date(arrival.getTime() + durationHours * 3_600_000)
+}
+
+function fmtTime(date: Date): string {
+  return date.toLocaleTimeString(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
 
 const STATUS_LABELS: Record<SpotStatus, string> = {
   free: 'Available',
@@ -82,7 +120,17 @@ export function SpotModal() {
   const createOwner = useCreateOwner()
   const createBooking = useCreateBooking()
   const cancelBooking = useCancelBooking()
+  const updateBookingTimes = useUpdateBookingTimes()
   const user = useAuthStore((s) => s.user)
+
+  const arrivalTime = usePrefsStore((s) => s.arrivalTime)
+  const reservationDuration = usePrefsStore((s) => s.reservationDuration)
+  const [bookingDuration, setBookingDuration] = useState(reservationDuration)
+
+  // Interval editing state for active reservations
+  const [editingInterval, setEditingInterval] = useState(false)
+  const [editStart, setEditStart] = useState('09:00')
+  const [editEnd, setEditEnd] = useState('17:00')
 
   const [managementExpanded, setManagementExpanded] = useState(false)
   const [assignOpen, setAssignOpen] = useState(false)
@@ -98,6 +146,8 @@ export function SpotModal() {
     setCreateFormOpen(false)
     setNewName('')
     setNewPlate('')
+    setBookingDuration(reservationDuration)
+    setEditingInterval(false)
   }
 
   function handleClose() {
@@ -106,13 +156,15 @@ export function SpotModal() {
     resetLocal()
   }
 
-  // Spot the current user has reserved elsewhere (for auto-cancel on new reserve)
+  // Spot the current user has reserved elsewhere ON THE SAME DAY (for auto-cancel on new reserve).
+  // Reservations on other days are independent and must not be affected.
   const myReservedElsewhere = user
     ? allSpots.find(
         (s) =>
           s.active_booking_user_id === user.id &&
           s.active_booking_id !== null &&
-          s.id !== spot?.id,
+          s.id !== spot?.id &&
+          s.active_booking_expires_at?.slice(0, 10) === selectedDate,
       )
     : undefined
 
@@ -212,6 +264,12 @@ export function SpotModal() {
 
   async function handleBook() {
     if (!spot) return
+    const expiresAt = computeExpiresAt(
+      arrivalTime,
+      bookingDuration,
+      selectedDate,
+    )
+    const expiryStr = fmtTime(expiresAt)
 
     // Auto-cancel any reservation the user holds elsewhere before booking
     if (myReservedElsewhere?.active_booking_id) {
@@ -230,11 +288,18 @@ export function SpotModal() {
     }
 
     try {
-      await createBooking.mutateAsync(spot.id)
+      const [hh, mm] = arrivalTime.split(':').map(Number)
+      const startsAtDate = new Date(selectedDate + 'T12:00:00')
+      startsAtDate.setHours(hh ?? 9, mm ?? 0, 0, 0)
+      await createBooking.mutateAsync({
+        spot_id: spot.id,
+        starts_at: startsAtDate.toISOString(),
+        expires_at: expiresAt.toISOString(),
+      })
       notifications.show({
         message: myReservedElsewhere
           ? `Moved to spot #${spot.number} — spot #${myReservedElsewhere.number} reservation cancelled.`
-          : `Spot #${spot.number} reserved! Valid for 8 hours.`,
+          : `Spot #${spot.number} reserved until ${expiryStr}!`,
         color: 'green',
       })
     } catch (err) {
@@ -243,6 +308,65 @@ export function SpotModal() {
         color: 'red',
       })
     }
+  }
+
+  function handleOpenIntervalEdit() {
+    if (!spot?.active_booking_expires_at) return
+    const expiry = new Date(spot.active_booking_expires_at)
+    // Use stored starts_at if available, otherwise derive from arrival pref
+    const start = spot.active_booking_starts_at
+      ? new Date(spot.active_booking_starts_at)
+      : null
+    const startHH = start
+      ? String(start.getHours()).padStart(2, '0')
+      : arrivalTime.split(':')[0]
+    const startMM = start
+      ? String(start.getMinutes()).padStart(2, '0')
+      : arrivalTime.split(':')[1]
+    setEditStart(`${startHH}:${startMM}`)
+    setEditEnd(
+      `${String(expiry.getHours()).padStart(2, '0')}:${String(expiry.getMinutes()).padStart(2, '0')}`,
+    )
+    setEditingInterval(true)
+  }
+
+  function handleSaveInterval() {
+    if (!spot?.active_booking_id || !spot.active_booking_expires_at) return
+    const bookingDate = spot.active_booking_expires_at.slice(0, 10)
+    const [sh, sm] = editStart.split(':').map(Number)
+    const [eh, em] = editEnd.split(':').map(Number)
+    const newStart = new Date(bookingDate + 'T12:00:00')
+    newStart.setHours(sh ?? 9, sm ?? 0, 0, 0)
+    const newEnd = new Date(bookingDate + 'T12:00:00')
+    newEnd.setHours(eh ?? 17, em ?? 0, 0, 0)
+
+    if (newEnd <= newStart) {
+      notifications.show({ message: 'End must be after start', color: 'red' })
+      return
+    }
+
+    updateBookingTimes.mutate(
+      {
+        id: spot.active_booking_id,
+        starts_at: newStart.toISOString(),
+        expires_at: newEnd.toISOString(),
+      },
+      {
+        onSuccess: () => {
+          setEditingInterval(false)
+          notifications.show({
+            message: `Reservation updated: ${editStart} – ${editEnd}`,
+            color: 'green',
+          })
+        },
+        onError: (err) =>
+          notifications.show({
+            message:
+              err instanceof Error ? err.message : 'Failed to update times',
+            color: 'red',
+          }),
+      },
+    )
   }
 
   function handleCancelBooking() {
@@ -267,6 +391,22 @@ export function SpotModal() {
   const isPending =
     assignOwner.isPending || updateStatus.isPending || createOwner.isPending
   const bookingPending = createBooking.isPending || cancelBooking.isPending
+
+  const computedExpiry = computeExpiresAt(
+    arrivalTime,
+    bookingDuration,
+    selectedDate,
+  )
+  const computedExpiryStr = fmtTime(computedExpiry)
+  // True when viewing today and the arrival+duration window has already closed
+  const isToday = selectedDate === today
+  const arrivalWindowPassed = isToday && computedExpiry <= new Date()
+
+  // Used in the "unavailable" CTA to avoid nested ternaries
+  const unavailableMsg =
+    spot?.status === 'occupied'
+      ? 'Spot unavailable — currently occupied'
+      : 'Spot unavailable — already reserved'
 
   const ownerSelectData = owners.map((o) => ({
     value: o.id,
@@ -559,37 +699,85 @@ export function SpotModal() {
           {/* ── CTA ─────────────────────────────────────────────── */}
 
           {/* Free spot: reserve (or move reservation here) — today or future only */}
-          {spot.status === 'free' && user && isBookableDate && (
-            <div className="space-y-2">
-              <Button
-                className="h-11 w-full gap-2 text-[15px] font-semibold"
-                style={{
-                  display: 'flex',
-                  justifySelf: 'stretch',
-                }}
-                disabled={bookingPending}
-                onClick={handleBook}
-              >
-                {myReservedElsewhere ? (
-                  <>
-                    <ArrowRightLeft className="size-5" />
-                    Move to This Spot
-                  </>
-                ) : (
-                  <>
-                    <CalendarCheck className="size-5" />
-                    Reserve Parking Spot
-                  </>
+          {spot.status === 'free' &&
+            user &&
+            isBookableDate &&
+            !arrivalWindowPassed && (
+              <div className="space-y-3">
+                {/* Duration + expiry picker */}
+                <div className="bg-muted/50 space-y-2 rounded-lg px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                      <Clock className="size-3.5" />
+                      From {arrivalTime}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() =>
+                          setBookingDuration((d) => Math.max(0.5, d - 0.5))
+                        }
+                        className="hover:bg-background flex size-6 items-center justify-center rounded border transition-colors"
+                      >
+                        <Minus className="size-3" />
+                      </button>
+                      <span className="w-14 text-center text-sm font-medium">
+                        {formatDuration(bookingDuration)}
+                      </span>
+                      <button
+                        onClick={() =>
+                          setBookingDuration((d) => Math.min(24, d + 0.5))
+                        }
+                        className="hover:bg-background flex size-6 items-center justify-center rounded border transition-colors"
+                      >
+                        <Plus className="size-3" />
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground text-right text-xs">
+                    Until {computedExpiryStr}
+                  </p>
+                </div>
+
+                <Button
+                  className="h-11 w-full gap-2 text-[15px] font-semibold"
+                  style={{ display: 'flex', justifySelf: 'stretch' }}
+                  disabled={bookingPending}
+                  onClick={handleBook}
+                >
+                  {myReservedElsewhere ? (
+                    <>
+                      <ArrowRightLeft className="size-5" />
+                      Move to This Spot
+                    </>
+                  ) : (
+                    <>
+                      <CalendarCheck className="size-5" />
+                      Reserve Parking Spot
+                    </>
+                  )}
+                </Button>
+                {myReservedElsewhere && (
+                  <p className="text-muted-foreground text-center text-xs">
+                    Spot #{myReservedElsewhere.number} reservation will be
+                    cancelled
+                  </p>
                 )}
-              </Button>
-              {myReservedElsewhere && (
-                <p className="text-muted-foreground text-center text-xs">
-                  Spot #{myReservedElsewhere.number} reservation will be
-                  cancelled
+              </div>
+            )}
+
+          {/* Free spot: arrival window passed for today */}
+          {spot.status === 'free' &&
+            user &&
+            isBookableDate &&
+            arrivalWindowPassed && (
+              <div className="flex items-center gap-3 rounded-lg border border-dashed px-4 py-3">
+                <Lock className="text-muted-foreground size-4 shrink-0" />
+                <p className="text-muted-foreground text-sm">
+                  Today&apos;s reservation window has ended — arrival at{' '}
+                  {arrivalTime}, until {computedExpiryStr}
                 </p>
-              )}
-            </div>
-          )}
+              </div>
+            )}
 
           {/* Free spot, not logged in or past date */}
           {spot.status === 'free' && (!user || !isBookableDate) && (
@@ -603,30 +791,126 @@ export function SpotModal() {
             </div>
           )}
 
-          {/* Reserved — user can cancel (their own booking, or admin cancelling any) */}
+          {/* Reserved — user can cancel or edit interval */}
           {spot.status === 'reserved' && canCancelThisBooking && (
-            <Button
-              variant="outline"
-              className="text-destructive border-destructive/25 hover:bg-destructive/5 hover:text-destructive h-11 w-full gap-2 text-[15px] font-semibold"
-              style={{
-                display: 'flex',
-                justifySelf: 'stretch',
-              }}
-              disabled={bookingPending}
-              onClick={handleCancelBooking}
-            >
-              <X className="size-5" />
-              Cancel Reservation
-            </Button>
+            <div className="space-y-3">
+              {spot.active_booking_expires_at && !editingInterval && (
+                <button
+                  onClick={handleOpenIntervalEdit}
+                  className="text-muted-foreground hover:bg-muted/50 group justify-space-between flex w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-2 text-sm transition-colors"
+                >
+                  <>
+                    <Clock className="mr-0.5 size-3.5 shrink-0" />
+                    <ReservationTimer
+                      expiresAt={spot.active_booking_expires_at}
+                      arrivalTime={
+                        spot.active_booking_starts_at
+                          ? fmtTime(new Date(spot.active_booking_starts_at))
+                          : arrivalTime
+                      }
+                    />
+                  </>
+                  <Pencil className="ml-auto size-4 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+                </button>
+              )}
+
+              {editingInterval && (
+                <div className="bg-muted/50 space-y-3 rounded-lg px-4 py-3">
+                  <p className="text-muted-foreground text-xs font-medium tracking-widest uppercase">
+                    Adjust interval
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <label className="text-muted-foreground mb-1 block text-xs">
+                        From
+                      </label>
+                      <input
+                        type="time"
+                        value={editStart}
+                        onChange={(e) => setEditStart(e.target.value)}
+                        className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+                      />
+                    </div>
+                    <span className="text-muted-foreground mt-5">–</span>
+                    <div className="flex-1">
+                      <label className="text-muted-foreground mb-1 block text-xs">
+                        To
+                      </label>
+                      <input
+                        type="time"
+                        value={editEnd}
+                        onChange={(e) => setEditEnd(e.target.value)}
+                        className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+                      />
+                    </div>
+                  </div>
+                  {(() => {
+                    const [sh, sm] = editStart.split(':').map(Number)
+                    const [eh, em] = editEnd.split(':').map(Number)
+                    const mins =
+                      (eh ?? 0) * 60 + (em ?? 0) - (sh ?? 0) * 60 - (sm ?? 0)
+                    if (mins <= 0) return null
+                    const dh = Math.floor(mins / 60)
+                    const dm = mins % 60
+                    return (
+                      <p className="text-muted-foreground text-right text-xs">
+                        Duration: {dh > 0 ? `${dh}h` : ''}
+                        {dm > 0 ? ` ${dm}m` : ''}
+                      </p>
+                    )
+                  })()}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      disabled={updateBookingTimes.isPending}
+                      onClick={handleSaveInterval}
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditingInterval(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <Button
+                variant="outline"
+                className="text-destructive border-destructive/25 hover:bg-destructive/5 hover:text-destructive h-11 w-full gap-2 text-[15px] font-semibold"
+                style={{ display: 'flex', justifySelf: 'stretch' }}
+                disabled={bookingPending || updateBookingTimes.isPending}
+                onClick={handleCancelBooking}
+              >
+                <X className="size-5" />
+                Cancel Reservation
+              </Button>
+            </div>
           )}
 
           {/* Occupied, or reserved by someone else */}
           {(spot.status === 'occupied' ||
             (spot.status === 'reserved' && !canCancelThisBooking)) && (
-            <div className="text-muted-foreground flex items-center justify-center rounded-lg border border-dashed py-3 text-sm">
-              {spot.status === 'occupied'
-                ? 'Spot unavailable — currently occupied'
-                : 'Spot unavailable — already reserved'}
+            <div className="text-muted-foreground flex flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed py-3 text-sm">
+              {spot.status === 'reserved' && spot.active_booking_expires_at ? (
+                <>
+                  <Clock className="size-4" />
+                  <ReservationTimer
+                    expiresAt={spot.active_booking_expires_at}
+                    arrivalTime={
+                      spot.active_booking_starts_at
+                        ? fmtTime(new Date(spot.active_booking_starts_at))
+                        : arrivalTime
+                    }
+                  />
+                </>
+              ) : (
+                <span>{unavailableMsg}</span>
+              )}
             </div>
           )}
         </div>
