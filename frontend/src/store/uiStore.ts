@@ -1,5 +1,18 @@
 import { create } from 'zustand'
 
+const SELECTED_DATE_KEY = 'pf_selected_date'
+
+function loadSelectedDate(): string {
+  try {
+    return (
+      localStorage.getItem(SELECTED_DATE_KEY) ??
+      new Date().toISOString().slice(0, 10)
+    )
+  } catch {
+    return new Date().toISOString().slice(0, 10)
+  }
+}
+
 type MapViewMode = 'map' | 'grid'
 
 interface UIStore {
@@ -20,6 +33,9 @@ export const useUIStore = create<UIStore>((set) => ({
   mapViewMode: 'map',
   setMapViewMode: (mode) => set({ mapViewMode: mode }),
 
-  selectedDate: new Date().toISOString().slice(0, 10),
-  setSelectedDate: (date) => set({ selectedDate: date }),
+  selectedDate: loadSelectedDate(),
+  setSelectedDate: (date) => {
+    localStorage.setItem(SELECTED_DATE_KEY, date)
+    set({ selectedDate: date })
+  },
 }))

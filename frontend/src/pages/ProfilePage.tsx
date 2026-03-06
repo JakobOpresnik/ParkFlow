@@ -158,11 +158,15 @@ export function ProfilePage() {
   const notifyOnBooking = usePrefsStore((s) => s.notifyOnBooking)
   const notifyOnAvailability = usePrefsStore((s) => s.notifyOnAvailability)
   const preferredLotId = usePrefsStore((s) => s.preferredLotId)
+  const arrivalTime = usePrefsStore((s) => s.arrivalTime)
+  const reservationDuration = usePrefsStore((s) => s.reservationDuration)
   const setNotifyOnBooking = usePrefsStore((s) => s.setNotifyOnBooking)
   const setNotifyOnAvailability = usePrefsStore(
     (s) => s.setNotifyOnAvailability,
   )
   const setPreferredLotId = usePrefsStore((s) => s.setPreferredLotId)
+  const setArrivalTime = usePrefsStore((s) => s.setArrivalTime)
+  const setReservationDuration = usePrefsStore((s) => s.setReservationDuration)
   const setSelectedLotId = useParkingStore((s) => s.setSelectedLotId)
 
   function handlePreferredLotChange(id: string | null) {
@@ -373,6 +377,42 @@ export function ProfilePage() {
               </PrefRow>
             </div>
           )}
+          <div className="py-4">
+            <PrefRow
+              icon={Clock}
+              title="Typical arrival time"
+              description="Reservations default to starting at this time"
+            >
+              <input
+                type="time"
+                value={arrivalTime}
+                onChange={(e) => setArrivalTime(e.target.value)}
+                className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+              />
+            </PrefRow>
+          </div>
+          <div className="py-4">
+            <PrefRow
+              icon={Clock}
+              title="Default reservation duration"
+              description="How many hours your spot is held by default"
+            >
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  min={0.5}
+                  max={24}
+                  step={0.5}
+                  value={reservationDuration}
+                  onChange={(e) =>
+                    setReservationDuration(parseFloat(e.target.value) || 8)
+                  }
+                  className="border-input bg-background h-9 w-16 rounded-md border px-3 text-sm"
+                />
+                <span className="text-muted-foreground text-sm">h</span>
+              </div>
+            </PrefRow>
+          </div>
         </div>
       </div>
 

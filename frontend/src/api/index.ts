@@ -148,10 +148,10 @@ export const api = {
 
   // Bookings
   getMyBookings: () => request<Booking[]>('/api/bookings/my'),
-  createBooking: (spot_id: string) =>
+  createBooking: (params: { spot_id: string; expires_at: string }) =>
     request<Booking>('/api/bookings', {
       method: 'POST',
-      body: JSON.stringify({ spot_id }),
+      body: JSON.stringify(params),
     }),
   cancelBooking: (id: string) =>
     request<{ ok: boolean }>(`/api/bookings/${id}/cancel`, {

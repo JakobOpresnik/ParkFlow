@@ -1,5 +1,6 @@
 import { Clock, User } from 'lucide-react'
 
+import { ReservationTimer } from '@/components/ReservationTimer'
 import { useParkingStore } from '@/store/parkingStore'
 import { useUIStore } from '@/store/uiStore'
 import type { Spot, SpotStatus } from '@/types'
@@ -94,6 +95,15 @@ export function SpotGrid({ spots }: SpotGridProps) {
                     <p className="text-spot-reserved mt-0.5 flex items-center gap-1 text-xs">
                       <Clock className="size-3 shrink-0" />
                       {spot.active_booking_reserved_by}
+                    </p>
+                  )}
+                {spot.status === 'reserved' &&
+                  spot.active_booking_expires_at && (
+                    <p className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
+                      <Clock className="size-3 shrink-0" />
+                      <ReservationTimer
+                        expiresAt={spot.active_booking_expires_at}
+                      />
                     </p>
                   )}
               </div>

@@ -1,5 +1,6 @@
 import {
   AlertCircle,
+  ArrowRight,
   CalendarDays,
   LayoutGrid,
   Map,
@@ -19,6 +20,15 @@ import { ParkingMap } from '@/components/ParkingMap/ParkingMap'
 import { SpotGrid } from '@/components/SpotGrid/SpotGrid'
 import { SpotModal } from '@/components/SpotModal/SpotModal'
 import { SpotSearch } from '@/components/SpotSearch/SpotSearch'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
 import { useLots } from '@/hooks/useLots'
 import { useParkingStore } from '@/store/parkingStore'
@@ -148,7 +158,9 @@ export function MapPage() {
   const today = new Date().toISOString().slice(0, 10)
   const selectedDate = useUIStore((s) => s.selectedDate)
   const setSelectedDate = useUIStore((s) => s.setSelectedDate)
-  const weekDays = getWeekDays(today)
+  // Strip tracks the selected week so navigating to next week updates the tabs
+  const weekDays = getWeekDays(selectedDate)
+  const currentWeekDays = getWeekDays(today)
 
   const {
     data: allSpots = [],
@@ -167,8 +179,44 @@ export function MapPage() {
   const setMapViewMode = useUIStore((s) => s.setMapViewMode)
 
   const preferredLotId = usePrefsStore((s) => s.preferredLotId)
+  const arrivalTime = usePrefsStore((s) => s.arrivalTime)
+  const reservationDuration = usePrefsStore((s) => s.reservationDuration)
 
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [nextWeekPromptDismissed, setNextWeekPromptDismissed] = useState(false)
+
+  // Re-show the prompt after 1 hour if the user clicked "Stay"
+  useEffect(() => {
+    if (!nextWeekPromptDismissed) return
+    const id = setTimeout(() => setNextWeekPromptDismissed(false), 3_600_000)
+    return () => clearTimeout(id)
+  }, [nextWeekPromptDismissed])
+
+  // Show "switch to next week?" prompt on Friday once the arrival window has passed
+  const isFriday = new Date().getDay() === 5
+  const fridayWindowPassed = (() => {
+    const [hh, mm] = arrivalTime.split(':').map(Number)
+    const arrival = new Date()
+    arrival.setHours(hh ?? 9, mm ?? 0, 0, 0)
+    return (
+      new Date(arrival.getTime() + reservationDuration * 3_600_000) <=
+      new Date()
+    )
+  })()
+  const viewingCurrentWeek = currentWeekDays.includes(selectedDate)
+  const showNextWeekPrompt =
+    isFriday &&
+    fridayWindowPassed &&
+    viewingCurrentWeek &&
+    !nextWeekPromptDismissed
+
+  function handleGoToNextWeek() {
+    // Friday + 3 days = next Monday
+    const nextMonday = new Date()
+    nextMonday.setDate(nextMonday.getDate() + 3)
+    setSelectedDate(nextMonday.toISOString().slice(0, 10))
+    // viewingCurrentWeek becomes false, so no need to snooze
+  }
   const [isFullscreen, setIsFullscreen] = useState(false)
   // 0 = lot row, 1 = weekday row
   const [keyNavRow, setKeyNavRow] = useState(0)
@@ -632,6 +680,35 @@ export function MapPage() {
           )}
         </div>
       </div>
+
+      {/* Next-week prompt — shown on Friday after arrival window closes */}
+      <Dialog open={showNextWeekPrompt} onOpenChange={() => {}}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader className="gap-5">
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarDays className="text-primary size-5 shrink-0" />
+              Switch to next week?
+            </DialogTitle>
+            <DialogDescription>
+              This week&apos;s reservation window has closed. Would you like to
+              view next week&apos;s availability and reserve a spot in advance?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setNextWeekPromptDismissed(true)}
+            >
+              Stay
+            </Button>
+            <Button size="sm" className="gap-1.5" onClick={handleGoToNextWeek}>
+              Go to next week
+              <ArrowRight className="size-3.5" />
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* SpotModal (Dialog, separate from sidebar) */}
       <SpotModal />
