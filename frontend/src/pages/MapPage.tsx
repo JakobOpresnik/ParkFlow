@@ -382,7 +382,7 @@ export function MapPage() {
               keyNavRow === 0
                 ? isMapMode
                   ? 'ring-1 ring-white/40'
-                  : 'ring-1 ring-primary/50'
+                  : 'ring-primary/50 ring-1'
                 : ''
             }`}
           >
@@ -441,7 +441,7 @@ export function MapPage() {
               keyNavRow === 1
                 ? isMapMode
                   ? 'ring-1 ring-white/40'
-                  : 'ring-1 ring-primary/50'
+                  : 'ring-primary/50 ring-1'
                 : ''
             }`}
           >

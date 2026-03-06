@@ -37,13 +37,16 @@ ParkFlow is a full-stack web application built for internal parking management a
 
 - 🖱️ Users can book free spots directly from the map or spot grid
 - ⏱️ Bookings auto-expire after 8 hours
+- 🔄 Creating a new booking auto-cancels any existing active booking for the same user
 - 📜 Full booking history with status tracking (`active`, `cancelled`, `expired`)
 
 ### 🗓️ Timesheet Integration
 
 - 🔗 **Presence-aware availability** — spot statuses are automatically adjusted based on employee presence data fetched from the Abelium timesheet system
-- 🏠 If a spot's owner is marked `remote`, `sick`, `care`, or `vacation`, their reserved spot is shown as **free** on the map without modifying the database
-- 📅 Presence data is fetched for today's date; the frontend merges it with spot data client-side via `useEffectiveSpots`
+- 🗓️ **Week-day picker** — users can browse Mon–Fri of the current week; spot availability is recalculated for each selected date
+- 🏠 If a spot's owner is marked `remote`, `sick`, `care`, `vacation`, or `no_entry`, their reserved spot is shown as **free** for that day without modifying the database
+- 📅 Presence data covers the full week; the frontend merges it with spot data client-side via `useEffectiveSpots` for whichever day is selected
+- ✅ **Presence-aware booking** — a spot whose owner is absent can be booked directly even if its DB status is `occupied`
 
 ### 🔧 Administration
 
@@ -351,7 +354,7 @@ Both `frontend/` and `backend/` share the same standards:
 bun lint            # ESLint check  (equivalent to: bun run lint)
 bun run lint:fix    # Auto-fix lint issues
 bun run format      # Prettier formatting
-bun run fix         # lint:fix + format in one step (frontend only)
+bun run lint:all    # lint:fix + format in one step (frontend only)
 ```
 
 **Enforced rules:**
