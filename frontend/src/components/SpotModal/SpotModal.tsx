@@ -71,6 +71,8 @@ export function SpotModal() {
   const setSelectedSpot = useParkingStore((s) => s.setSelectedSpot)
 
   const selectedDate = useUIStore((s) => s.selectedDate)
+  const today = new Date().toISOString().slice(0, 10)
+  const isBookableDate = selectedDate >= today
   const { data: allSpots = [] } = useEffectiveSpots(selectedDate)
   const spot = allSpots.find((s) => s.id === selectedSpot?.id) ?? selectedSpot
 
@@ -556,8 +558,8 @@ export function SpotModal() {
 
           {/* ── CTA ─────────────────────────────────────────────── */}
 
-          {/* Free spot: reserve (or move reservation here) */}
-          {spot.status === 'free' && user && (
+          {/* Free spot: reserve (or move reservation here) — today or future only */}
+          {spot.status === 'free' && user && isBookableDate && (
             <div className="space-y-2">
               <Button
                 className="h-11 w-full gap-2 text-[15px] font-semibold"
@@ -589,12 +591,14 @@ export function SpotModal() {
             </div>
           )}
 
-          {/* Free spot, not logged in */}
-          {spot.status === 'free' && !user && (
+          {/* Free spot, not logged in or past date */}
+          {spot.status === 'free' && (!user || !isBookableDate) && (
             <div className="flex items-center gap-3 rounded-lg border border-dashed px-4 py-3">
               <Lock className="text-muted-foreground size-4 shrink-0" />
               <p className="text-muted-foreground text-sm">
-                Sign in to reserve this spot
+                {!isBookableDate
+                  ? 'Cannot reserve spots for past dates'
+                  : 'Sign in to reserve this spot'}
               </p>
             </div>
           )}

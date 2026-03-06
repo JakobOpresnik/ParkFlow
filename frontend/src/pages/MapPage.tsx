@@ -170,6 +170,8 @@ export function MapPage() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  // 0 = lot row, 1 = weekday row
+  const [keyNavRow, setKeyNavRow] = useState(0)
 
   // Auto-select preferred lot (or first lot as fallback) when arriving at map
   useEffect(() => {
@@ -191,23 +193,55 @@ export function MapPage() {
     return () => document.removeEventListener('fullscreenchange', onFsChange)
   }, [])
 
-  // Arrow key lot navigation
+  // Arrow key navigation: Up/Down switches between lot row and weekday row;
+  // Left/Right navigates within the active row.
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
       const tag = (e.target as HTMLElement).tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
-      if (lots.length < 2) return
-      const idx = lots.findIndex((l) => l.id === selectedLotId)
-      const next =
-        e.key === 'ArrowRight'
-          ? lots[(idx + 1) % lots.length]
-          : lots[(idx - 1 + lots.length) % lots.length]
-      if (next) setSelectedLotId(next.id)
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setKeyNavRow(0)
+        return
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setKeyNavRow(1)
+        return
+      }
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+
+      if (keyNavRow === 0) {
+        // Navigate lots
+        if (lots.length < 2) return
+        const idx = lots.findIndex((l) => l.id === selectedLotId)
+        const next =
+          e.key === 'ArrowRight'
+            ? lots[(idx + 1) % lots.length]
+            : lots[(idx - 1 + lots.length) % lots.length]
+        if (next) setSelectedLotId(next.id)
+      } else {
+        // Navigate weekdays
+        const idx = weekDays.indexOf(selectedDate)
+        const nextIdx =
+          e.key === 'ArrowRight'
+            ? (idx + 1) % weekDays.length
+            : (idx - 1 + weekDays.length) % weekDays.length
+        setSelectedDate(weekDays[nextIdx] ?? selectedDate)
+      }
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [lots, selectedLotId, setSelectedLotId])
+  }, [
+    keyNavRow,
+    lots,
+    selectedLotId,
+    setSelectedLotId,
+    weekDays,
+    selectedDate,
+    setSelectedDate,
+  ])
 
   const isLoading = spotsLoading || lotsLoading
   const activeLot = lots.find((l) => l.id === selectedLotId) ?? lots[0] ?? null
@@ -313,7 +347,7 @@ export function MapPage() {
 
       {/* ── Grid view ────────────────────────────────────────────── */}
       {!isMapMode && (
-        <div className="absolute inset-0 overflow-y-auto p-4 pt-24 sm:pt-20">
+        <div className="absolute inset-0 overflow-y-auto p-4 pt-44 sm:pt-40">
           {isLoading ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {Array.from({ length: 10 }).map((_, i) => (
@@ -343,7 +377,15 @@ export function MapPage() {
           }`}
         >
           {/* Row 1: lot tabs */}
-          <div className="flex flex-wrap gap-1">
+          <div
+            className={`flex flex-wrap gap-1 rounded-lg transition-shadow ${
+              keyNavRow === 0
+                ? isMapMode
+                  ? 'ring-1 ring-white/40'
+                  : 'ring-1 ring-primary/50'
+                : ''
+            }`}
+          >
             {isLoading ? (
               <>
                 <div
@@ -394,7 +436,15 @@ export function MapPage() {
           />
 
           {/* Row 2: Mon–Fri day strip */}
-          <div className="flex gap-0.5">
+          <div
+            className={`flex gap-0.5 rounded-lg transition-shadow ${
+              keyNavRow === 1
+                ? isMapMode
+                  ? 'ring-1 ring-white/40'
+                  : 'ring-1 ring-primary/50'
+                : ''
+            }`}
+          >
             {weekDays.map((date) => {
               const { short, num } = formatDayLabel(date)
               const isToday = date === today

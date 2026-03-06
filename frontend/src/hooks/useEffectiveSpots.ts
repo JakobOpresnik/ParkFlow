@@ -18,8 +18,8 @@ export function useEffectiveSpots(date: string) {
   const data = useMemo<Spot[]>(() => {
     const spots = spotsQuery.data ?? []
     const presence = presenceQuery.data ?? []
-
-    if (presence.length === 0) return spots
+    const today = new Date().toISOString().slice(0, 10)
+    const isToday = date === today
 
     // Map lowercase name → 'in_office' | 'absent' for the selected date
     const presenceByName = new Map<string, 'in_office' | 'absent'>()
@@ -34,12 +34,24 @@ export function useEffectiveSpots(date: string) {
     }
 
     return spots.map((spot) => {
-      // Reserved = live booking. Always preserve it regardless of viewed date.
-      if (spot.status === 'reserved') return spot
-      // Spots with no owner are unaffected by presence.
-      if (spot.owner_name === null) return spot
+      // Active bookings only apply to today's view — other dates use presence-based status.
+      if (spot.status === 'reserved' && isToday) return spot
+
+      // No owner → presence has no effect; reset any non-today reservation to free.
+      if (spot.owner_name === null) {
+        return spot.status === 'reserved'
+          ? { ...spot, status: 'free' as const }
+          : spot
+      }
+
       const presenceStatus = presenceByName.get(spot.owner_name.toLowerCase())
-      if (presenceStatus === undefined) return spot
+      // No presence data for this owner → reset non-today reservations to free, leave others.
+      if (presenceStatus === undefined) {
+        return spot.status === 'reserved'
+          ? { ...spot, status: 'free' as const }
+          : spot
+      }
+
       return {
         ...spot,
         status: presenceStatus === 'in_office' ? 'occupied' : ('free' as const),
