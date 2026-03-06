@@ -55,9 +55,19 @@ router.post('/', requireAuth, async (req, res, next) => {
   try {
     await expireStaleBookings()
 
-    const { spot_id } = req.body as { spot_id?: string }
+    const { spot_id, expires_at } = req.body as {
+      spot_id?: string
+      expires_at?: string
+    }
     if (!spot_id) {
       res.status(400).json({ error: 'spot_id is required' })
+      return
+    }
+
+    // Resolve expires_at: use client-supplied value or fall back to 8 h from now
+    const expiresAt = expires_at ? new Date(expires_at) : new Date(Date.now() + 8 * 3_600_000)
+    if (isNaN(expiresAt.getTime())) {
+      res.status(400).json({ error: 'Invalid expires_at' })
       return
     }
 
@@ -128,9 +138,9 @@ router.post('/', requireAuth, async (req, res, next) => {
       ])
       const booking = await client.query(
         `INSERT INTO bookings (user_id, spot_id, expires_at, reserved_by)
-         VALUES ($1, $2, now() + interval '8 hours', $3)
+         VALUES ($1, $2, $3, $4)
          RETURNING id, status, booked_at, expires_at, ended_at`,
-        [req.user!.userId, spot_id, req.user!.displayName],
+        [req.user!.userId, spot_id, expiresAt.toISOString(), req.user!.displayName],
       )
       await client.query('COMMIT')
 
