@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from 'express'
+import type { NextFunction, Request, Response } from "express";
 
 export function errorHandler(
   err: unknown,
@@ -6,15 +6,15 @@ export function errorHandler(
   res: Response,
   _next: NextFunction,
 ): void {
-  const message = err instanceof Error ? err.message : 'Internal server error'
+  const message = err instanceof Error ? err.message : "Internal server error";
   const status =
-    err instanceof Error && 'status' in err && typeof err.status === 'number'
+    err instanceof Error && "status" in err && typeof err.status === "number"
       ? err.status
-      : 500
+      : 500;
 
   if (status >= 500) {
-    console.error(err)
+    console.error(err);
   }
 
-  res.status(status).json({ error: message })
+  res.status(status).json({ error: message });
 }

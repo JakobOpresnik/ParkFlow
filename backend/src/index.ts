@@ -1,10 +1,11 @@
-import 'dotenv/config'
-import { createApp } from './app.js'
+import "dotenv/config";
 
-const PORT = process.env.PORT ?? 3001
+import { createApp } from "./app.js";
 
-const app = createApp()
+const PORT = process.env.PORT ?? 3001;
+
+const app = createApp();
 
 app.listen(PORT, () => {
-  console.log(`ParkFlow backend listening on http://localhost:${PORT}`)
-})
+  console.log(`ParkFlow backend listening on http://localhost:${PORT}`);
+});
