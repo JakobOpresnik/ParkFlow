@@ -29,7 +29,7 @@ if (!root) throw new Error('Root element not found')
 createRoot(root).render(
   <StrictMode>
     <MantineProvider theme={theme} defaultColorScheme="auto">
-      <Notifications position="top-right" autoClose={2000} />
+      <Notifications position="top-right" autoClose={2000} w={320} />
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
       </QueryClientProvider>

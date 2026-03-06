@@ -228,28 +228,27 @@ export const ParkingMap = forwardRef<ParkingMapHandle, ParkingMapProps>(
           }}
         >
           {/*
-           * key={imageSrc} forces a fresh DOM <img> element when the lot
-           * changes, preventing the onError opacity:0 mutation from persisting
-           * across lot switches.
+           * Single SVG containing both the floor plan image and spot rectangles.
+           * This guarantees they share the same coordinate space and remain
+           * perfectly aligned on any resize — no separate <img> + overlay drift.
            */}
-          <img
-            key={imageSrc}
-            src={imageSrc}
-            alt={`${lot.name} floor plan`}
-            className="absolute inset-0 h-full w-full object-contain"
-            draggable={false}
-            style={invertFloorPlan ? { filter: 'invert(1)' } : undefined}
-            onError={(e) => {
-              ;(e.currentTarget as HTMLImageElement).style.opacity = '0'
-            }}
-          />
-
           <svg
             viewBox={vb}
             className="absolute inset-0 h-full w-full"
             aria-label={`${lot.name} parking map`}
             style={{ pointerEvents: 'none' }}
           >
+            <image
+              key={imageSrc}
+              href={imageSrc}
+              width={lot.image_width}
+              height={lot.image_height}
+              preserveAspectRatio="xMidYMid meet"
+              style={invertFloorPlan ? { filter: 'invert(1)' } : undefined}
+              onError={(e) => {
+                ;(e.currentTarget as SVGImageElement).style.opacity = '0'
+              }}
+            />
             {spotsWithCoords.map((spot) => {
               const coords = resolveCoords(spot.coordinates)
               const { x, y, width, height, rotation } = coords

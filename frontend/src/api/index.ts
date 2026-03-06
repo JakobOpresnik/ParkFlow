@@ -1,3 +1,5 @@
+import { notifications } from '@mantine/notifications'
+
 import type {
   AppUser,
   Booking,
@@ -12,6 +14,10 @@ import type {
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 const TOKEN_KEY = 'pf_access_token'
+const ID_TOKEN_KEY = 'pf_id_token'
+
+// Prevent duplicate "session expired" toasts when multiple requests fail at once.
+let sessionExpiredNotified = false
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const token = localStorage.getItem(TOKEN_KEY)
@@ -24,7 +30,25 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     headers,
     ...options,
   })
+
   if (!res.ok) {
+    if (res.status === 401) {
+      localStorage.removeItem(TOKEN_KEY)
+      localStorage.removeItem(ID_TOKEN_KEY)
+      if (!sessionExpiredNotified) {
+        sessionExpiredNotified = true
+        notifications.show({
+          title: 'Session expired',
+          message: 'Please log in again.',
+          color: 'red',
+          autoClose: 3000,
+        })
+        setTimeout(() => {
+          window.location.href = '/login'
+        }, 3000)
+      }
+      throw new Error('Session expired')
+    }
     const body = (await res.json().catch(() => ({}))) as { error?: string }
     throw new Error(body.error ?? `Request failed: ${res.status}`)
   }
