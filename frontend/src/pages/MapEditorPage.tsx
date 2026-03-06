@@ -371,6 +371,7 @@ function PendingPanel({
               {unmappedSpots.map((s) => (
                 <option key={s.id} value={s.id}>
                   #{s.number} {s.label ? `— ${s.label}` : ''}
+                  {s.owner_name ? ` · ${s.owner_name}` : ''}
                 </option>
               ))}
             </select>

@@ -21,8 +21,9 @@ import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { useCancelBooking, useCreateBooking } from '@/hooks/useBookings'
+import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
 import { useCreateOwner, useOwners } from '@/hooks/useOwners'
-import { useAssignOwner, useSpots, useUpdateStatus } from '@/hooks/useSpots'
+import { useAssignOwner, useUpdateStatus } from '@/hooks/useSpots'
 import { useAuthStore } from '@/store/authStore'
 import { useParkingStore } from '@/store/parkingStore'
 import { useUIStore } from '@/store/uiStore'
@@ -69,7 +70,8 @@ export function SpotModal() {
   const selectedSpot = useParkingStore((s) => s.selectedSpot)
   const setSelectedSpot = useParkingStore((s) => s.setSelectedSpot)
 
-  const { data: allSpots = [] } = useSpots()
+  const selectedDate = useUIStore((s) => s.selectedDate)
+  const { data: allSpots = [] } = useEffectiveSpots(selectedDate)
   const spot = allSpots.find((s) => s.id === selectedSpot?.id) ?? selectedSpot
 
   const { data: owners = [] } = useOwners()

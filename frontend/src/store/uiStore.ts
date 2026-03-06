@@ -8,6 +8,9 @@ interface UIStore {
 
   mapViewMode: MapViewMode
   setMapViewMode: (mode: MapViewMode) => void
+
+  selectedDate: string
+  setSelectedDate: (date: string) => void
 }
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -16,4 +19,7 @@ export const useUIStore = create<UIStore>((set) => ({
 
   mapViewMode: 'map',
   setMapViewMode: (mode) => set({ mapViewMode: mode }),
+
+  selectedDate: new Date().toISOString().slice(0, 10),
+  setSelectedDate: (date) => set({ selectedDate: date }),
 }))

@@ -93,10 +93,15 @@ export const PRESENCE_STATUSES = [
 
 export type PresenceStatus = (typeof PRESENCE_STATUSES)[number]
 
+export interface PresenceDayEntry {
+  date: string
+  status: PresenceStatus
+}
+
 export interface EmployeePresence {
   user_id: number
   name: string
-  status: PresenceStatus
+  week: PresenceDayEntry[]
 }
 
 export type LabelPosition = 'top' | 'bottom' | 'left' | 'right'

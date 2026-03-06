@@ -1,5 +1,6 @@
 import {
   AlertCircle,
+  CalendarDays,
   LayoutGrid,
   Map,
   MapPin,
@@ -103,6 +104,29 @@ function OverlayBtn({
   )
 }
 
+// ─── Week utilities ───────────────────────────────────────────────────────────
+
+function getWeekDays(referenceDate: string): string[] {
+  // Returns YYYY-MM-DD for Mon–Fri of the week containing referenceDate
+  const ref = new Date(referenceDate + 'T12:00:00')
+  const dow = ref.getDay() // 0=Sun, 1=Mon, …, 6=Sat
+  const monday = new Date(ref)
+  monday.setDate(ref.getDate() - (dow === 0 ? 6 : dow - 1))
+  return Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    return d.toISOString().slice(0, 10)
+  })
+}
+
+function formatDayLabel(dateStr: string): { short: string; num: number } {
+  const d = new Date(dateStr + 'T12:00:00')
+  return {
+    short: d.toLocaleDateString('en', { weekday: 'short' }),
+    num: d.getDate(),
+  }
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const BLUEPRINT_STYLE: React.CSSProperties = {
@@ -121,11 +145,16 @@ export function MapPage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<ParkingMapHandle>(null)
 
+  const today = new Date().toISOString().slice(0, 10)
+  const selectedDate = useUIStore((s) => s.selectedDate)
+  const setSelectedDate = useUIStore((s) => s.setSelectedDate)
+  const weekDays = getWeekDays(today)
+
   const {
     data: allSpots = [],
     isLoading: spotsLoading,
     isError,
-  } = useEffectiveSpots()
+  } = useEffectiveSpots(selectedDate)
   const { data: lots = [], isLoading: lotsLoading } = useLots()
 
   const selectedLotId = useParkingStore((s) => s.selectedLotId)
@@ -304,54 +333,121 @@ export function MapPage() {
         </div>
       )}
 
-      {/* ── Top-left: lot selector — always visible ──────────────── */}
+      {/* ── Top-left: lot selector + week day strip ──────────────── */}
       <div className="absolute top-3 left-3 z-20 max-w-[calc(100vw-96px)]">
         <div
-          className={`flex flex-wrap gap-1 rounded-xl p-1.5 ${
+          className={`flex flex-col gap-1 rounded-xl p-1.5 ${
             isMapMode
               ? 'bg-black/40 backdrop-blur-sm'
               : 'bg-card border shadow-sm'
           }`}
         >
-          {isLoading ? (
-            <>
-              <div
-                className={`h-9 w-20 animate-pulse rounded-lg ${isMapMode ? 'bg-white/10' : 'bg-muted'}`}
-              />
-              <div
-                className={`h-9 w-24 animate-pulse rounded-lg ${isMapMode ? 'bg-white/10' : 'bg-muted'}`}
-              />
-            </>
-          ) : (
-            lots.map((lot) => (
-              <button
-                key={lot.id}
-                onClick={() => handleLotSelect(lot)}
-                className={`flex min-h-9 items-center rounded-lg px-3 py-1 text-xs font-medium transition-colors ${
-                  isMapMode
-                    ? activeLot?.id === lot.id
-                      ? 'bg-white text-blue-950'
-                      : 'text-white/80 hover:bg-white/10 hover:text-white'
-                    : activeLot?.id === lot.id
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                {lot.name}
-                {(() => {
-                  const ls = allSpots.filter((s) => s.lot_id === lot.id)
-                  const free = ls.filter((s) => s.status === 'free').length
-                  return ls.length > 0 ? (
-                    <span
-                      className={`ml-3 size-1.5 cursor-pointer rounded-full ${free === 0 ? STATUS_DOT['occupied'] : STATUS_DOT['free']} ${
-                        activeLot?.id === lot.id ? 'opacity-100' : 'opacity-70'
-                      }`}
-                      title={free === 0 ? 'No free spots' : `${free} free`}
-                    />
-                  ) : null
-                })()}
-              </button>
-            ))
+          {/* Row 1: lot tabs */}
+          <div className="flex flex-wrap gap-1">
+            {isLoading ? (
+              <>
+                <div
+                  className={`h-9 w-20 animate-pulse rounded-lg ${isMapMode ? 'bg-white/10' : 'bg-muted'}`}
+                />
+                <div
+                  className={`h-9 w-24 animate-pulse rounded-lg ${isMapMode ? 'bg-white/10' : 'bg-muted'}`}
+                />
+              </>
+            ) : (
+              lots.map((lot) => (
+                <button
+                  key={lot.id}
+                  onClick={() => handleLotSelect(lot)}
+                  className={`flex min-h-9 items-center rounded-lg px-3 py-1 text-xs font-medium transition-colors ${
+                    isMapMode
+                      ? activeLot?.id === lot.id
+                        ? 'bg-white text-blue-950'
+                        : 'text-white/80 hover:bg-white/10 hover:text-white'
+                      : activeLot?.id === lot.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                >
+                  {lot.name}
+                  {(() => {
+                    const ls = allSpots.filter((s) => s.lot_id === lot.id)
+                    const free = ls.filter((s) => s.status === 'free').length
+                    return ls.length > 0 ? (
+                      <span
+                        className={`ml-3 size-1.5 cursor-pointer rounded-full ${free === 0 ? STATUS_DOT['occupied'] : STATUS_DOT['free']} ${
+                          activeLot?.id === lot.id
+                            ? 'opacity-100'
+                            : 'opacity-70'
+                        }`}
+                        title={free === 0 ? 'No free spots' : `${free} free`}
+                      />
+                    ) : null
+                  })()}
+                </button>
+              ))
+            )}
+          </div>
+
+          {/* Divider */}
+          <div
+            className={`-mx-0.5 h-px ${isMapMode ? 'bg-white/15' : 'bg-border'}`}
+          />
+
+          {/* Row 2: Mon–Fri day strip */}
+          <div className="flex gap-0.5">
+            {weekDays.map((date) => {
+              const { short, num } = formatDayLabel(date)
+              const isToday = date === today
+              const isSelected = date === selectedDate
+              return (
+                <button
+                  key={date}
+                  onClick={() => setSelectedDate(date)}
+                  title={date}
+                  className={`flex flex-1 flex-col items-center rounded-lg px-2 py-1.5 transition-colors ${
+                    isMapMode
+                      ? isSelected
+                        ? 'bg-white/20 text-white'
+                        : 'text-white/70 hover:bg-white/10 hover:text-white'
+                      : isSelected
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                >
+                  <span className="text-[10px] leading-none font-medium tracking-wide uppercase">
+                    {short}
+                  </span>
+                  <span className="mt-0.5 text-sm leading-none font-bold tabular-nums">
+                    {num}
+                  </span>
+                  <span
+                    className={`mt-1 size-1 rounded-full transition-colors ${
+                      isToday
+                        ? isSelected
+                          ? isMapMode
+                            ? 'bg-white'
+                            : 'bg-primary-foreground'
+                          : isMapMode
+                            ? 'bg-white/60'
+                            : 'bg-primary'
+                        : 'invisible'
+                    }`}
+                  />
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Row 3: projection note (non-today only) */}
+          {selectedDate !== today && (
+            <div
+              className={`flex items-center gap-1.5 px-1 text-[10px] ${
+                isMapMode ? 'text-white/50' : 'text-muted-foreground'
+              }`}
+            >
+              <CalendarDays className="size-3 shrink-0" />
+              Projected · based on scheduled attendance
+            </div>
           )}
         </div>
       </div>
