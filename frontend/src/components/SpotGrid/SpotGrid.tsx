@@ -1,4 +1,4 @@
-import { Clock, User } from 'lucide-react'
+import { Accessibility, Clock, User, Zap } from 'lucide-react'
 
 import { ReservationTimer } from '@/components/ReservationTimer'
 import { useParkingStore } from '@/store/parkingStore'
@@ -54,9 +54,17 @@ export function SpotGrid({ spots }: SpotGridProps) {
           {/* Header: number + status */}
           <div className="flex items-start justify-between px-4 pt-3 pb-2">
             <div>
-              <p className="text-muted-foreground mb-0.5 text-[10px] font-medium tracking-widest uppercase">
-                Spot
-              </p>
+              <div className="mb-0.5 flex items-center gap-1.5">
+                <p className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">
+                  Spot
+                </p>
+                {spot.type === 'ev' && (
+                  <Zap className="size-3 text-yellow-500" />
+                )}
+                {spot.type === 'handicap' && (
+                  <Accessibility className="size-3 text-blue-500" />
+                )}
+              </div>
               <p className="text-2xl leading-none font-bold tracking-tight">
                 #{spot.number}
               </p>

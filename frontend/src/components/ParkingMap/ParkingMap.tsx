@@ -317,6 +317,38 @@ export const ParkingMap = forwardRef<ParkingMapHandle, ParkingMapProps>(
                   >
                     {spot.number}
                   </text>
+                  {spot.type === 'ev' && (
+                    <text
+                      x={x + width - fontSize * 0.4}
+                      y={y + fontSize * 0.7}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      className="pointer-events-none select-none"
+                      fontSize={Math.max(8, fontSize * 0.7)}
+                      fill="#facc15"
+                      stroke="rgba(0,0,0,0.5)"
+                      strokeWidth={2}
+                      paintOrder="stroke"
+                    >
+                      ⚡
+                    </text>
+                  )}
+                  {spot.type === 'handicap' && (
+                    <text
+                      x={x + width - fontSize * 0.4}
+                      y={y + fontSize * 0.7}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      className="pointer-events-none select-none"
+                      fontSize={Math.max(8, fontSize * 0.7)}
+                      fill="#60a5fa"
+                      stroke="rgba(0,0,0,0.5)"
+                      strokeWidth={2}
+                      paintOrder="stroke"
+                    >
+                      ♿
+                    </text>
+                  )}
                   {spot.owner_vehicle_plate && (
                     <text
                       x={cx}

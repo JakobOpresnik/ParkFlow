@@ -1,4 +1,5 @@
 export type SpotStatus = 'free' | 'occupied' | 'reserved'
+export type SpotType = 'standard' | 'ev' | 'handicap' | 'compact'
 
 export interface AppUser {
   id: string
@@ -49,6 +50,7 @@ export interface Spot {
   floor: string
   lot_id: string | null
   status: SpotStatus
+  type: SpotType
   owner_id: string | null
   coordinates: SpotCoordinates | null
   created_at: string
@@ -69,6 +71,7 @@ export type SpotChangeType =
   | 'owner_assigned'
   | 'owner_unassigned'
   | 'status_changed'
+  | 'type_changed'
 
 export interface SpotChange {
   id: string

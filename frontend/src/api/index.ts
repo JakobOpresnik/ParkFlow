@@ -10,6 +10,7 @@ import type {
   SpotChange,
   SpotCoordinates,
   SpotStatus,
+  SpotType,
 } from '@/types'
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
@@ -109,6 +110,7 @@ export const api = {
     label?: string | null
     lot_id: string
     status?: SpotStatus
+    type?: SpotType
   }) =>
     request<Spot>('/api/spots', {
       method: 'POST',
@@ -121,6 +123,7 @@ export const api = {
       label?: string | null
       lot_id?: string
       status?: SpotStatus
+      type?: SpotType
     },
   ) =>
     request<Spot>(`/api/spots/${id}`, {

@@ -5,6 +5,7 @@ import { pool } from "../db/pool.js";
 const router = Router();
 
 const ACEX_OWNER_NAME = "ACEX - kdor prej pride, prej melje";
+const validTypes = ["standard", "ev", "handicap", "compact"];
 
 const SPOT_SELECT = `
   SELECT
@@ -14,6 +15,7 @@ const SPOT_SELECT = `
     s.floor,
     s.lot_id,
     CASE WHEN o.name = '${ACEX_OWNER_NAME}' THEN 'free' ELSE s.status END AS status,
+    s.type,
     s.coordinates,
     s.created_at,
     o.id            AS owner_id,
@@ -81,11 +83,12 @@ router.get("/:number", async (req, res, next) => {
 // Admin: POST /api/spots — create a new spot
 router.post("/", async (req, res, next) => {
   try {
-    const { number, label, lot_id, status } = req.body as {
+    const { number, label, lot_id, status, type } = req.body as {
       number?: number;
       label?: string;
       lot_id?: string;
       status?: string;
+      type?: string;
     };
 
     if (typeof number !== "number" || !Number.isInteger(number) || number < 1) {
@@ -100,11 +103,12 @@ router.post("/", async (req, res, next) => {
     const validStatuses = ["free", "occupied", "reserved"];
     const spotStatus =
       status && validStatuses.includes(status) ? status : "free";
+    const spotType = type && validTypes.includes(type) ? type : "standard";
 
     const result = await pool.query(
-      `INSERT INTO spots (number, label, lot_id, status)
-       VALUES ($1, $2, $3, $4) RETURNING id, number, label, floor, lot_id, status, coordinates, created_at`,
-      [number, label?.trim() ?? null, lot_id, spotStatus],
+      `INSERT INTO spots (number, label, lot_id, status, type)
+       VALUES ($1, $2, $3, $4, $5) RETURNING id, number, label, floor, lot_id, status, type, coordinates, created_at`,
+      [number, label?.trim() ?? null, lot_id, spotStatus, spotType],
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -116,11 +120,12 @@ router.post("/", async (req, res, next) => {
 router.put("/:id", async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { number, label, lot_id, status } = req.body as {
+    const { number, label, lot_id, status, type } = req.body as {
       number?: number;
       label?: string;
       lot_id?: string;
       status?: string;
+      type?: string;
     };
 
     const validStatuses = ["free", "occupied", "reserved"];
@@ -130,20 +135,28 @@ router.put("/:id", async (req, res, next) => {
         .json({ error: `status must be one of: ${validStatuses.join(", ")}` });
       return;
     }
+    if (type && !validTypes.includes(type)) {
+      res
+        .status(400)
+        .json({ error: `type must be one of: ${validTypes.join(", ")}` });
+      return;
+    }
 
     const result = await pool.query(
       `UPDATE spots
        SET number = COALESCE($1, number),
            label  = COALESCE($2, label),
            lot_id = COALESCE($3, lot_id),
-           status = COALESCE($4, status)
-       WHERE id = $5
-       RETURNING id, number, label, floor, lot_id, status, coordinates, created_at`,
+           status = COALESCE($4, status),
+           type   = COALESCE($5, type)
+       WHERE id = $6
+       RETURNING id, number, label, floor, lot_id, status, type, coordinates, created_at`,
       [
         number ?? null,
         label !== undefined ? label?.trim() || null : null,
         lot_id ?? null,
         status ?? null,
+        type ?? null,
         id,
       ],
     );
@@ -328,6 +341,58 @@ router.patch("/:id/status", async (req, res, next) => {
         `INSERT INTO spot_changes (spot_id, change_type, old_value, new_value)
        VALUES ($1, 'status_changed', $2, $3)`,
         [id, oldStatus, status],
+      )
+      .catch(() => {
+        /* audit log failure is non-fatal */
+      });
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/spots/:id/type — update spot type with enum validation
+router.patch("/:id/type", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { type } = req.body as { type: string };
+
+    if (!validTypes.includes(type)) {
+      res
+        .status(400)
+        .json({ error: `type must be one of: ${validTypes.join(", ")}` });
+      return;
+    }
+
+    // Fetch old type for audit log
+    const before = await pool.query("SELECT type FROM spots WHERE id = $1", [
+      id,
+    ]);
+    if (before.rows.length === 0) {
+      res.status(404).json({ error: "Spot not found" });
+      return;
+    }
+    const oldType = before.rows[0].type as string;
+
+    const result = await pool.query(
+      `UPDATE spots SET type = $1
+       WHERE id = $2
+       RETURNING id, number, label, floor, lot_id, status, type, owner_id, coordinates`,
+      [type, id],
+    );
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: "Spot not found" });
+      return;
+    }
+
+    // Audit log
+    await pool
+      .query(
+        `INSERT INTO spot_changes (spot_id, change_type, old_value, new_value)
+       VALUES ($1, 'type_changed', $2, $3)`,
+        [id, oldType, type],
       )
       .catch(() => {
         /* audit log failure is non-fatal */
