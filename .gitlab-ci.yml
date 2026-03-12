@@ -1,3 +1,26 @@
+deploy_test:
+  stage: deploy
+  image: cr.matheo.si/pub/alpine-runner
+  before_script:
+    - !reference [.ssh_helper, load]
+  script:
+    - !reference [.git_helper, git_clone_or_pull]
+    - !reference [.docker-compose, deploy]
+  environment:
+    name: test
+  variables:
+    CI_SSH_HOST: deploy.example.com
+    CI_SSH_USER: deployuser
+    CI_SSH_PORT: '22'
+    SSH_PRIVATE_KEY: $SSH_PRIVATE_KEY
+    DEPLOY_DIR: /srv/parkflow
+    DEPLOY_BRANCH: $CI_COMMIT_BRANCH
+    CI_COMPOSE_FILE: compose.yml
+    CI_DEPLOY_USER: registryuser
+    CI_DEPLOY_PASSWORD: $REGISTRY_PASSWORD
+  rules:
+    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
+      when: always
 include:
   - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/gitlab-ci-local@~latest
   - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/secret-detection@~latest
