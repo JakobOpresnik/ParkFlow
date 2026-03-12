@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Coverage & test artifacts
+coverage/
+.nyc_output/
+
+# Misc
+*.log
