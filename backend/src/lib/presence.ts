@@ -85,8 +85,8 @@ export async function fetchWeekPresence(
   }
 
   const token = await getAppApiToken();
-  const url = `${TIMESHEET_BASE_URL}/entries?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
-  const response = await fetch(url, {
+  const entries_url = `${TIMESHEET_BASE_URL}/entries?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+  const response = await fetch(entries_url, {
     headers: { 'X-APP-API-TOKEN': token },
   });
 
