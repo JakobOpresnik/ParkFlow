@@ -1,3 +1,4 @@
+import { Menu, Select } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
   Layers,
@@ -407,48 +408,45 @@ function SpotForm({
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium">Parking Lot *</label>
-        <select
-          className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:outline-none"
-          value={value.lot_id}
-          onChange={(e) => onChange({ ...value, lot_id: e.target.value })}
-        >
-          <option value="">Select a lot…</option>
-          {lots.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.name}
-            </option>
-          ))}
-        </select>
+        <Select
+          value={value.lot_id || null}
+          onChange={(v) => onChange({ ...value, lot_id: v ?? '' })}
+          data={lots.map((l) => ({ value: l.id, label: l.name }))}
+          placeholder="Select a lot…"
+          allowDeselect={false}
+        />
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-sm font-medium">Status</label>
-          <select
-            className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:outline-none"
+          <Select
             value={value.status}
-            onChange={(e) =>
-              onChange({ ...value, status: e.target.value as SpotStatus })
+            onChange={(v) =>
+              onChange({ ...value, status: (v ?? 'free') as SpotStatus })
             }
-          >
-            <option value="free">Free</option>
-            <option value="occupied">Occupied</option>
-            <option value="reserved">Reserved</option>
-          </select>
+            data={[
+              { value: 'free', label: 'Free' },
+              { value: 'occupied', label: 'Occupied' },
+              { value: 'reserved', label: 'Reserved' },
+            ]}
+            allowDeselect={false}
+          />
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium">Type</label>
-          <select
-            className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:outline-none"
+          <Select
             value={value.type}
-            onChange={(e) =>
-              onChange({ ...value, type: e.target.value as SpotType })
+            onChange={(v) =>
+              onChange({ ...value, type: (v ?? 'standard') as SpotType })
             }
-          >
-            <option value="standard">Standard</option>
-            <option value="ev">EV Charging</option>
-            <option value="handicap">Handicap</option>
-            <option value="compact">Compact</option>
-          </select>
+            data={[
+              { value: 'standard', label: 'Standard' },
+              { value: 'ev', label: 'EV Charging' },
+              { value: 'handicap', label: 'Handicap' },
+              { value: 'compact', label: 'Compact' },
+            ]}
+            allowDeselect={false}
+          />
         </div>
       </div>
     </div>
@@ -463,6 +461,8 @@ function SpotsSection() {
   const deleteSpot = useDeleteSpot()
 
   const [lotFilter, setLotFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<SpotStatus | 'all'>('all')
+  const [typeFilter, setTypeFilter] = useState<SpotType | 'all'>('all')
   const [spotSearch, setSpotSearch] = useState('')
   const [dialogMode, setDialogMode] = useState<'add' | 'edit' | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -474,6 +474,14 @@ function SpotsSection() {
       lotFilter === 'all'
         ? allSpots
         : allSpots.filter((s) => s.lot_id === lotFilter)
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter((s) => s.status === statusFilter)
+    }
+
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter((s) => (s.type ?? 'standard') === typeFilter)
+    }
 
     if (spotSearch.trim()) {
       const q = spotSearch.toLowerCase()
@@ -488,7 +496,7 @@ function SpotsSection() {
     }
 
     return filtered
-  }, [allSpots, lotFilter, spotSearch, lots])
+  }, [allSpots, lotFilter, statusFilter, typeFilter, spotSearch, lots])
 
   function lotName(lotId: string | null) {
     return lots.find((l) => l.id === lotId)?.name ?? '—'
@@ -609,38 +617,42 @@ function SpotsSection() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-base font-semibold">
-          <ParkingCircle className="text-primary size-4" />
-          Parking Spots
-        </h2>
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Lot filter pills */}
-          <div className="flex flex-wrap gap-1">
+      <div className="flex items-center gap-3">
+        {/* Left: title */}
+        <div className="flex flex-1 items-center">
+          <h2 className="flex items-center gap-2 text-base font-semibold">
+            <ParkingCircle className="text-primary size-4" />
+            Parking Spots
+          </h2>
+        </div>
+        {/* Center: lot filter pills */}
+        <div className="flex flex-wrap items-center justify-center gap-1">
+          <button
+            onClick={() => setLotFilter('all')}
+            className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+              lotFilter === 'all'
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'text-muted-foreground border-border hover:text-foreground'
+            }`}
+          >
+            All
+          </button>
+          {lots.map((lot) => (
             <button
-              onClick={() => setLotFilter('all')}
+              key={lot.id}
+              onClick={() => setLotFilter(lot.id)}
               className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                lotFilter === 'all'
+                lotFilter === lot.id
                   ? 'bg-primary text-primary-foreground border-primary'
                   : 'text-muted-foreground border-border hover:text-foreground'
               }`}
             >
-              All
+              {lot.name}
             </button>
-            {lots.map((lot) => (
-              <button
-                key={lot.id}
-                onClick={() => setLotFilter(lot.id)}
-                className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                  lotFilter === lot.id
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'text-muted-foreground border-border hover:text-foreground'
-                }`}
-              >
-                {lot.name}
-              </button>
-            ))}
-          </div>
+          ))}
+        </div>
+        {/* Right: search + add */}
+        <div className="flex flex-1 items-center justify-end gap-2">
           <div className="relative">
             <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
             <Input
@@ -659,7 +671,11 @@ function SpotsSection() {
               </button>
             )}
           </div>
-          <Button size="sm" onClick={openAdd} className="gap-2">
+          <Button
+            size="sm"
+            onClick={openAdd}
+            className="min-w-[100px] shrink-0 gap-2"
+          >
             <Plus className="size-4" />
             Add Spot
           </Button>
@@ -668,11 +684,6 @@ function SpotsSection() {
 
       {isLoading ? (
         <div className="bg-muted h-24 animate-pulse rounded-lg" />
-      ) : displayedSpots.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-10 text-center">
-          <ParkingCircle className="text-muted-foreground mx-auto mb-3 size-8" />
-          <p className="text-muted-foreground text-sm">No spots found.</p>
-        </div>
       ) : (
         <div className="bg-card rounded-lg border shadow-sm">
           <Table>
@@ -680,9 +691,132 @@ function SpotsSection() {
               <TableRow>
                 <TableHead>#</TableHead>
                 <TableHead>Label</TableHead>
-                <TableHead>Lot</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Type</TableHead>
+                <TableHead className="min-w-[160px]">
+                  <div className="flex items-center gap-4">
+                    <span>Lot</span>
+                    <Menu withinPortal position="bottom-start">
+                      <Menu.Target>
+                        <button className="cursor-pointer">
+                          {lotFilter === 'all' ? (
+                            <span className="text-muted-foreground text-xs">All ▾</span>
+                          ) : (
+                            <span className="bg-primary/10 text-primary inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium">
+                              {lots.find((l) => l.id === lotFilter)?.name}
+                              <X
+                                className="size-3 cursor-pointer opacity-60 hover:opacity-100"
+                                onClick={(e) => { e.stopPropagation(); setLotFilter('all') }}
+                              />
+                            </span>
+                          )}
+                        </button>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        <Menu.Item onClick={() => setLotFilter('all')}>
+                          <span className="text-xs">All</span>
+                        </Menu.Item>
+                        {lots.map((lot) => (
+                          <Menu.Item key={lot.id} onClick={() => setLotFilter(lot.id)}>
+                            <span className="bg-primary/10 text-primary inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium">
+                              {lot.name}
+                            </span>
+                          </Menu.Item>
+                        ))}
+                      </Menu.Dropdown>
+                    </Menu>
+                  </div>
+                </TableHead>
+                <TableHead className="min-w-[180px]">
+                  <div className="flex items-center gap-4">
+                    <span>Status</span>
+                    <Menu withinPortal position="bottom-start">
+                      <Menu.Target>
+                        <button className="cursor-pointer">
+                          {statusFilter === 'all' ? (
+                            <span className="text-muted-foreground text-xs">
+                              All ▾
+                            </span>
+                          ) : (
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                                statusFilter === 'free'
+                                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                  : statusFilter === 'occupied'
+                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                              }`}
+                            >
+                              {statusFilter}
+                              <X
+                                className="size-3 cursor-pointer opacity-60 hover:opacity-100"
+                                onClick={(e) => { e.stopPropagation(); setStatusFilter('all') }}
+                              />
+                            </span>
+                          )}
+                        </button>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        {(['all', 'free', 'occupied', 'reserved'] as const).map(
+                          (v) => (
+                            <Menu.Item
+                              key={v}
+                              onClick={() => setStatusFilter(v)}
+                            >
+                              {v === 'all' ? (
+                                <span className="text-xs">All</span>
+                              ) : (
+                                <span
+                                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                                    v === 'free'
+                                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                      : v === 'occupied'
+                                        ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                        : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                  }`}
+                                >
+                                  {v}
+                                </span>
+                              )}
+                            </Menu.Item>
+                          ),
+                        )}
+                      </Menu.Dropdown>
+                    </Menu>
+                  </div>
+                </TableHead>
+                <TableHead className="min-w-[160px]">
+                  <div className="flex items-center gap-4">
+                    <span>Type</span>
+                    <Menu withinPortal position="bottom-start">
+                      <Menu.Target>
+                        <button className="cursor-pointer">
+                          {typeFilter === 'all' ? (
+                            <span className="text-muted-foreground text-xs">All ▾</span>
+                          ) : (
+                            <span className="bg-primary/10 text-primary inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium">
+                              {TYPE_LABELS[typeFilter]}
+                              <X
+                                className="size-3 cursor-pointer opacity-60 hover:opacity-100"
+                                onClick={(e) => { e.stopPropagation(); setTypeFilter('all') }}
+                              />
+                            </span>
+                          )}
+                        </button>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        <Menu.Item onClick={() => setTypeFilter('all')}>
+                          <span className="text-xs">All</span>
+                        </Menu.Item>
+                        {(Object.entries(TYPE_LABELS) as [SpotType, string][]).map(([value, label]) => (
+                          <Menu.Item key={value} onClick={() => setTypeFilter(value)}>
+                            <span className="bg-primary/10 text-primary inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium">
+                              {label}
+                            </span>
+                          </Menu.Item>
+                        ))}
+                      </Menu.Dropdown>
+                    </Menu>
+                  </div>
+                </TableHead>
                 <TableHead>Owner</TableHead>
                 <TableHead className="bg-card before:bg-border sticky right-0 w-[100px] text-center before:absolute before:inset-y-0 before:left-0 before:w-px before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
                   Actions
@@ -690,71 +824,85 @@ function SpotsSection() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {displayedSpots.map((spot, index) => (
-                <TableRow key={spot.id}>
-                  <TableCell className="font-semibold">{index + 1}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {spot.label ? (
-                      <Highlight text={spot.label} query={spotSearch} />
-                    ) : (
-                      '—'
-                    )}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    <Highlight text={lotName(spot.lot_id)} query={spotSearch} />
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                        spot.status === 'free'
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                          : spot.status === 'occupied'
-                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                      }`}
-                    >
-                      {spot.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    {spot.type !== 'standard' ? (
-                      <span className="text-xs font-medium">
-                        {TYPE_LABELS[spot.type]}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground text-xs">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {spot.owner_name ? (
-                      <Highlight text={spot.owner_name} query={spotSearch} />
-                    ) : (
-                      '—'
-                    )}
-                  </TableCell>
-                  <TableCell className="bg-card before:bg-border sticky right-0 before:absolute before:inset-y-0 before:left-0 before:w-px before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
-                    <div className="flex items-center gap-1">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => openEdit(spot)}
-                        aria-label="Edit spot"
-                      >
-                        <Pencil className="size-3.5" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => setDeleteTarget(spot)}
-                        aria-label="Delete spot"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </div>
+              {displayedSpots.length === 0 ? (
+                <TableRow style={{ height: '80px' }}>
+                  <TableCell
+                    colSpan={7}
+                    className="text-muted-foreground text-center text-sm"
+                  >
+                    No parking spots match the current filters.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                displayedSpots.map((spot, index) => (
+                  <TableRow key={spot.id}>
+                    <TableCell className="font-semibold">{index + 1}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {spot.label ? (
+                        <Highlight text={spot.label} query={spotSearch} />
+                      ) : (
+                        '—'
+                      )}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      <Highlight
+                        text={lotName(spot.lot_id)}
+                        query={spotSearch}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                          spot.status === 'free'
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            : spot.status === 'occupied'
+                              ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                              : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                        }`}
+                      >
+                        {spot.status}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {spot.type !== 'standard' ? (
+                        <span className="text-xs font-medium">
+                          {TYPE_LABELS[spot.type]}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {spot.owner_name ? (
+                        <Highlight text={spot.owner_name} query={spotSearch} />
+                      ) : (
+                        '—'
+                      )}
+                    </TableCell>
+                    <TableCell className="bg-card before:bg-border sticky right-0 before:absolute before:inset-y-0 before:left-0 before:w-px before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => openEdit(spot)}
+                          aria-label="Edit spot"
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => setDeleteTarget(spot)}
+                          aria-label="Delete spot"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
