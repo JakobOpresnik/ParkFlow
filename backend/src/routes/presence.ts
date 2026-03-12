@@ -17,8 +17,8 @@ router.get("/", async (req, res, next) => {
     }
 
     const targetDate: string = date ?? new Date().toISOString().slice(0, 10);
-    const data = await fetchWeekPresence(targetDate);
-    res.json(data);
+    const { employees, work_free_days } = await fetchWeekPresence(targetDate);
+    res.json({ employees, work_free_days });
   } catch (err) {
     next(err);
   }
