@@ -43,7 +43,7 @@ include:
         - IMAGE_NAME: frontend
           CONTEXT_PATH: frontend
           DOCKER_FILE: frontend/Dockerfile
-   - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/env-helper@~latest
+  - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/env-helper@~latest
   - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/ssh-helper@~latest
   - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/git-helper@~latest
   - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/docker-compose@~latest
