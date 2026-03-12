@@ -209,8 +209,7 @@ export function OwnersPage() {
               value={ownerSearch}
               onChange={(e) => setOwnerSearch(e.target.value)}
               placeholder="Search owners..."
-              size="sm"
-              className="w-52 pr-7 pl-8 text-sm"
+              className="h-8 w-52 pr-7 pl-8 text-sm"
             />
             {ownerSearch && (
               <button
