@@ -209,7 +209,7 @@ export function OwnersPage() {
               value={ownerSearch}
               onChange={(e) => setOwnerSearch(e.target.value)}
               placeholder="Search owners..."
-              className="h-9 w-52 pr-7 pl-8 text-sm"
+              className="h-8 w-52 pr-7 pl-8 text-sm"
             />
             {ownerSearch && (
               <button
@@ -221,7 +221,7 @@ export function OwnersPage() {
               </button>
             )}
           </div>
-          <Button onClick={openAdd} className="gap-2">
+          <Button size="sm" onClick={openAdd} className="gap-2">
             <Plus className="size-4" />
             Add Owner
           </Button>

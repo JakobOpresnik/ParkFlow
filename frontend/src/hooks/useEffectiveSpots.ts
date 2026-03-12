@@ -119,5 +119,10 @@ export function useEffectiveSpots(date: string) {
     return Array.from(byId.values())
   }, [spotsQuery.data, presenceQuery.data, date])
 
-  return { ...spotsQuery, data, isWorkFreeDay }
+  return {
+    ...spotsQuery,
+    data,
+    isWorkFreeDay,
+    isLoadingPresence: presenceQuery.isLoading,
+  }
 }

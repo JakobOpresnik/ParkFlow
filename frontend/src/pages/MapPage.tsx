@@ -167,6 +167,7 @@ export function MapPage() {
     isLoading: spotsLoading,
     isError,
     isWorkFreeDay,
+    isLoadingPresence,
   } = useEffectiveSpots(selectedDate)
   const { data: lots = [], isLoading: lotsLoading } = useLots()
 
@@ -322,6 +323,7 @@ export function MapPage() {
   }
 
   const isMapMode = mapViewMode === 'map'
+  const shouldBlurMap = isWorkFreeDay || isLoadingPresence
 
   return (
     <div
@@ -332,7 +334,7 @@ export function MapPage() {
       {/* ── Map — centered with aspect ratio ─────────────────────── */}
       {isMapMode && (
         <div
-          className={`absolute inset-0 flex items-center justify-center p-4 transition-[filter] duration-300 ${isWorkFreeDay ? 'blur-[3px]' : ''}`}
+          className={`absolute inset-0 flex items-center justify-center p-4 transition-[filter] duration-300 ${shouldBlurMap ? 'blur-[3px]' : ''}`}
         >
           <div
             className="relative h-full max-h-full w-full max-w-full"
@@ -399,7 +401,7 @@ export function MapPage() {
       {/* ── Grid view ────────────────────────────────────────────── */}
       {!isMapMode && (
         <div
-          className={`absolute inset-0 overflow-y-auto p-4 pt-44 transition-[filter] duration-300 sm:pt-40 ${isWorkFreeDay ? 'blur-[3px]' : ''}`}
+          className={`absolute inset-0 overflow-y-auto p-4 pt-44 transition-[filter] duration-300 sm:pt-40 ${shouldBlurMap ? 'blur-[3px]' : ''}`}
         >
           {isLoading ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -716,6 +718,18 @@ export function MapPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Presence / timesheet loading overlay ─────────────────── */}
+      {isLoadingPresence && !isLoading && (
+        <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
+          <div className="flex items-center gap-3 rounded-2xl bg-black/70 px-6 py-4 shadow-2xl backdrop-blur-md">
+            <div className="size-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+            <p className="text-sm font-medium text-white">
+              Loading timesheet data…
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Work-free day overlay ─────────────────────────────────── */}
       {isWorkFreeDay && (
