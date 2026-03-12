@@ -1,6 +1,7 @@
+import { Select } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { MousePointer, Pencil, RotateCcw, Save, Trash2, X } from 'lucide-react'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -148,7 +149,7 @@ function LotTabs({
         <button
           key={lot.id}
           onClick={() => onSelect(lot.id)}
-          className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+          className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
             selectedId === lot.id
               ? 'bg-primary text-primary-foreground border-primary'
               : 'text-muted-foreground hover:text-foreground'
@@ -324,14 +325,29 @@ function PendingPanel({
         </Button>
       </div>
 
-      {/* Geometry readout (viewBox coords) */}
-      <div className="bg-muted/60 text-muted-foreground rounded px-2 py-1.5 font-mono text-xs">
-        <div>
-          x:{Math.round(pending.x)} y:{Math.round(pending.y)}
-        </div>
-        <div>
-          w:{Math.round(pending.width)} h:{Math.round(pending.height)}
-        </div>
+      {/* Geometry inputs (viewBox coords) */}
+      <div className="grid grid-cols-2 gap-1.5 font-mono text-xs">
+        {(
+          [
+            ['x', 'x'],
+            ['y', 'y'],
+            ['w', 'width'],
+            ['h', 'height'],
+          ] as const
+        ).map(([label, key]) => (
+          <label key={key} className="flex items-center gap-1">
+            <span className="text-muted-foreground w-3 shrink-0">{label}</span>
+            <input
+              type="number"
+              value={Math.round(pending[key])}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10)
+                if (!isNaN(val)) onPendingChange({ [key]: val })
+              }}
+              className="border-input bg-background w-full rounded border px-1.5 py-0.5 text-xs"
+            />
+          </label>
+        ))}
       </div>
 
       <CoordControls value={pending} onChange={onPendingChange} />
@@ -363,18 +379,17 @@ function PendingPanel({
               All spots in this lot already have coordinates.
             </p>
           ) : (
-            <select
+            <Select
               value={assignId}
-              onChange={(e) => setAssignId(e.target.value)}
-              className="border-input bg-background w-full rounded-md border px-2 py-1.5 text-sm"
-            >
-              {unmappedSpots.map((s) => (
-                <option key={s.id} value={s.id}>
-                  #{s.number} {s.label ? `— ${s.label}` : ''}
-                  {s.owner_name ? ` · ${s.owner_name}` : ''}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setAssignId(v ?? '')}
+              data={unmappedSpots.map((s) => ({
+                value: s.id,
+                label: `#${s.number}${s.label ? ` — ${s.label}` : ''}${s.owner_name ? ` · ${s.owner_name}` : ''}`,
+              }))}
+              size="sm"
+              allowDeselect={false}
+              w="100%"
+            />
           )}
         </div>
       ) : (
@@ -519,6 +534,31 @@ export function MapEditorPage() {
   const [pendingRect, setPendingRect] = useState<PendingRect | null>(null)
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null)
   const [imageError, setImageError] = useState(false)
+
+  // Arrow key nudge for pending rect
+  useEffect(() => {
+    if (!pendingRect) return
+    function onKeyDown(e: KeyboardEvent) {
+      // Don't hijack arrow keys while user is typing in an input
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      )
+        return
+      const step = e.shiftKey ? 5 : 1
+      const delta: Partial<PendingRect> = {}
+      if (e.key === 'ArrowLeft') delta.x = (pendingRect?.x ?? 0) - step
+      else if (e.key === 'ArrowRight') delta.x = (pendingRect?.x ?? 0) + step
+      else if (e.key === 'ArrowUp') delta.y = (pendingRect?.y ?? 0) - step
+      else if (e.key === 'ArrowDown') delta.y = (pendingRect?.y ?? 0) + step
+      else return
+      e.preventDefault()
+      setPendingRect((p) => (p ? { ...p, ...delta } : p))
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [pendingRect])
 
   // Auto-save
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
@@ -701,48 +741,57 @@ export function MapEditorPage() {
       </div>
 
       {/* Toolbar */}
-      <div className="bg-card flex flex-wrap items-center gap-3 rounded-lg border p-3">
-        <div className="flex rounded-md border">
-          <Button
-            size="sm"
-            variant="ghost"
-            className={`gap-1.5 rounded-r-none px-3 ${mode === 'draw' ? 'bg-accent' : ''}`}
-            onClick={() => {
-              setMode('draw')
-              setSelectedSpotId(null)
-              setPendingRect(null)
-            }}
-          >
-            <Pencil className="size-4" />
-            Draw
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className={`gap-1.5 rounded-l-none border-l px-3 ${mode === 'select' ? 'bg-accent' : ''}`}
-            onClick={() => setMode('select')}
-          >
-            <MousePointer className="size-4" />
-            Select
-          </Button>
+      <div className="bg-card flex items-center gap-3 rounded-lg border p-3">
+        {/* Left: mode toggle */}
+        <div className="flex items-center">
+          <div className="flex rounded-md border">
+            <button
+              className={`flex cursor-pointer items-center gap-1.5 rounded-l-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                mode === 'draw'
+                  ? 'bg-muted text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              onClick={() => {
+                setMode('draw')
+                setSelectedSpotId(null)
+                setPendingRect(null)
+              }}
+            >
+              <Pencil className="size-4" />
+              Draw
+            </button>
+            <button
+              className={`flex cursor-pointer items-center gap-1.5 rounded-r-md border-l px-3 py-1.5 text-sm font-medium transition-colors ${
+                mode === 'select'
+                  ? 'bg-muted text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              onClick={() => setMode('select')}
+            >
+              <MousePointer className="size-4" />
+              Select
+            </button>
+          </div>
         </div>
 
-        {!isLoading && (
-          <LotTabs
-            lots={lots}
-            selectedId={activeLotId}
-            onSelect={(id) => {
-              setSelectedLotId(id)
-              setSelectedSpotId(null)
-              setPendingRect(null)
-            }}
-          />
-        )}
+        {/* Center: lot tabs */}
+        <div className="flex flex-1 items-center justify-center">
+          {!isLoading && (
+            <LotTabs
+              lots={lots}
+              selectedId={activeLotId}
+              onSelect={(id) => {
+                setSelectedLotId(id)
+                setSelectedSpotId(null)
+                setPendingRect(null)
+              }}
+            />
+          )}
+        </div>
 
-        <div className="ml-auto text-xs">
-          <span className="text-muted-foreground">
-            {mappedSpots.length}/{lotSpots.length} mapped
-          </span>
+        {/* Right: mapped count */}
+        <div className="text-muted-foreground text-xs">
+          {mappedSpots.length}/{lotSpots.length} mapped
         </div>
       </div>
 
