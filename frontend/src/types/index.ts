@@ -98,12 +98,18 @@ export type PresenceStatus = (typeof PRESENCE_STATUSES)[number]
 export interface PresenceDayEntry {
   date: string
   status: PresenceStatus
+  is_work_free_day: boolean
 }
 
 export interface EmployeePresence {
   user_id: number
   name: string
   week: PresenceDayEntry[]
+}
+
+export interface PresenceResponse {
+  employees: EmployeePresence[]
+  work_free_days: string[]
 }
 
 export type LabelPosition = 'top' | 'bottom' | 'left' | 'right'
