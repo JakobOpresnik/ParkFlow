@@ -7,9 +7,10 @@ include:
     inputs:
       stage: security
       repository: true
-  - project: 'pub/gitlab-ci-templates'
-    ref: main
-    file: '/templates/docker-multi-build.yml'
+  - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/docker-multi-build@~latest
+    rules:
+      - if: $CI_COMMIT_TAG
+      - if: $CI_COMMIT_BRANCH == 'main'
     inputs:
       stage: build
       buildList:
@@ -19,12 +20,17 @@ include:
         - IMAGE_NAME: frontend
           CONTEXT_PATH: frontend
           DOCKER_FILE: frontend/Dockerfile
+   - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/env-helper@~latest
+  - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/ssh-helper@~latest
+  - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/git-helper@~latest
+  - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/docker-compose@~latest
 
 stages:
   - security
   - test
   - lint
   - build
+  - deploy
 
 variables:
   # Dependency-Track integration used by trivy template job `repo_sbom_upload`.
@@ -94,3 +100,58 @@ frontend_build:
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
     - if: $CI_COMMIT_BRANCH
+
+backend_container_build:
+  stage: build
+  image: docker:27
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_TLS_CERTDIR: ''
+  script:
+    - docker build -f backend/Dockerfile backend
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH == 'main'
+      when: never
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH
+
+frontend_container_build:
+  stage: build
+  image: docker:27
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_TLS_CERTDIR: ''
+  script:
+    - docker build -f frontend/Dockerfile frontend
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH == 'main'
+      when: never
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH
+
+deploy_production:
+  stage: deploy
+  image: cr.matheo.si/pub/alpine-runner
+  before_script:
+    - !reference [.ssh_helper, load]
+    - !reference [.env_helper, load]
+  script:
+    - !reference [.git_helper, git_clone_or_pull]
+    - !reference [.docker-compose, deploy]
+  environment:
+    name: production
+  variables:
+    CI_SSH_HOST: parkflow.int.matheo.si
+    CI_SSH_USER: deploy
+    CI_SSH_PORT: '22'
+    SSH_PRIVATE_KEY: $SSH_PRIVATE_KEY
+    DEPLOY_DIR: /home/parkflow
+    CI_COMPOSE_FILE: compose.yml
+  rules:
+     - if: $CI_COMMIT_TAG
