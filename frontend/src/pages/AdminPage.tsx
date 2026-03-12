@@ -31,7 +31,7 @@ import {
   useSpots,
   useUpdateSpot,
 } from '@/hooks/useSpots'
-import type { ParkingLot, Spot, SpotStatus } from '@/types'
+import type { ParkingLot, Spot, SpotStatus, SpotType } from '@/types'
 
 // ─── Lot management ────────────────────────────────────────────────────────────
 
@@ -347,6 +347,7 @@ type SpotFormData = {
   label: string
   lot_id: string
   status: SpotStatus
+  type: SpotType
 }
 
 const EMPTY_SPOT: SpotFormData = {
@@ -354,6 +355,14 @@ const EMPTY_SPOT: SpotFormData = {
   label: '',
   lot_id: '',
   status: 'free',
+  type: 'standard',
+}
+
+const TYPE_LABELS: Record<SpotType, string> = {
+  standard: 'Standard',
+  ev: '⚡ EV',
+  handicap: '♿ Handicap',
+  compact: 'Compact',
 }
 
 function SpotForm({
@@ -402,19 +411,36 @@ function SpotForm({
           ))}
         </select>
       </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium">Status</label>
-        <select
-          className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:outline-none"
-          value={value.status}
-          onChange={(e) =>
-            onChange({ ...value, status: e.target.value as SpotStatus })
-          }
-        >
-          <option value="free">Free</option>
-          <option value="occupied">Occupied</option>
-          <option value="reserved">Reserved</option>
-        </select>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-sm font-medium">Status</label>
+          <select
+            className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:outline-none"
+            value={value.status}
+            onChange={(e) =>
+              onChange({ ...value, status: e.target.value as SpotStatus })
+            }
+          >
+            <option value="free">Free</option>
+            <option value="occupied">Occupied</option>
+            <option value="reserved">Reserved</option>
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">Type</label>
+          <select
+            className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:outline-none"
+            value={value.type}
+            onChange={(e) =>
+              onChange({ ...value, type: e.target.value as SpotType })
+            }
+          >
+            <option value="standard">Standard</option>
+            <option value="ev">EV Charging</option>
+            <option value="handicap">Handicap</option>
+            <option value="compact">Compact</option>
+          </select>
+        </div>
       </div>
     </div>
   )
@@ -454,6 +480,7 @@ function SpotsSection() {
       label: spot.label ?? '',
       lot_id: spot.lot_id ?? '',
       status: spot.status,
+      type: spot.type ?? 'standard',
     })
     setEditingId(spot.id)
     setDialogMode('edit')
@@ -485,6 +512,7 @@ function SpotsSection() {
           label: form.label || null,
           lot_id: form.lot_id,
           status: form.status,
+          type: form.type,
         },
         {
           onSuccess: () => {
@@ -511,6 +539,7 @@ function SpotsSection() {
             label: form.label || null,
             lot_id: form.lot_id,
             status: form.status,
+            type: form.type,
           },
         },
         {
@@ -609,6 +638,7 @@ function SpotsSection() {
                 <TableHead>Label</TableHead>
                 <TableHead>Lot</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Owner</TableHead>
                 <TableHead className="bg-card before:bg-border sticky right-0 w-[100px] text-center before:absolute before:inset-y-0 before:left-0 before:w-px before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
                   Actions
@@ -637,6 +667,15 @@ function SpotsSection() {
                     >
                       {spot.status}
                     </span>
+                  </TableCell>
+                  <TableCell>
+                    {spot.type !== 'standard' ? (
+                      <span className="text-xs font-medium">
+                        {TYPE_LABELS[spot.type]}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {spot.owner_name ?? '—'}

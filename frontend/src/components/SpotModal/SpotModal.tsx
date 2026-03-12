@@ -34,9 +34,17 @@ import { useAuthStore } from '@/store/authStore'
 import { useParkingStore } from '@/store/parkingStore'
 import { usePrefsStore } from '@/store/prefsStore'
 import { useUIStore } from '@/store/uiStore'
-import type { SpotStatus } from '@/types'
+import type { SpotStatus, SpotType } from '@/types'
 
 import { ReservationTimer } from '../ReservationTimer'
+
+const SPOT_TYPE_INFO: Partial<
+  Record<SpotType, { icon: string; label: string }>
+> = {
+  ev: { icon: '⚡', label: 'EV Charging' },
+  handicap: { icon: '♿', label: 'Handicap Accessible' },
+  compact: { icon: '🅿', label: 'Compact' },
+}
 
 // ─── Booking time helpers ──────────────────────────────────────────────────────
 
@@ -482,6 +490,19 @@ export function SpotModal() {
               </span>
               <span className="text-sm font-medium">{spot.floor}</span>
             </div>
+            {spot.type && SPOT_TYPE_INFO[spot.type] && (
+              <div className="flex items-center gap-3 px-4 py-3">
+                <span className="size-4 shrink-0 text-center text-sm">
+                  {SPOT_TYPE_INFO[spot.type]!.icon}
+                </span>
+                <span className="text-muted-foreground w-14 shrink-0 text-sm">
+                  Type
+                </span>
+                <span className="text-sm font-medium">
+                  {SPOT_TYPE_INFO[spot.type]!.label}
+                </span>
+              </div>
+            )}
             <div className="flex items-start gap-3 px-4 py-3">
               <User className="text-muted-foreground mt-0.5 size-4 shrink-0" />
               <span className="text-muted-foreground w-14 shrink-0 text-sm">
