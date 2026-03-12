@@ -79,8 +79,8 @@ backend_test:
     - bun install --frozen-lockfile
     - bun run test
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
+      when: never
 
 backend_lint:
   stage: lint
@@ -89,8 +89,8 @@ backend_lint:
     - bun install --frozen-lockfile
     - bunx tsc -p tsconfig.json --noEmit
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
+      when: never
 
 frontend_lint:
   stage: lint
@@ -99,8 +99,8 @@ frontend_lint:
     - bun install --frozen-lockfile
     - bun run lint
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
+      when: never
 
 compose_dockerfile_guard:
   stage: lint
@@ -111,8 +111,8 @@ compose_dockerfile_guard:
       grep -q 'dockerfile: Dockerfile' docker-compose.yml
       test "$(grep -c 'dockerfile: Dockerfile' docker-compose.yml)" -eq 2
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
+      when: never
 
 frontend_build:
   stage: build
@@ -121,8 +121,8 @@ frontend_build:
     - bun install --frozen-lockfile
     - bun run build
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
+      when: never
 
 backend_container_build:
   stage: build
@@ -134,12 +134,8 @@ backend_container_build:
   script:
     - docker build -f backend/Dockerfile backend
   rules:
-    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
       when: never
-    - if: $CI_COMMIT_BRANCH == 'main'
-      when: never
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    - if: $CI_COMMIT_BRANCH
 
 frontend_container_build:
   stage: build
@@ -151,12 +147,8 @@ frontend_container_build:
   script:
     - docker build -f frontend/Dockerfile frontend
   rules:
-    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
       when: never
-    - if: $CI_COMMIT_BRANCH == 'main'
-      when: never
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    - if: $CI_COMMIT_BRANCH
 
 deploy_production:
   stage: deploy
