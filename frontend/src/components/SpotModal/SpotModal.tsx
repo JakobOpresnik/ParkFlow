@@ -510,11 +510,24 @@ export function SpotModal() {
               </span>
               {spot.owner_name ? (
                 <div className="min-w-0">
-                  {spot.owner_name.split('/').map((name) => (
-                    <p key={name} className="text-sm leading-snug font-medium">
-                      {name.trim()}
-                    </p>
-                  ))}
+                  {spot.owner_name.split('/').map((name) => {
+                    const isInOffice =
+                      spot.in_office_owner?.toLowerCase() ===
+                      name.trim().toLowerCase()
+                    return (
+                      <p
+                        key={name}
+                        className="flex items-center gap-1.5 text-sm leading-snug font-medium"
+                      >
+                        {name.trim()}
+                        {isInOffice && (
+                          <span className="text-spot-occupied bg-spot-occupied/10 rounded-full px-1.5 py-0.5 text-xs font-medium">
+                            in office
+                          </span>
+                        )}
+                      </p>
+                    )
+                  })}
                   {spot.owner_vehicle_plate && (
                     <p className="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-xs">
                       <Car className="size-3" />

@@ -88,8 +88,18 @@ export function SpotGrid({ spots }: SpotGridProps) {
               <div className="min-w-0">
                 {spot.owner_name ? (
                   spot.owner_name.split('/').map((name) => (
-                    <p key={name} className="text-muted-foreground text-xs">
+                    <p
+                      key={name}
+                      className={`text-xs ${
+                        spot.in_office_owner?.toLowerCase() === name.trim().toLowerCase()
+                          ? 'text-spot-occupied font-medium'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
                       {name.trim()}
+                      {spot.in_office_owner?.toLowerCase() === name.trim().toLowerCase() && (
+                        <span className="ml-1 opacity-70">· in office</span>
+                      )}
                     </p>
                   ))
                 ) : (

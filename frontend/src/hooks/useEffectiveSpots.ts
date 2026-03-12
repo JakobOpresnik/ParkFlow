@@ -66,9 +66,21 @@ export function useEffectiveSpots(date: string) {
           : spot
       }
 
-      const presenceStatus = presenceByName.get(spot.owner_name.toLowerCase())
-      // No presence data for this owner → reset non-today reservations to free, leave others.
-      if (presenceStatus === undefined) {
+      // Support shared spots: owner_name may be "Name1 / Name2"
+      const ownerNames = spot.owner_name
+        .split('/')
+        .map((n) => n.trim())
+        .filter(Boolean)
+
+      const inOfficeOwner = ownerNames.find(
+        (n) => presenceByName.get(n.toLowerCase()) === 'in_office',
+      )
+      const anyPresenceData = ownerNames.some(
+        (n) => presenceByName.get(n.toLowerCase()) !== undefined,
+      )
+
+      // No presence data for any owner → reset non-today reservations to free.
+      if (!anyPresenceData) {
         return spot.status === 'reserved'
           ? { ...spot, status: 'free' as const }
           : spot
@@ -76,10 +88,8 @@ export function useEffectiveSpots(date: string) {
 
       return {
         ...spot,
-        status:
-          presenceStatus === 'in_office'
-            ? ('occupied' as const)
-            : ('free' as const),
+        status: inOfficeOwner ? ('occupied' as const) : ('free' as const),
+        in_office_owner: inOfficeOwner ?? null,
       }
     })
 
