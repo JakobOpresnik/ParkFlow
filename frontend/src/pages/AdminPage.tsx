@@ -1,6 +1,14 @@
 import { notifications } from '@mantine/notifications'
-import { Layers, ParkingCircle, Pencil, Plus, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import {
+  Layers,
+  ParkingCircle,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from 'lucide-react'
+import { useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -10,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Highlight } from '@/components/ui/highlight'
 import { Input } from '@/components/ui/input'
 import {
   Table,
@@ -428,15 +437,32 @@ function SpotsSection() {
   const deleteSpot = useDeleteSpot()
 
   const [lotFilter, setLotFilter] = useState<string>('all')
+  const [spotSearch, setSpotSearch] = useState('')
   const [dialogMode, setDialogMode] = useState<'add' | 'edit' | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<SpotFormData>(EMPTY_SPOT)
   const [deleteTarget, setDeleteTarget] = useState<Spot | null>(null)
 
-  const displayedSpots =
-    lotFilter === 'all'
-      ? allSpots
-      : allSpots.filter((s) => s.lot_id === lotFilter)
+  const displayedSpots = useMemo(() => {
+    let filtered =
+      lotFilter === 'all'
+        ? allSpots
+        : allSpots.filter((s) => s.lot_id === lotFilter)
+
+    if (spotSearch.trim()) {
+      const q = spotSearch.toLowerCase()
+      const lotNameMap = new Map(lots.map((l) => [l.id, l.name.toLowerCase()]))
+      filtered = filtered.filter(
+        (s) =>
+          (s.label?.toLowerCase().includes(q) ?? false) ||
+          (s.owner_name?.toLowerCase().includes(q) ?? false) ||
+          String(s.number).includes(q) ||
+          (lotNameMap.get(s.lot_id ?? '')?.includes(q) ?? false),
+      )
+    }
+
+    return filtered
+  }, [allSpots, lotFilter, spotSearch, lots])
 
   function lotName(lotId: string | null) {
     return lots.find((l) => l.id === lotId)?.name ?? '—'
@@ -564,7 +590,7 @@ function SpotsSection() {
           <div className="flex flex-wrap gap-1">
             <button
               onClick={() => setLotFilter('all')}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+              className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                 lotFilter === 'all'
                   ? 'bg-primary text-primary-foreground border-primary'
                   : 'text-muted-foreground border-border hover:text-foreground'
@@ -576,7 +602,7 @@ function SpotsSection() {
               <button
                 key={lot.id}
                 onClick={() => setLotFilter(lot.id)}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                   lotFilter === lot.id
                     ? 'bg-primary text-primary-foreground border-primary'
                     : 'text-muted-foreground border-border hover:text-foreground'
@@ -585,6 +611,24 @@ function SpotsSection() {
                 {lot.name}
               </button>
             ))}
+          </div>
+          <div className="relative">
+            <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
+            <Input
+              value={spotSearch}
+              onChange={(e) => setSpotSearch(e.target.value)}
+              placeholder="Search spots..."
+              className="h-8 w-44 pr-7 pl-8 text-sm"
+            />
+            {spotSearch && (
+              <button
+                onClick={() => setSpotSearch('')}
+                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer"
+                aria-label="Clear search"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
           <Button size="sm" onClick={openAdd} className="gap-2">
             <Plus className="size-4" />
@@ -620,10 +664,14 @@ function SpotsSection() {
                 <TableRow key={spot.id}>
                   <TableCell className="font-semibold">{index + 1}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {spot.label ?? '—'}
+                    {spot.label ? (
+                      <Highlight text={spot.label} query={spotSearch} />
+                    ) : (
+                      '—'
+                    )}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
-                    {lotName(spot.lot_id)}
+                    <Highlight text={lotName(spot.lot_id)} query={spotSearch} />
                   </TableCell>
                   <TableCell>
                     <span
@@ -639,7 +687,11 @@ function SpotsSection() {
                     </span>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
-                    {spot.owner_name ?? '—'}
+                    {spot.owner_name ? (
+                      <Highlight text={spot.owner_name} query={spotSearch} />
+                    ) : (
+                      '—'
+                    )}
                   </TableCell>
                   <TableCell className="bg-card before:bg-border sticky right-0 before:absolute before:inset-y-0 before:left-0 before:w-px before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
                     <div className="flex items-center gap-1">
