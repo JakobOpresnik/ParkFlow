@@ -1,6 +1,6 @@
 import { notifications } from '@mantine/notifications'
-import { Pencil, Plus, Trash2, Users } from 'lucide-react'
-import { useState } from 'react'
+import { Pencil, Plus, Search, Trash2, Users, X } from 'lucide-react'
+import { useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Highlight } from '@/components/ui/highlight'
 import { Input } from '@/components/ui/input'
 import {
   Table,
@@ -88,10 +89,23 @@ export function OwnersPage() {
   const updateOwner = useUpdateOwner()
   const deleteOwner = useDeleteOwner()
 
+  const [ownerSearch, setOwnerSearch] = useState('')
   const [dialogMode, setDialogMode] = useState<'add' | 'edit' | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<OwnerFormData>(EMPTY_FORM)
   const [deleteTarget, setDeleteTarget] = useState<Owner | null>(null)
+
+  const filteredOwners = useMemo(() => {
+    if (!ownerSearch.trim()) return owners
+    const q = ownerSearch.toLowerCase()
+    return owners.filter(
+      (o) =>
+        o.name.toLowerCase().includes(q) ||
+        (o.email?.toLowerCase().includes(q) ?? false) ||
+        (o.phone?.toLowerCase().includes(q) ?? false) ||
+        (o.vehicle_plate?.toLowerCase().includes(q) ?? false),
+    )
+  }, [owners, ownerSearch])
 
   function openAdd() {
     setForm(EMPTY_FORM)
@@ -188,19 +202,41 @@ export function OwnersPage() {
             Manage parking spot owners
           </p>
         </div>
-        <Button onClick={openAdd} className="gap-2">
-          <Plus className="size-4" />
-          Add Owner
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
+            <Input
+              value={ownerSearch}
+              onChange={(e) => setOwnerSearch(e.target.value)}
+              placeholder="Search owners..."
+              className="h-9 w-52 pr-7 pl-8 text-sm"
+            />
+            {ownerSearch && (
+              <button
+                onClick={() => setOwnerSearch('')}
+                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer"
+                aria-label="Clear search"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
+          <Button onClick={openAdd} className="gap-2">
+            <Plus className="size-4" />
+            Add Owner
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
         <p className="text-muted-foreground text-sm">Loading…</p>
-      ) : owners.length === 0 ? (
+      ) : filteredOwners.length === 0 ? (
         <div className="rounded-lg border border-dashed p-10 text-center">
           <Users className="text-muted-foreground mx-auto mb-3 size-8" />
           <p className="text-muted-foreground">
-            No owners yet. Add the first one.
+            {ownerSearch.trim()
+              ? 'No owners match your search.'
+              : 'No owners yet. Add the first one.'}
           </p>
         </div>
       ) : (
@@ -218,17 +254,34 @@ export function OwnersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {owners.map((owner) => (
+              {filteredOwners.map((owner) => (
                 <TableRow key={owner.id}>
-                  <TableCell className="font-medium">{owner.name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {owner.email ?? '—'}
+                  <TableCell className="font-medium">
+                    <Highlight text={owner.name} query={ownerSearch} />
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {owner.phone ?? '—'}
+                    {owner.email ? (
+                      <Highlight text={owner.email} query={ownerSearch} />
+                    ) : (
+                      '—'
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {owner.phone ? (
+                      <Highlight text={owner.phone} query={ownerSearch} />
+                    ) : (
+                      '—'
+                    )}
                   </TableCell>
                   <TableCell className="font-mono text-sm">
-                    {owner.vehicle_plate ?? '—'}
+                    {owner.vehicle_plate ? (
+                      <Highlight
+                        text={owner.vehicle_plate}
+                        query={ownerSearch}
+                      />
+                    ) : (
+                      '—'
+                    )}
                   </TableCell>
                   <TableCell className="bg-card before:bg-border sticky right-0 before:absolute before:inset-y-0 before:left-0 before:w-px before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
                     <div className="flex items-center gap-1">

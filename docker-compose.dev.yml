@@ -22,6 +22,8 @@ services:
       dockerfile: Dockerfile.dev
     pull_policy: build
     command: bun run dev
+    env_file:
+      - ./backend/.env
     environment:
       DATABASE_URL: postgresql://parkflow:parkflow@db:5432/parkflow
       PORT: 3001

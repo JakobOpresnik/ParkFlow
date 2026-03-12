@@ -3,9 +3,9 @@ import { notifications } from '@mantine/notifications'
 import type {
   AppUser,
   Booking,
-  EmployeePresence,
   Owner,
   ParkingLot,
+  PresenceResponse,
   Spot,
   SpotChange,
   SpotCoordinates,
@@ -175,7 +175,5 @@ export const api = {
 
   // Presence (proxied from Abelium timesheet)
   getPresence: (date: string) =>
-    request<EmployeePresence[]>(
-      `/api/presence?date=${encodeURIComponent(date)}`,
-    ),
+    request<PresenceResponse>(`/api/presence?date=${encodeURIComponent(date)}`),
 }

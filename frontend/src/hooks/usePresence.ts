@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { api } from '@/api'
-import type { EmployeePresence } from '@/types'
+import type { PresenceResponse } from '@/types'
 
 export function usePresence(date: string) {
-  return useQuery<EmployeePresence[]>({
+  return useQuery<PresenceResponse>({
     queryKey: ['presence', date],
     queryFn: () => api.getPresence(date),
     enabled: /^\d{4}-\d{2}-\d{2}$/.test(date),
