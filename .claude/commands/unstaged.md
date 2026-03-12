@@ -35,5 +35,20 @@ Steps:
    git commit -m "fix: align search bar and button height on owners page"
    ```
 
+8. After all commits, print a **Merge Request description** based on the full set of changes. Format:
+
+   ---
+   **MR Description**
+
+   ## What changed
+   A short paragraph (2–4 sentences) summarising the overall scope of the changes — what was added, fixed, or improved and why.
+
+   ## Changes
+   A bullet list — one bullet per logical commit, written in plain English (not commit message style). Focus on what the user will see or experience.
+
+   ## Notes
+   Any caveats, follow-ups, or things a reviewer should pay attention to. Omit this section if there's nothing relevant.
+   ---
+
 Do NOT stage or commit anything. This is analysis only.
 If there are no unstaged changes, say so clearly.
