@@ -1,0 +1,14 @@
+[allowlist]
+description = "Allowlist for known non-secret values"
+
+regexes = [
+  # Fake Bearer tokens used in test fixtures
+  'Bearer (dummy|valid|invalid|expired|bad)-[\w-]+',
+  # Authentik OAuth public client ID in dev compose (not a secret)
+  'V9RNWkqNeQq8FhnTCxnPr3hhlQLoBXHkp0k8k95j',
+]
+
+paths = [
+  # Test fixture files never contain real secrets
+  '''backend/src/__tests__/.*\.ts''',
+]
