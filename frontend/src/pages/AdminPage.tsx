@@ -698,13 +698,18 @@ function SpotsSection() {
                       <Menu.Target>
                         <button className="cursor-pointer">
                           {lotFilter === 'all' ? (
-                            <span className="text-muted-foreground text-xs">All ▾</span>
+                            <span className="text-muted-foreground text-xs">
+                              All ▾
+                            </span>
                           ) : (
                             <span className="bg-primary/10 text-primary inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium">
                               {lots.find((l) => l.id === lotFilter)?.name}
                               <X
                                 className="size-3 cursor-pointer opacity-60 hover:opacity-100"
-                                onClick={(e) => { e.stopPropagation(); setLotFilter('all') }}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setLotFilter('all')
+                                }}
                               />
                             </span>
                           )}
@@ -715,7 +720,10 @@ function SpotsSection() {
                           <span className="text-xs">All</span>
                         </Menu.Item>
                         {lots.map((lot) => (
-                          <Menu.Item key={lot.id} onClick={() => setLotFilter(lot.id)}>
+                          <Menu.Item
+                            key={lot.id}
+                            onClick={() => setLotFilter(lot.id)}
+                          >
                             <span className="bg-primary/10 text-primary inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium">
                               {lot.name}
                             </span>
@@ -748,7 +756,10 @@ function SpotsSection() {
                               {statusFilter}
                               <X
                                 className="size-3 cursor-pointer opacity-60 hover:opacity-100"
-                                onClick={(e) => { e.stopPropagation(); setStatusFilter('all') }}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setStatusFilter('all')
+                                }}
                               />
                             </span>
                           )}
@@ -790,13 +801,18 @@ function SpotsSection() {
                       <Menu.Target>
                         <button className="cursor-pointer">
                           {typeFilter === 'all' ? (
-                            <span className="text-muted-foreground text-xs">All ▾</span>
+                            <span className="text-muted-foreground text-xs">
+                              All ▾
+                            </span>
                           ) : (
                             <span className="bg-primary/10 text-primary inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium">
                               {TYPE_LABELS[typeFilter]}
                               <X
                                 className="size-3 cursor-pointer opacity-60 hover:opacity-100"
-                                onClick={(e) => { e.stopPropagation(); setTypeFilter('all') }}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setTypeFilter('all')
+                                }}
                               />
                             </span>
                           )}
@@ -806,8 +822,13 @@ function SpotsSection() {
                         <Menu.Item onClick={() => setTypeFilter('all')}>
                           <span className="text-xs">All</span>
                         </Menu.Item>
-                        {(Object.entries(TYPE_LABELS) as [SpotType, string][]).map(([value, label]) => (
-                          <Menu.Item key={value} onClick={() => setTypeFilter(value)}>
+                        {(
+                          Object.entries(TYPE_LABELS) as [SpotType, string][]
+                        ).map(([value, label]) => (
+                          <Menu.Item
+                            key={value}
+                            onClick={() => setTypeFilter(value)}
+                          >
                             <span className="bg-primary/10 text-primary inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium">
                               {label}
                             </span>
