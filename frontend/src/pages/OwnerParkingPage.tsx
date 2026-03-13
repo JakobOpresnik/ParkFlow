@@ -69,11 +69,16 @@ const STATUS_LABEL: Record<DayStatus, string> = {
   reserved: 'Rezervirano',
 }
 
-const STATUS_BADGE: Record<DayStatus, string> = {
-  free: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  occupied:
-    'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-  reserved: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+const STATUS_COLOR: Record<DayStatus, string> = {
+  free: 'green',
+  occupied: 'orange',
+  reserved: 'blue',
+}
+
+const STATUS_BORDER: Record<DayStatus, string> = {
+  free: 'border-l-4 border-l-green-500',
+  occupied: 'border-l-4 border-l-orange-400',
+  reserved: 'border-l-4 border-l-blue-500',
 }
 
 function computeDayStatus(
@@ -203,7 +208,9 @@ function SpotCard({
   isCancelling: boolean
 }) {
   return (
-    <div className="bg-card overflow-hidden rounded-2xl border">
+    <div
+      className={`bg-card overflow-hidden rounded-2xl border ${STATUS_BORDER[status]}`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between p-4">
         <div>
@@ -216,15 +223,11 @@ function SpotCard({
             )}
           </div>
           <div className="mt-1 flex items-center gap-2">
-            <Badge
-              className={`border-transparent text-xs ${STATUS_BADGE[status]}`}
-            >
+            <Badge color={STATUS_COLOR[status]} variant="secondary">
               {STATUS_LABEL[status]}
             </Badge>
             {isOverridden && (
-              <span className="text-muted-foreground text-xs">
-                (override)
-              </span>
+              <span className="text-muted-foreground text-xs">(override)</span>
             )}
           </div>
         </div>
@@ -267,7 +270,8 @@ function SpotCard({
           <Button
             onClick={() => onSetDayStatus('free')}
             disabled={isToggling}
-            className="h-11 flex-1 gap-2 bg-green-600 text-sm font-semibold text-white hover:bg-green-700"
+            color="green"
+            className="h-11 flex-1 gap-2 text-sm font-semibold"
           >
             <DoorOpen className="size-4" />
             Sprosti mesto
@@ -277,7 +281,7 @@ function SpotCard({
           <Button
             onClick={() => onSetDayStatus('occupied')}
             disabled={isToggling}
-            variant="outline"
+            color="orange"
             className="h-11 flex-1 gap-2 text-sm font-semibold"
           >
             <UserCheck className="size-4" />
