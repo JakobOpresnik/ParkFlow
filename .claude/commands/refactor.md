@@ -122,7 +122,7 @@ Once in a folder:
 
 #### Hook splitting — when one hook is doing too much
 
-If a hook returns >~10 values, check whether those values naturally belong to two different domains. Split by domain, not by type:
+**Hard limit: 10 return values.** Any hook returning more than 10 values must be split — no exceptions. Split by domain, not by type:
 
 ```
 // bad:  useProfilePage() → 24 values mixing user identity, prefs, and booking stats
@@ -130,7 +130,7 @@ If a hook returns >~10 values, check whether those values naturally belong to tw
 //       useBookingStats() → derived booking metrics (9 values, own domain)
 ```
 
-Each hook should have a single clear responsibility that you can state in one sentence.
+Each hook should have a single clear responsibility you can state in one sentence without using "and". If you cannot, it must be split.
 
 #### Zustand whole-store subscription
 
