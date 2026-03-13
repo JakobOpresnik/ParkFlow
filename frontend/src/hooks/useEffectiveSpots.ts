@@ -75,7 +75,7 @@ export function useEffectiveSpots(date: string) {
       }
 
       // Support shared spots: owner_name may be "Name1 / Name2"
-      const ownerNames = spot.owner_name
+      const ownerNames = (spot.owner_name ?? '')
         .split('/')
         .map((n) => n.trim())
         .filter(Boolean)

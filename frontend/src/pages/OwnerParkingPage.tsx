@@ -419,7 +419,7 @@ export function OwnerParkingPage() {
     error: ownerError,
   } = useOwnerMe()
   const { data: spots = [], isLoading: spotsLoading } = useOwnerSpots()
-  const { data: presence = [] } = usePresence(selectedDate)
+  const { data: presenceData } = usePresence(selectedDate)
   const { data: weekBookings = [] } = useOwnerWeek(today, weekEnd)
   const { data: overrides = [] } = useOwnerOverrides(today, weekEnd)
 
@@ -428,14 +428,15 @@ export function OwnerParkingPage() {
 
   const presenceMap = useMemo(() => {
     const map = new Map<string, string>()
-    for (const emp of presence) {
+    const employees = presenceData?.employees ?? []
+    for (const emp of employees) {
       const dayEntry = emp.week.find((d) => d.date === selectedDate)
       if (dayEntry) {
         map.set(emp.name.toLowerCase(), dayEntry.status)
       }
     }
     return map
-  }, [presence, selectedDate])
+  }, [presenceData, selectedDate])
 
   function getStatus(spot: OwnerSpot): DayStatus {
     return computeDayStatus(
