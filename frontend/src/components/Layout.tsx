@@ -11,6 +11,7 @@ import {
   ParkingCircle,
   PenLine,
   Settings,
+  SquareParking,
   User,
   Users,
 } from 'lucide-react'
@@ -25,6 +26,7 @@ const topNavItems = [
   { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
   { to: '/stats', label: 'Statistics', Icon: BarChart2 },
   { to: '/my-bookings', label: 'My Bookings', Icon: Calendar },
+  { to: '/my-parking', label: 'My Parking', Icon: SquareParking },
 ]
 
 const adminSubItems = [

@@ -34,6 +34,26 @@ const SPOT_SELECT = `
   LEFT JOIN bookings b ON b.spot_id = s.id AND b.status = 'active'
 `;
 
+// GET /api/spots/day-overrides?date=YYYY-MM-DD — all per-day overrides for a date
+router.get("/day-overrides", async (req, res, next) => {
+  try {
+    const { date } = req.query as { date?: string };
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      res.status(400).json({ error: "date query param required (YYYY-MM-DD)" });
+      return;
+    }
+    const result = await pool.query(
+      `SELECT id, spot_id, date, status, set_by
+       FROM spot_day_status
+       WHERE date = $1::date`,
+      [date],
+    );
+    res.json(result.rows);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // BE-1: GET /api/spots — all spots, optionally filtered by ?lot_id=
 router.get("/", async (req, res, next) => {
   try {
@@ -75,6 +95,37 @@ router.get("/:number", async (req, res, next) => {
     }
 
     res.json(result.rows[0]);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/spots/:id/bookings — booking history for a specific spot
+router.get("/:id/bookings", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { limit } = req.query as { limit?: string };
+    const maxRows = Math.min(parseInt(limit ?? "50", 10) || 50, 200);
+
+    const result = await pool.query(
+      `SELECT
+        b.id,
+        b.status,
+        b.reserved_by,
+        b.booked_at,
+        b.starts_at,
+        b.expires_at,
+        b.ended_at,
+        b.cancelled_by,
+        b.user_id
+      FROM bookings b
+      WHERE b.spot_id = $1
+      ORDER BY b.booked_at DESC
+      LIMIT $2`,
+      [id, maxRows],
+    );
+
+    res.json(result.rows);
   } catch (err) {
     next(err);
   }

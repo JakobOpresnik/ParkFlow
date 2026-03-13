@@ -1,5 +1,5 @@
 import { notifications } from '@mantine/notifications'
-import { Pencil, Plus, Search, Trash2, Users, X } from 'lucide-react'
+import { Link2, Pencil, Plus, Search, Trash2, Unlink, Users, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -23,6 +23,7 @@ import {
 import {
   useCreateOwner,
   useDeleteOwner,
+  useLinkOwner,
   useOwners,
   useUpdateOwner,
 } from '@/hooks/useOwners'
@@ -36,6 +37,7 @@ const EMPTY_FORM: OwnerFormData = {
   phone: null,
   vehicle_plate: null,
   notes: null,
+  user_id: null,
 }
 
 function OwnerForm({
@@ -79,6 +81,14 @@ function OwnerForm({
         <label className="mb-1 block text-sm font-medium">Notes</label>
         <Input placeholder="Optional note" {...field('notes')} />
       </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium">SSO Username</label>
+        <Input placeholder="e.g. jnovak" {...field('user_id')} />
+        <p className="text-muted-foreground mt-1 text-xs">
+          Links this owner to their SSO account for &quot;My Parking&quot;
+          access.
+        </p>
+      </div>
     </div>
   )
 }
@@ -88,12 +98,15 @@ export function OwnersPage() {
   const createOwner = useCreateOwner()
   const updateOwner = useUpdateOwner()
   const deleteOwner = useDeleteOwner()
+  const linkOwner = useLinkOwner()
 
   const [ownerSearch, setOwnerSearch] = useState('')
   const [dialogMode, setDialogMode] = useState<'add' | 'edit' | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<OwnerFormData>(EMPTY_FORM)
   const [deleteTarget, setDeleteTarget] = useState<Owner | null>(null)
+  const [linkTarget, setLinkTarget] = useState<Owner | null>(null)
+  const [linkUsername, setLinkUsername] = useState('')
 
   const filteredOwners = useMemo(() => {
     if (!ownerSearch.trim()) return owners
@@ -120,6 +133,7 @@ export function OwnersPage() {
       phone: owner.phone,
       vehicle_plate: owner.vehicle_plate,
       notes: owner.notes,
+      user_id: owner.user_id,
     })
     setEditingId(owner.id)
     setDialogMode('edit')
@@ -191,6 +205,36 @@ export function OwnersPage() {
     })
   }
 
+  function openLink(owner: Owner) {
+    setLinkTarget(owner)
+    setLinkUsername(owner.user_id ?? '')
+  }
+
+  function handleLink() {
+    if (!linkTarget) return
+    const username = linkUsername.trim() || null
+    linkOwner.mutate(
+      { id: linkTarget.id, username },
+      {
+        onSuccess: () => {
+          notifications.show({
+            message: username
+              ? `${linkTarget.name} linked to ${username}`
+              : `${linkTarget.name} unlinked`,
+            color: 'green',
+          })
+          setLinkTarget(null)
+        },
+        onError: (err) =>
+          notifications.show({
+            message:
+              err instanceof Error ? err.message : 'Failed to link owner',
+            color: 'red',
+          }),
+      },
+    )
+  }
+
   const isSaving = createOwner.isPending || updateOwner.isPending
 
   return (
@@ -248,6 +292,7 @@ export function OwnersPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Plate</TableHead>
+                <TableHead>SSO User</TableHead>
                 <TableHead className="bg-card before:bg-border sticky right-0 w-[100px] text-center before:absolute before:inset-y-0 before:left-0 before:w-px before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
                   Actions
                 </TableHead>
@@ -281,6 +326,25 @@ export function OwnersPage() {
                       />
                     ) : (
                       '—'
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {owner.user_id ? (
+                      <button
+                        onClick={() => openLink(owner)}
+                        className="text-primary flex items-center gap-1 text-sm hover:underline"
+                      >
+                        <Link2 className="size-3" />
+                        {owner.user_id}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => openLink(owner)}
+                        className="text-muted-foreground flex items-center gap-1 text-xs hover:underline"
+                      >
+                        <Unlink className="size-3" />
+                        Not linked
+                      </button>
                     )}
                   </TableCell>
                   <TableCell className="bg-card before:bg-border sticky right-0 before:absolute before:inset-y-0 before:left-0 before:w-px before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
@@ -357,6 +421,43 @@ export function OwnersPage() {
               disabled={deleteOwner.isPending}
             >
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Link SSO user dialog */}
+      <Dialog
+        open={linkTarget !== null}
+        onOpenChange={(open) => !open && setLinkTarget(null)}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Link SSO User</DialogTitle>
+          </DialogHeader>
+          <p className="text-muted-foreground text-sm">
+            Link <strong>{linkTarget?.name}</strong> to an SSO username so they
+            can access the &quot;My Parking&quot; page.
+          </p>
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              SSO Username
+            </label>
+            <Input
+              placeholder="e.g. jnovak"
+              value={linkUsername}
+              onChange={(e) => setLinkUsername(e.target.value)}
+            />
+            <p className="text-muted-foreground mt-1 text-xs">
+              Leave empty to unlink.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLinkTarget(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleLink} disabled={linkOwner.isPending}>
+              {linkUsername.trim() ? 'Link' : 'Unlink'}
             </Button>
           </DialogFooter>
         </DialogContent>

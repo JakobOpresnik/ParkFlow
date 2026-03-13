@@ -16,6 +16,7 @@ export interface Booking {
   booked_at: string
   expires_at: string
   ended_at: string | null
+  cancelled_by: string | null
   spot_id: string
   spot_number: number
   spot_label: string | null
@@ -29,6 +30,7 @@ export interface Owner {
   phone: string | null
   vehicle_plate: string | null
   notes: string | null
+  user_id: string | null
   created_at: string
 }
 
@@ -115,6 +117,57 @@ export interface EmployeePresence {
 export interface PresenceResponse {
   employees: EmployeePresence[]
   work_free_days: string[]
+}
+
+export interface OwnerSpot {
+  id: string
+  number: number
+  label: string | null
+  floor: string
+  lot_id: string | null
+  status: SpotStatus
+  coordinates: SpotCoordinates | null
+  created_at: string
+  owner_id: string
+  owner_name: string
+  lot_name: string | null
+  active_booking_id: string | null
+  active_booking_user_id: string | null
+  active_booking_reserved_by: string | null
+  active_booking_starts_at: string | null
+  active_booking_expires_at: string | null
+}
+
+export interface SpotDayOverride {
+  id: string
+  spot_id: string
+  date: string
+  status: 'free' | 'occupied'
+  set_by: string | null
+}
+
+export interface OwnerWeekBooking {
+  id: string
+  spot_id: string
+  status: BookingStatus
+  reserved_by: string | null
+  booked_at: string
+  starts_at: string | null
+  expires_at: string
+  ended_at: string | null
+  cancelled_by: string | null
+}
+
+export interface SpotBooking {
+  id: string
+  status: BookingStatus
+  reserved_by: string | null
+  booked_at: string
+  starts_at: string | null
+  expires_at: string
+  ended_at: string | null
+  cancelled_by: string | null
+  user_id: string
 }
 
 export type LabelPosition = 'top' | 'bottom' | 'left' | 'right'

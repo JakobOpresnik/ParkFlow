@@ -16,7 +16,7 @@ import {
   X,
   XCircle,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
@@ -140,6 +140,8 @@ export function SpotModal() {
   const [editStart, setEditStart] = useState('09:00')
   const [editEnd, setEditEnd] = useState('17:00')
 
+  const bookingInFlight = useRef(false)
+
   const [managementExpanded, setManagementExpanded] = useState(false)
   const [assignOpen, setAssignOpen] = useState(false)
   const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null)
@@ -238,6 +240,7 @@ export function SpotModal() {
         phone: null,
         vehicle_plate: newPlate.trim() || null,
         notes: null,
+        user_id: null,
       },
       {
         onSuccess: (owner) => {
@@ -271,7 +274,8 @@ export function SpotModal() {
   }
 
   async function handleBook() {
-    if (!spot) return
+    if (!spot || bookingInFlight.current) return
+    bookingInFlight.current = true
     const expiresAt = computeExpiresAt(
       arrivalTime,
       bookingDuration,
@@ -315,6 +319,8 @@ export function SpotModal() {
         message: err instanceof Error ? err.message : 'Booking failed',
         color: 'red',
       })
+    } finally {
+      bookingInFlight.current = false
     }
   }
 

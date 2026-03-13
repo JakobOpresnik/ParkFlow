@@ -38,6 +38,17 @@ export function useUpdateOwner() {
   })
 }
 
+export function useLinkOwner() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, username }: { id: string; username: string | null }) =>
+      api.linkOwner(id, username),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['owners'] })
+    },
+  })
+}
+
 export function useDeleteOwner() {
   const qc = useQueryClient()
   return useMutation({
