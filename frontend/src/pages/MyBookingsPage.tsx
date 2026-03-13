@@ -157,9 +157,14 @@ export function MyBookingsPage() {
 
       {!isLoading && active.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-sm font-medium tracking-wide uppercase opacity-60">
-            Active
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
+              Active
+            </h2>
+            <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-semibold text-green-700 tabular-nums dark:text-green-400">
+              {active.length}
+            </span>
+          </div>
           {active.map((b) => (
             <BookingCard key={b.id} booking={b} />
           ))}
@@ -168,9 +173,14 @@ export function MyBookingsPage() {
 
       {!isLoading && history.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-sm font-medium tracking-wide uppercase opacity-60">
-            History
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
+              History
+            </h2>
+            <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium tabular-nums">
+              {history.length}
+            </span>
+          </div>
           {history.map((b) => (
             <BookingCard key={b.id} booking={b} />
           ))}

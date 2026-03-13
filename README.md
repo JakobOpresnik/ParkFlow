@@ -380,6 +380,37 @@ bun run lint:all    # lint:fix + format in one step (frontend only)
 
 ---
 
+## 🎨 Interface Design System
+
+The project uses the [`interface-design`](https://github.com/anthropics/claude-code-skills) Claude Code skill to maintain UI/UX consistency across the frontend.
+
+### `.interface-design/system.md`
+
+The file `.interface-design/system.md` is the **single source of truth for all visual decisions** — spacing scale, color tokens, radius, depth strategy, typography, component patterns (cards, tables, buttons, badges, toolbars, etc.), and explicit do-nots.
+
+It was extracted from the existing codebase and must be updated whenever a new pattern is introduced. Think of it like a living style guide that Claude reads before touching any frontend code.
+
+### Available commands (in Claude Code)
+
+| Command | What it does |
+|---|---|
+| `/interface-design:extract` | Scans all `*.tsx` files and extracts spacing, radius, color, and component patterns into `system.md` |
+| `/interface-design:audit` | Checks a file or component against `system.md` for violations (wrong spacing, inconsistent depth, etc.) |
+| `/interface-design:critique` | Reviews the last built component with a design-lead eye — finds places that defaulted instead of decided, then rebuilds them |
+| `/interface-design:init` | Builds new UI components with craft and consistency, guided by `system.md` |
+| `/interface-design:status` | Shows the current design direction, tokens, and patterns in `system.md` |
+
+### Workflow
+
+When building or modifying frontend UI:
+
+1. The skill reads `system.md` first — all established patterns apply automatically
+2. New components should follow existing patterns (spacing grid, depth strategy, color tokens)
+3. After building something new, run `/interface-design:critique` to catch defaults
+4. If a new reusable pattern emerges, update `system.md`
+
+---
+
 ## 🤝 Contributing
 
 1. 🌿 Branch from `main` using a descriptive branch name

@@ -65,9 +65,9 @@ export function Layout({ children, noPadding }: LayoutProps) {
   }
 
   const linkClass =
-    'text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-3 rounded-md px-2 py-2.5 text-sm transition-colors sm:px-3'
+    'relative text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-3 rounded-lg px-2 py-2.5 text-sm transition-colors sm:px-3'
   const activeLinkClass =
-    'bg-primary/10 text-primary font-medium hover:bg-primary/10 hover:text-primary'
+    'bg-primary/10 text-primary font-semibold hover:bg-primary/10 hover:text-primary before:absolute before:inset-y-1.5 before:left-0.5 before:w-0.5 before:rounded-full before:bg-primary'
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -75,8 +75,10 @@ export function Layout({ children, noPadding }: LayoutProps) {
       <aside className="bg-card flex w-14 shrink-0 flex-col border-r sm:w-56">
         {/* Logo */}
         <div className="flex h-14 items-center border-b px-3 sm:px-4">
-          <ParkingCircle className="text-primary size-5 shrink-0" />
-          <span className="ml-2 hidden text-sm font-semibold tracking-tight sm:block">
+          <div className="bg-primary/10 flex size-7 shrink-0 items-center justify-center rounded-lg">
+            <ParkingCircle className="text-primary size-4" />
+          </div>
+          <span className="ml-2.5 hidden text-sm font-semibold tracking-tight sm:block">
             ParkFlow
           </span>
         </div>

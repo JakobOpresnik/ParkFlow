@@ -91,13 +91,15 @@ export function SpotGrid({ spots }: SpotGridProps) {
                     <p
                       key={name}
                       className={`text-xs ${
-                        spot.in_office_owner?.toLowerCase() === name.trim().toLowerCase()
+                        spot.in_office_owner?.toLowerCase() ===
+                        name.trim().toLowerCase()
                           ? 'text-spot-occupied font-medium'
                           : 'text-muted-foreground'
                       }`}
                     >
                       {name.trim()}
-                      {spot.in_office_owner?.toLowerCase() === name.trim().toLowerCase() && (
+                      {spot.in_office_owner?.toLowerCase() ===
+                        name.trim().toLowerCase() && (
                         <span className="ml-1 opacity-70">· in office</span>
                       )}
                     </p>

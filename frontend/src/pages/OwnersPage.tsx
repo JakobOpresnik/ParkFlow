@@ -1,5 +1,14 @@
 import { notifications } from '@mantine/notifications'
-import { Link2, Pencil, Plus, Search, Trash2, Unlink, Users, X } from 'lucide-react'
+import {
+  Link2,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  Unlink,
+  Users,
+  X,
+} from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
