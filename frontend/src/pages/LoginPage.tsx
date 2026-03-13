@@ -84,9 +84,9 @@ export function LoginPage() {
         </div>
 
         {/* Card */}
-        <div className="bg-card rounded-2xl border p-6 shadow-lg shadow-black/5">
+        <div className="bg-card flex flex-col items-center rounded-2xl border p-6 shadow-lg shadow-black/5">
           <Button
-            className="w-full gap-2"
+            className="gap-2"
             disabled={loading}
             onClick={() => void handleLogin()}
           >
