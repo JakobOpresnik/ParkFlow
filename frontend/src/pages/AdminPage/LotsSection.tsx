@@ -8,10 +8,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useLots } from '@/hooks/useLots'
+import { useSpots } from '@/hooks/useSpots'
 import type { ParkingLot } from '@/types'
 
 import { LotForm } from './LotForm'
-import { useLotsSection } from './useLotsSection'
+import { useLotDelete } from './useLotDelete'
+import { useLotDialog } from './useLotDialog'
 
 // — types —
 
@@ -60,23 +63,26 @@ function LotCard({ lot, spotCount, onEdit, onDelete }: LotCardProps) {
 // — main component —
 
 export function LotsSection() {
+  const { data: lots = [], isLoading } = useLots()
+  const { data: allSpots = [] } = useSpots()
+
   const {
-    lots,
-    isLoading,
     dialog,
     form,
     setForm,
-    deleteTarget,
-    setDeleteTarget,
     isSaving,
-    isDeleting,
-    getSpotCount,
     handleOpenAdd,
     handleOpenEdit,
     handleClose,
     handleSubmit,
-    handleConfirmDelete,
-  } = useLotsSection()
+  } = useLotDialog()
+
+  const { deleteTarget, setDeleteTarget, isDeleting, handleConfirmDelete } =
+    useLotDelete()
+
+  function getSpotCount(lotId: string) {
+    return allSpots.filter((s) => s.lot_id === lotId).length
+  }
 
   return (
     <div className="space-y-4">

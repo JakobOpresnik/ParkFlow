@@ -19,10 +19,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useLots } from '@/hooks/useLots'
+import { useSpots } from '@/hooks/useSpots'
 import type { Spot, SpotStatus, SpotType } from '@/types'
 
 import { SpotForm } from './SpotForm'
-import { useSpotsSection } from './useSpotsSection'
+import { useSpotDelete } from './useSpotDelete'
+import { useSpotDialog } from './useSpotDialog'
+import { useSpotFilters } from './useSpotFilters'
 
 // — types —
 
@@ -127,9 +131,10 @@ function SpotRow({
 // — main component —
 
 export function SpotsSection() {
+  const { data: lots = [] } = useLots()
+  const { data: allSpots = [], isLoading } = useSpots()
+
   const {
-    lots,
-    isLoading,
     lotFilter,
     setLotFilter,
     statusFilter,
@@ -138,21 +143,23 @@ export function SpotsSection() {
     setTypeFilter,
     spotSearch,
     setSpotSearch,
+    displayedSpots,
+    getLotName,
+  } = useSpotFilters(allSpots, lots)
+
+  const {
     dialog,
     form,
     setForm,
-    deleteTarget,
-    setDeleteTarget,
     isSaving,
-    isDeleting,
-    displayedSpots,
-    getLotName,
     handleOpenAdd,
     handleOpenEdit,
     handleClose,
     handleSubmit,
-    handleConfirmDelete,
-  } = useSpotsSection()
+  } = useSpotDialog(lots)
+
+  const { deleteTarget, setDeleteTarget, isDeleting, handleConfirmDelete } =
+    useSpotDelete()
 
   return (
     <div className="space-y-4">

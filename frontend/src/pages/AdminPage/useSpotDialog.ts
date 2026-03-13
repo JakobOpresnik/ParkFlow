@@ -1,14 +1,8 @@
 import { notifications } from '@mantine/notifications'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 
-import { useLots } from '@/hooks/useLots'
-import {
-  useCreateSpot,
-  useDeleteSpot,
-  useSpots,
-  useUpdateSpot,
-} from '@/hooks/useSpots'
-import type { Spot, SpotStatus, SpotType } from '@/types'
+import { useCreateSpot, useUpdateSpot } from '@/hooks/useSpots'
+import type { ParkingLot, Spot } from '@/types'
 
 import type { SpotFormData } from './SpotForm'
 
@@ -31,55 +25,14 @@ const EMPTY_SPOT: SpotFormData = {
 
 // — hook —
 
-export function useSpotsSection() {
-  const { data: lots = [] } = useLots()
-  const { data: allSpots = [], isLoading } = useSpots()
-  const createSpot = useCreateSpot()
-  const updateSpot = useUpdateSpot()
-  const deleteSpot = useDeleteSpot()
-
-  const [lotFilter, setLotFilter] = useState<string>('all')
-  const [statusFilter, setStatusFilter] = useState<SpotStatus | 'all'>('all')
-  const [typeFilter, setTypeFilter] = useState<SpotType | 'all'>('all')
-  const [spotSearch, setSpotSearch] = useState('')
+export function useSpotDialog(lots: ParkingLot[]) {
   const [dialog, setDialog] = useState<SpotDialogState>({ mode: null })
   const [form, setForm] = useState<SpotFormData>(EMPTY_SPOT)
-  const [deleteTarget, setDeleteTarget] = useState<Spot | null>(null)
+
+  const createSpot = useCreateSpot()
+  const updateSpot = useUpdateSpot()
 
   const isSaving = createSpot.isPending || updateSpot.isPending
-
-  const displayedSpots = useMemo(() => {
-    let filtered =
-      lotFilter === 'all'
-        ? allSpots
-        : allSpots.filter((s) => s.lot_id === lotFilter)
-
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((s) => s.status === statusFilter)
-    }
-
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter((s) => (s.type ?? 'standard') === typeFilter)
-    }
-
-    if (spotSearch.trim()) {
-      const q = spotSearch.toLowerCase()
-      const lotNameMap = new Map(lots.map((l) => [l.id, l.name.toLowerCase()]))
-      filtered = filtered.filter(
-        (s) =>
-          (s.label?.toLowerCase().includes(q) ?? false) ||
-          (s.owner_name?.toLowerCase().includes(q) ?? false) ||
-          String(s.number).includes(q) ||
-          (lotNameMap.get(s.lot_id ?? '')?.includes(q) ?? false),
-      )
-    }
-
-    return filtered
-  }, [allSpots, lotFilter, statusFilter, typeFilter, spotSearch, lots])
-
-  function getLotName(lotId: string | null) {
-    return lots.find((l) => l.id === lotId)?.name ?? '—'
-  }
 
   function handleOpenAdd() {
     setForm({ ...EMPTY_SPOT, lot_id: lots[0]?.id ?? '' })
@@ -171,48 +124,14 @@ export function useSpotsSection() {
     }
   }
 
-  function handleConfirmDelete() {
-    if (!deleteTarget) return
-    deleteSpot.mutate(deleteTarget.id, {
-      onSuccess: () => {
-        notifications.show({
-          message: `Spot #${deleteTarget.number} deleted`,
-          color: 'green',
-        })
-        setDeleteTarget(null)
-      },
-      onError: (err) =>
-        notifications.show({
-          message: err instanceof Error ? err.message : 'Failed to delete spot',
-          color: 'red',
-        }),
-    })
-  }
-
   return {
-    lots,
-    isLoading,
-    lotFilter,
-    setLotFilter,
-    statusFilter,
-    setStatusFilter,
-    typeFilter,
-    setTypeFilter,
-    spotSearch,
-    setSpotSearch,
     dialog,
     form,
     setForm,
-    deleteTarget,
-    setDeleteTarget,
     isSaving,
-    isDeleting: deleteSpot.isPending,
-    displayedSpots,
-    getLotName,
     handleOpenAdd,
     handleOpenEdit,
     handleClose,
     handleSubmit,
-    handleConfirmDelete,
   }
 }

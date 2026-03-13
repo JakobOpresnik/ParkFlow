@@ -1,13 +1,7 @@
 import { notifications } from '@mantine/notifications'
 import { useState } from 'react'
 
-import {
-  useCreateLot,
-  useDeleteLot,
-  useLots,
-  useUpdateLot,
-} from '@/hooks/useLots'
-import { useSpots } from '@/hooks/useSpots'
+import { useCreateLot, useUpdateLot } from '@/hooks/useLots'
 import type { ParkingLot } from '@/types'
 
 import type { LotFormData } from './LotForm'
@@ -32,22 +26,14 @@ const EMPTY_LOT: LotFormData = {
 
 // — hook —
 
-export function useLotsSection() {
-  const { data: lots = [], isLoading } = useLots()
-  const { data: allSpots = [] } = useSpots()
-  const createLot = useCreateLot()
-  const updateLot = useUpdateLot()
-  const deleteLot = useDeleteLot()
-
+export function useLotDialog() {
   const [dialog, setDialog] = useState<LotDialogState>({ mode: null })
   const [form, setForm] = useState<LotFormData>(EMPTY_LOT)
-  const [deleteTarget, setDeleteTarget] = useState<ParkingLot | null>(null)
+
+  const createLot = useCreateLot()
+  const updateLot = useUpdateLot()
 
   const isSaving = createLot.isPending || updateLot.isPending
-
-  function getSpotCount(lotId: string) {
-    return allSpots.filter((s) => s.lot_id === lotId).length
-  }
 
   function handleOpenAdd() {
     setForm(EMPTY_LOT)
@@ -110,39 +96,14 @@ export function useLotsSection() {
     }
   }
 
-  function handleConfirmDelete() {
-    if (!deleteTarget) return
-    deleteLot.mutate(deleteTarget.id, {
-      onSuccess: () => {
-        notifications.show({
-          message: `"${deleteTarget.name}" deleted`,
-          color: 'green',
-        })
-        setDeleteTarget(null)
-      },
-      onError: (err) =>
-        notifications.show({
-          message: err instanceof Error ? err.message : 'Failed to delete lot',
-          color: 'red',
-        }),
-    })
-  }
-
   return {
-    lots,
-    isLoading,
     dialog,
     form,
     setForm,
-    deleteTarget,
-    setDeleteTarget,
     isSaving,
-    isDeleting: deleteLot.isPending,
-    getSpotCount,
     handleOpenAdd,
     handleOpenEdit,
     handleClose,
     handleSubmit,
-    handleConfirmDelete,
   }
 }
