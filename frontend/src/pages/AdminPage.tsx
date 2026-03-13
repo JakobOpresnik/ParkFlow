@@ -35,13 +35,15 @@ import {
   useLots,
   useUpdateLot,
 } from '@/hooks/useLots'
+import { useOwners } from '@/hooks/useOwners'
 import {
+  useAssignOwner,
   useCreateSpot,
   useDeleteSpot,
   useSpots,
   useUpdateSpot,
 } from '@/hooks/useSpots'
-import type { ParkingLot, Spot, SpotStatus, SpotType } from '@/types'
+import type { Owner, ParkingLot, Spot, SpotStatus, SpotType } from '@/types'
 
 // ─── Lot management ────────────────────────────────────────────────────────────
 
@@ -358,6 +360,7 @@ type SpotFormData = {
   lot_id: string
   status: SpotStatus
   type: SpotType
+  owner_id: string
 }
 
 const EMPTY_SPOT: SpotFormData = {
@@ -366,6 +369,7 @@ const EMPTY_SPOT: SpotFormData = {
   lot_id: '',
   status: 'free',
   type: 'standard',
+  owner_id: '',
 }
 
 const TYPE_LABELS: Record<SpotType, string> = {
@@ -379,10 +383,12 @@ function SpotForm({
   value,
   onChange,
   lots,
+  owners,
 }: {
   value: SpotFormData
   onChange: (v: SpotFormData) => void
   lots: ParkingLot[]
+  owners: Owner[]
 }) {
   return (
     <div className="grid gap-3">
@@ -449,6 +455,22 @@ function SpotForm({
           />
         </div>
       </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium">Owner</label>
+        <select
+          className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:outline-none"
+          value={value.owner_id}
+          onChange={(e) => onChange({ ...value, owner_id: e.target.value })}
+        >
+          <option value="">No owner</option>
+          {owners.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.name}
+              {o.user_id ? ` (${o.user_id})` : ''}
+            </option>
+          ))}
+        </select>
+      </div>
     </div>
   )
 }
@@ -456,9 +478,11 @@ function SpotForm({
 function SpotsSection() {
   const { data: lots = [] } = useLots()
   const { data: allSpots = [], isLoading } = useSpots()
+  const { data: owners = [] } = useOwners()
   const createSpot = useCreateSpot()
   const updateSpot = useUpdateSpot()
   const deleteSpot = useDeleteSpot()
+  const assignOwner = useAssignOwner()
 
   const [lotFilter, setLotFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<SpotStatus | 'all'>('all')
@@ -515,6 +539,7 @@ function SpotsSection() {
       lot_id: spot.lot_id ?? '',
       status: spot.status,
       type: spot.type ?? 'standard',
+      owner_id: spot.owner_id ?? '',
     })
     setEditingId(spot.id)
     setDialogMode('edit')
@@ -549,7 +574,10 @@ function SpotsSection() {
           type: form.type,
         },
         {
-          onSuccess: () => {
+          onSuccess: (spot) => {
+            if (form.owner_id) {
+              assignOwner.mutate({ id: spot.id, owner_id: form.owner_id })
+            }
             notifications.show({
               message: `Spot #${num} created`,
               color: 'green',
@@ -565,6 +593,10 @@ function SpotsSection() {
         },
       )
     } else if (dialogMode === 'edit' && editingId) {
+      const currentSpot = allSpots.find((s) => s.id === editingId)
+      const ownerChanged =
+        (form.owner_id || null) !== (currentSpot?.owner_id ?? null)
+
       updateSpot.mutate(
         {
           id: editingId,
@@ -578,6 +610,12 @@ function SpotsSection() {
         },
         {
           onSuccess: () => {
+            if (ownerChanged) {
+              assignOwner.mutate({
+                id: editingId,
+                owner_id: form.owner_id || null,
+              })
+            }
             notifications.show({
               message: `Spot #${num} updated`,
               color: 'green',
@@ -919,7 +957,12 @@ function SpotsSection() {
               {dialogMode === 'add' ? 'Add Spot' : 'Edit Spot'}
             </DialogTitle>
           </DialogHeader>
-          <SpotForm value={form} onChange={setForm} lots={lots} />
+          <SpotForm
+            value={form}
+            onChange={setForm}
+            lots={lots}
+            owners={owners}
+          />
           <DialogFooter>
             <Button variant="outline" onClick={closeDialog}>
               Cancel

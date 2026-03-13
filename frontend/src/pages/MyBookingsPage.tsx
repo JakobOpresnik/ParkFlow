@@ -100,6 +100,13 @@ function BookingCard({ booking }: BookingCardProps) {
               Ended {formatDate(booking.ended_at)}
             </div>
           )}
+
+          {booking.cancelled_by && (
+            <div className="flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400">
+              <XCircle className="size-3.5" />
+              Preklical lastnik: {booking.cancelled_by}
+            </div>
+          )}
         </div>
 
         {booking.status === 'active' && (

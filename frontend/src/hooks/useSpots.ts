@@ -11,6 +11,15 @@ export function useSpots() {
   })
 }
 
+export function useSpotDayOverrides(date: string) {
+  return useQuery({
+    queryKey: ['spots', 'day-overrides', date],
+    queryFn: () => api.getSpotDayOverrides(date),
+    enabled: !!date,
+    staleTime: 30_000,
+  })
+}
+
 export function useCreateSpot() {
   const qc = useQueryClient()
   return useMutation({
