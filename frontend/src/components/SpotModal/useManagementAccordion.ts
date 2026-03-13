@@ -3,21 +3,19 @@ import { useState } from 'react'
 
 import { useCreateOwner, useOwners } from '@/hooks/useOwners'
 import { useAssignOwner, useUpdateStatus } from '@/hooks/useSpots'
-import type { Spot, SpotStatus } from '@/types'
+import type { Owner, Spot, SpotStatus } from '@/types'
 
-const STATUS_LABELS: Record<SpotStatus, string> = {
-  free: 'Available',
-  occupied: 'Occupied',
-  reserved: 'Reserved',
-}
+import { STATUS_CONFIG } from './constants'
+
+// — hook —
 
 export function useManagementAccordion(spot: Spot) {
-  const [expanded, setExpanded] = useState(false)
-  const [assignOpen, setAssignOpen] = useState(false)
+  const [expanded, setExpanded] = useState<boolean>(false)
+  const [assignOpen, setAssignOpen] = useState<boolean>(false)
   const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null)
-  const [createFormOpen, setCreateFormOpen] = useState(false)
-  const [newName, setNewName] = useState('')
-  const [newPlate, setNewPlate] = useState('')
+  const [createFormOpen, setCreateFormOpen] = useState<boolean>(false)
+  const [newName, setNewName] = useState<string>('')
+  const [newPlate, setNewPlate] = useState<string>('')
 
   const { data: owners = [] } = useOwners()
   const assignOwner = useAssignOwner()
@@ -26,9 +24,10 @@ export function useManagementAccordion(spot: Spot) {
   const isPending =
     assignOwner.isPending || updateStatus.isPending || createOwner.isPending
 
-  const ownerSelectData = owners.map((o) => ({
-    value: o.id,
-    label: o.name + (o.vehicle_plate ? ` (${o.vehicle_plate})` : ''),
+  const ownerSelectData = owners.map((owner: Owner) => ({
+    value: owner.id,
+    label:
+      owner.name + (owner.vehicle_plate ? ` (${owner.vehicle_plate})` : ''),
   }))
 
   function handleStatusChange(status: SpotStatus) {
@@ -37,7 +36,7 @@ export function useManagementAccordion(spot: Spot) {
       {
         onSuccess: () =>
           notifications.show({
-            message: `Spot #${spot.number} marked as ${STATUS_LABELS[status]}`,
+            message: `Spot #${spot.number} marked as ${STATUS_CONFIG[status].label}`,
             color: 'green',
           }),
         onError: (err) =>
@@ -59,7 +58,7 @@ export function useManagementAccordion(spot: Spot) {
             message: `Spot #${spot.number} unassigned`,
             color: 'green',
           }),
-        onError: (err) =>
+        onError: (err: Error) =>
           notifications.show({
             message: err instanceof Error ? err.message : 'Failed',
             color: 'red',
@@ -85,7 +84,7 @@ export function useManagementAccordion(spot: Spot) {
           setSelectedOwnerId(null)
           setCreateFormOpen(false)
         },
-        onError: (err) =>
+        onError: (err: Error) =>
           notifications.show({
             message:
               err instanceof Error ? err.message : 'Failed to assign owner',
@@ -122,7 +121,7 @@ export function useManagementAccordion(spot: Spot) {
                 setNewName('')
                 setNewPlate('')
               },
-              onError: (err) =>
+              onError: (err: Error) =>
                 notifications.show({
                   message:
                     err instanceof Error ? err.message : 'Failed to assign',
@@ -131,7 +130,7 @@ export function useManagementAccordion(spot: Spot) {
             },
           )
         },
-        onError: (err) =>
+        onError: (err: Error) =>
           notifications.show({
             message:
               err instanceof Error ? err.message : 'Failed to create owner',

@@ -18,7 +18,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ParkingMapHandle } from '@/components/ParkingMap/ParkingMap'
 import { ParkingMap } from '@/components/ParkingMap/ParkingMap'
 import { SpotGrid } from '@/components/SpotGrid/SpotGrid'
-import { SpotModal } from '@/components/SpotModal/SpotModal'
+import { SpotModal } from '@/components/SpotModal'
 import { SpotSearch } from '@/components/SpotSearch/SpotSearch'
 import { Button } from '@/components/ui/button'
 import {

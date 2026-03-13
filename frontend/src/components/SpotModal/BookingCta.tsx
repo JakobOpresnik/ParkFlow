@@ -1,0 +1,219 @@
+import {
+  ArrowRightLeft,
+  CalendarCheck,
+  Clock,
+  Lock,
+  Pencil,
+  X,
+} from 'lucide-react'
+
+import { ReservationTimer } from '@/components/ReservationTimer'
+import { Button } from '@/components/ui/button'
+import type { Spot } from '@/types'
+
+import { DurationPicker } from './DurationPicker'
+import { IntervalEditor } from './IntervalEditor'
+import { useBookingCta } from './useBookingCta'
+import { useIntervalEditor } from './useIntervalEditor'
+import { fmtTime } from './utils'
+
+// — types —
+
+interface BookingCtaProps {
+  readonly spot: Spot
+  readonly user: { id: string; role: string } | null
+  readonly selectedDate: string
+  readonly arrivalTime: string
+  readonly reservationDuration: number
+  readonly myReservedElsewhere: Spot | undefined
+  readonly canCancelThisBooking: boolean
+}
+
+// — constants —
+
+const STRETCH_BUTTON_STYLE = {
+  display: 'flex',
+  justifySelf: 'stretch',
+} as const
+
+// — main component —
+
+export function BookingCta({
+  spot,
+  user,
+  selectedDate,
+  arrivalTime,
+  reservationDuration,
+  myReservedElsewhere,
+  canCancelThisBooking,
+}: BookingCtaProps) {
+  const {
+    bookingDuration,
+    setBookingDuration,
+    isBookableDate,
+    computedExpiryStr,
+    arrivalWindowPassed,
+    bookingPending,
+    unavailableMsg,
+    handleBook,
+    handleCancelBooking,
+  } = useBookingCta(spot, {
+    selectedDate,
+    arrivalTime,
+    reservationDuration,
+    myReservedElsewhere,
+  })
+
+  const {
+    editingInterval,
+    setEditingInterval,
+    editStart,
+    setEditStart,
+    editEnd,
+    setEditEnd,
+    updateBookingTimesPending,
+    handleOpenIntervalEdit,
+    handleSaveInterval,
+  } = useIntervalEditor(spot, arrivalTime)
+
+  const canReserveNow =
+    spot.status === 'free' && !!user && isBookableDate && !arrivalWindowPassed
+  const freeWindowExpired =
+    spot.status === 'free' && !!user && isBookableDate && arrivalWindowPassed
+  const freeButUnavailable =
+    spot.status === 'free' && (!user || !isBookableDate)
+  const isUnavailableSpot =
+    spot.status === 'occupied' ||
+    (spot.status === 'reserved' && !canCancelThisBooking)
+
+  return (
+    <>
+      {/* Free spot: reserve (or move reservation here) — today or future only */}
+      {canReserveNow && (
+        <div className="space-y-3">
+          <DurationPicker
+            duration={bookingDuration}
+            onChange={setBookingDuration}
+            arrivalTime={arrivalTime}
+            expiryStr={computedExpiryStr}
+          />
+          <Button
+            className="h-11 w-full gap-2 text-[15px] font-semibold"
+            style={STRETCH_BUTTON_STYLE}
+            disabled={bookingPending}
+            onClick={handleBook}
+          >
+            {myReservedElsewhere ? (
+              <>
+                <ArrowRightLeft className="size-5" />
+                Move to This Spot
+              </>
+            ) : (
+              <>
+                <CalendarCheck className="size-5" />
+                Reserve Parking Spot
+              </>
+            )}
+          </Button>
+          {myReservedElsewhere && (
+            <p className="text-muted-foreground text-center text-xs">
+              Spot #{myReservedElsewhere.number} reservation will be cancelled
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Free spot: arrival window passed for today */}
+      {freeWindowExpired && (
+        <div className="flex items-center gap-3 rounded-lg border border-dashed px-4 py-3">
+          <Lock className="text-muted-foreground size-4 shrink-0" />
+          <p className="text-muted-foreground text-sm">
+            Today&apos;s reservation window has ended — arrival at {arrivalTime}
+            , until {computedExpiryStr}
+          </p>
+        </div>
+      )}
+
+      {/* Free spot, not logged in or past date */}
+      {freeButUnavailable && (
+        <div className="flex items-center gap-3 rounded-lg border border-dashed px-4 py-3">
+          <Lock className="text-muted-foreground size-4 shrink-0" />
+          <p className="text-muted-foreground text-sm">
+            {!isBookableDate
+              ? 'Cannot reserve spots for past dates'
+              : 'Sign in to reserve this spot'}
+          </p>
+        </div>
+      )}
+
+      {/* Reserved — user can cancel or edit interval */}
+      {spot.status === 'reserved' && canCancelThisBooking && (
+        <div className="space-y-3">
+          {spot.active_booking_expires_at && !editingInterval && (
+            <button
+              onClick={handleOpenIntervalEdit}
+              className="text-muted-foreground hover:bg-muted/50 group justify-space-between flex w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-2 text-sm transition-colors"
+            >
+              <>
+                <Clock className="mr-0.5 size-3.5 shrink-0" />
+                <ReservationTimer
+                  expiresAt={spot.active_booking_expires_at}
+                  arrivalTime={
+                    spot.active_booking_starts_at
+                      ? fmtTime(new Date(spot.active_booking_starts_at))
+                      : arrivalTime
+                  }
+                />
+              </>
+              <Pencil className="ml-auto size-4 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+            </button>
+          )}
+
+          {editingInterval && (
+            <IntervalEditor
+              editStart={editStart}
+              editEnd={editEnd}
+              onChangeStart={setEditStart}
+              onChangeEnd={setEditEnd}
+              onSave={handleSaveInterval}
+              onCancel={() => setEditingInterval(false)}
+              isPending={updateBookingTimesPending}
+            />
+          )}
+
+          <Button
+            variant="outline"
+            className="text-destructive border-destructive/25 hover:bg-destructive/5 hover:text-destructive h-11 w-full gap-2 text-[15px] font-semibold"
+            style={STRETCH_BUTTON_STYLE}
+            disabled={bookingPending || updateBookingTimesPending}
+            onClick={handleCancelBooking}
+          >
+            <X className="size-5" />
+            Cancel Reservation
+          </Button>
+        </div>
+      )}
+
+      {/* Occupied, or reserved by someone else */}
+      {isUnavailableSpot && (
+        <div className="text-muted-foreground flex flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed py-3 text-sm">
+          {spot.status === 'reserved' && spot.active_booking_expires_at ? (
+            <>
+              <Clock className="size-4" />
+              <ReservationTimer
+                expiresAt={spot.active_booking_expires_at}
+                arrivalTime={
+                  spot.active_booking_starts_at
+                    ? fmtTime(new Date(spot.active_booking_starts_at))
+                    : arrivalTime
+                }
+              />
+            </>
+          ) : (
+            <span>{unavailableMsg}</span>
+          )}
+        </div>
+      )}
+    </>
+  )
+}
