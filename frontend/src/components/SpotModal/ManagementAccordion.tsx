@@ -7,6 +7,8 @@ import type { Spot } from '@/types'
 
 import { ALL_STATUSES, STATUS_CONFIG } from './constants'
 import { useManagementAccordion } from './useManagementAccordion'
+import { useNewOwnerForm } from './useNewOwnerForm'
+import { useOwnerAssignment } from './useOwnerAssignment'
 
 // — types —
 
@@ -20,24 +22,36 @@ export function ManagementAccordion({ spot }: ManagementAccordionProps) {
   const {
     expanded,
     setExpanded,
+    isPending: isStatusPending,
+    handleStatusChange,
+  } = useManagementAccordion(spot)
+
+  const {
     assignOpen,
     setAssignOpen,
     selectedOwnerId,
     setSelectedOwnerId,
+    owners,
+    ownerSelectData,
+    isPending: isAssignPending,
+    handleUnassign,
+    handleAssignConfirm,
+  } = useOwnerAssignment(spot)
+
+  const {
     createFormOpen,
     setCreateFormOpen,
     newName,
     setNewName,
     newPlate,
     setNewPlate,
-    owners,
-    ownerSelectData,
-    isPending,
-    handleStatusChange,
-    handleUnassign,
-    handleAssignConfirm,
+    isPending: isCreatePending,
     handleCreateAndAssign,
-  } = useManagementAccordion(spot)
+  } = useNewOwnerForm(spot, () => {
+    setExpanded(false)
+    setAssignOpen(false)
+    setSelectedOwnerId(null)
+  })
 
   return (
     <div className="rounded-lg border">
@@ -69,7 +83,7 @@ export function ManagementAccordion({ spot }: ManagementAccordionProps) {
                   size="sm"
                   variant="outline"
                   color={STATUS_CONFIG[s].color}
-                  disabled={s === spot.status || isPending}
+                  disabled={s === spot.status || isStatusPending}
                   onClick={() => handleStatusChange(s)}
                   className={
                     s === spot.status ? 'cursor-default opacity-40' : ''
@@ -93,7 +107,7 @@ export function ManagementAccordion({ spot }: ManagementAccordionProps) {
                     size="sm"
                     variant="ghost"
                     className="text-destructive hover:text-destructive h-7 gap-1.5 text-xs"
-                    disabled={isPending}
+                    disabled={isAssignPending}
                     onClick={handleUnassign}
                   >
                     <X className="size-3" />
@@ -130,7 +144,7 @@ export function ManagementAccordion({ spot }: ManagementAccordionProps) {
                     <div className="flex gap-2">
                       <Button
                         size="sm"
-                        disabled={!selectedOwnerId || isPending}
+                        disabled={!selectedOwnerId || isAssignPending}
                         onClick={handleAssignConfirm}
                       >
                         Confirm
@@ -162,7 +176,7 @@ export function ManagementAccordion({ spot }: ManagementAccordionProps) {
                     <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
-                        disabled={!newName.trim() || isPending}
+                        disabled={!newName.trim() || isCreatePending}
                         onClick={handleCreateAndAssign}
                       >
                         Create & Assign
