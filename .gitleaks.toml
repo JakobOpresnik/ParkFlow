@@ -12,3 +12,9 @@ paths = [
   # Test fixture files never contain real secrets
   '''backend/src/__tests__/.*\.ts''',
 ]
+
+commits = [
+  # TIMESHEET_SECRET was briefly in .env.example before being cleared;
+  # value has been rotated — allowlisting the commit to suppress history scan
+  "7b0b302",
+]
