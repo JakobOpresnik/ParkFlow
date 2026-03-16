@@ -59,7 +59,7 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
   const computedExpiryStr = fmtTime(computedExpiry)
   const arrivalWindowPassed =
     selectedDate === today && computedExpiry <= new Date()
-  const bookingPending = createBooking.isPending || cancelBooking.isPending
+  const bookingPending = createBooking.isPending
 
   const unavailableMsg =
     spot.status === 'occupied'
@@ -85,54 +85,42 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
     const expiryStr = fmtTime(expiresAt)
 
     try {
-      if (myReservedElsewhere?.active_booking_id) {
+      // The backend auto-cancels any same-day booking for this user in the same
+      // transaction — no need to cancel explicitly here. Doing so would create
+      // failure modes (race conditions, stale data) that block a valid booking.
+      const [hh, mm] = arrivalTime.split(':').map(Number)
+      const startsAtDate = new Date(selectedDate + 'T12:00:00')
+      startsAtDate.setHours(hh ?? 9, mm ?? 0, 0, 0)
+      await createBooking.mutateAsync({
+        spot_id: spot.id,
+        starts_at: startsAtDate.toISOString(),
+        expires_at: expiresAt.toISOString(),
+      })
+
+      // If the user owns another spot, free it for the day so others can use it.
+      if (myOwnedSpot) {
         try {
-          await cancelBooking.mutateAsync(myReservedElsewhere.active_booking_id)
-        } catch (err) {
-          notifications.show({
-            message:
-              err instanceof Error
-                ? err.message
-                : 'Could not cancel existing reservation',
-            color: 'red',
+          await setSpotDayStatus.mutateAsync({
+            spotId: myOwnedSpot.id,
+            date: selectedDate,
+            status: 'free',
           })
-          return
+        } catch {
+          // Non-critical — booking succeeded, day-status is best-effort
         }
       }
 
-      try {
-        const [hh, mm] = arrivalTime.split(':').map(Number)
-        const startsAtDate = new Date(selectedDate + 'T12:00:00')
-        startsAtDate.setHours(hh ?? 9, mm ?? 0, 0, 0)
-        await createBooking.mutateAsync({
-          spot_id: spot.id,
-          starts_at: startsAtDate.toISOString(),
-          expires_at: expiresAt.toISOString(),
-        })
-        notifications.show({
-          message: myReservedElsewhere
-            ? `Moved to spot #${spot.number} — spot #${myReservedElsewhere.number} reservation cancelled.`
-            : `Spot #${spot.number} reserved until ${expiryStr}!`,
-          color: 'green',
-        })
-
-        if (myOwnedSpot) {
-          try {
-            await setSpotDayStatus.mutateAsync({
-              spotId: myOwnedSpot.id,
-              date: selectedDate,
-              status: 'free',
-            })
-          } catch {
-            // Non-critical — ignore failure
-          }
-        }
-      } catch (err) {
-        notifications.show({
-          message: err instanceof Error ? err.message : 'Booking failed',
-          color: 'red',
-        })
-      }
+      notifications.show({
+        message: myReservedElsewhere
+          ? `Moved to spot #${spot.number} — spot #${myReservedElsewhere.number} reservation cancelled.`
+          : `Spot #${spot.number} reserved until ${expiryStr}!`,
+        color: 'green',
+      })
+    } catch (err) {
+      notifications.show({
+        message: err instanceof Error ? err.message : 'Booking failed',
+        color: 'red',
+      })
     } finally {
       bookingInFlight.current = false
     }

@@ -80,11 +80,14 @@ export function SpotModal() {
       )
     : undefined
 
-  // Whether the logged-in user (or admin) can cancel this spot's active booking
+  // Whether the logged-in user (or admin) can cancel this spot's active booking.
+  // Must also verify the booking is for the selected date — stale booking data
+  // from a different day can appear on the spot when viewing future/past dates.
   const canCancelThisBooking =
     !!spot.active_booking_id &&
     !!user &&
-    (spot.active_booking_user_id === user.id || user.role === 'admin')
+    (spot.active_booking_user_id === user.id || user.role === 'admin') &&
+    spot.active_booking_expires_at?.slice(0, 10) === selectedDate
 
   const bannerSubtext = buildBannerSubtext(
     spot,
@@ -121,7 +124,7 @@ export function SpotModal() {
         <div className="bg-border h-px" />
 
         {/* ── Body ────────────────────────────────────────────── */}
-        <div className="max-h-[65vh] space-y-4 overflow-y-auto px-6 py-5">
+        <div className="max-h-[80vh] space-y-4 overflow-y-auto px-6 py-5">
           <StatusBanner
             status={spot.status}
             subtext={bannerSubtext}
@@ -139,7 +142,9 @@ export function SpotModal() {
           <div className="bg-border -mx-6 h-px" />
 
           {/* ── CTA ─────────────────────────────────────────────── */}
+          {/* key resets ownerWarningOpen / bookingDuration / interval state on spot change */}
           <BookingCta
+            key={spot.id}
             spot={spot}
             user={user}
             selectedDate={selectedDate}
