@@ -16,7 +16,7 @@ import {
   X,
   XCircle,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
@@ -28,6 +28,7 @@ import {
   useUpdateBookingTimes,
 } from '@/hooks/useBookings'
 import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
+import { useSetSpotDayStatus } from '@/hooks/useOwnerParking'
 import { useCreateOwner, useOwners } from '@/hooks/useOwners'
 import { useAssignOwner, useUpdateStatus } from '@/hooks/useSpots'
 import { useAuthStore } from '@/store/authStore'
@@ -129,6 +130,7 @@ export function SpotModal() {
   const createBooking = useCreateBooking()
   const cancelBooking = useCancelBooking()
   const updateBookingTimes = useUpdateBookingTimes()
+  const setSpotDayStatus = useSetSpotDayStatus()
   const user = useAuthStore((s) => s.user)
 
   const arrivalTime = usePrefsStore((s) => s.arrivalTime)
@@ -140,12 +142,15 @@ export function SpotModal() {
   const [editStart, setEditStart] = useState('09:00')
   const [editEnd, setEditEnd] = useState('17:00')
 
+  const bookingInFlight = useRef(false)
+
   const [managementExpanded, setManagementExpanded] = useState(false)
   const [assignOpen, setAssignOpen] = useState(false)
   const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null)
   const [createFormOpen, setCreateFormOpen] = useState(false)
   const [newName, setNewName] = useState('')
   const [newPlate, setNewPlate] = useState('')
+  const [ownerWarningOpen, setOwnerWarningOpen] = useState(false)
 
   function resetLocal() {
     setManagementExpanded(false)
@@ -156,6 +161,7 @@ export function SpotModal() {
     setNewPlate('')
     setBookingDuration(reservationDuration)
     setEditingInterval(false)
+    setOwnerWarningOpen(false)
   }
 
   function handleClose() {
@@ -173,6 +179,17 @@ export function SpotModal() {
           s.active_booking_id !== null &&
           s.id !== spot?.id &&
           s.active_booking_expires_at?.slice(0, 10) === selectedDate,
+      )
+    : undefined
+
+  // Whether the logged-in user is the owner of this spot
+  const isCurrentUserOwner =
+    !!user && !!spot && spot.owner_user_id === user.username
+
+  // The spot the logged-in user owns (if any) — used to warn before reserving elsewhere
+  const myOwnedSpot = user
+    ? allSpots.find(
+        (s) => s.owner_user_id === user.username && s.id !== spot?.id,
       )
     : undefined
 
@@ -238,6 +255,7 @@ export function SpotModal() {
         phone: null,
         vehicle_plate: newPlate.trim() || null,
         notes: null,
+        user_id: null,
       },
       {
         onSuccess: (owner) => {
@@ -271,7 +289,13 @@ export function SpotModal() {
   }
 
   async function handleBook() {
-    if (!spot) return
+    if (!spot || bookingInFlight.current) return
+    if (myOwnedSpot && !ownerWarningOpen) {
+      setOwnerWarningOpen(true)
+      return
+    }
+    setOwnerWarningOpen(false)
+    bookingInFlight.current = true
     const expiresAt = computeExpiresAt(
       arrivalTime,
       bookingDuration,
@@ -304,6 +328,18 @@ export function SpotModal() {
         starts_at: startsAtDate.toISOString(),
         expires_at: expiresAt.toISOString(),
       })
+      // If the user owns another spot, free it for the day so others can use it
+      if (myOwnedSpot) {
+        try {
+          await setSpotDayStatus.mutateAsync({
+            spotId: myOwnedSpot.id,
+            date: selectedDate,
+            status: 'free',
+          })
+        } catch {
+          // Non-critical — booking succeeded, just couldn't free own spot
+        }
+      }
       notifications.show({
         message: myReservedElsewhere
           ? `Moved to spot #${spot.number} — spot #${myReservedElsewhere.number} reservation cancelled.`
@@ -315,6 +351,8 @@ export function SpotModal() {
         message: err instanceof Error ? err.message : 'Booking failed',
         color: 'red',
       })
+    } finally {
+      bookingInFlight.current = false
     }
   }
 
@@ -421,7 +459,9 @@ export function SpotModal() {
     label: o.name + (o.vehicle_plate ? ` (${o.vehicle_plate})` : ''),
   }))
 
-  const banner = STATUS_BANNER[spot.status]
+  const displayStatus =
+    isCurrentUserOwner && spot.status === 'occupied' ? 'reserved' : spot.status
+  const banner = STATUS_BANNER[displayStatus]
 
   // Status banner subtext — contextual based on current user's relationship to this spot
   const bannerSubtext =
@@ -429,13 +469,15 @@ export function SpotModal() {
       ? myReservedElsewhere
         ? `You have spot #${myReservedElsewhere.number} reserved. Moving here will cancel it.`
         : 'This spot is open and ready to reserve.'
-      : spot.status === 'reserved'
-        ? canCancelThisBooking
-          ? 'You have reserved this spot.'
-          : 'This spot has already been reserved.'
-        : spot.owner_name
-          ? 'This spot is currently in use by the owner.'
-          : 'This spot is currently in use.'
+      : isCurrentUserOwner && spot.status === 'occupied'
+        ? 'Your spot — you are currently using it.'
+        : spot.status === 'reserved'
+          ? canCancelThisBooking
+            ? 'You have reserved this spot.'
+            : 'This spot has already been reserved.'
+          : spot.owner_name
+            ? 'This spot is currently in use by the owner.'
+            : 'This spot is currently in use.'
 
   return (
     <Dialog
@@ -475,7 +517,9 @@ export function SpotModal() {
               <p
                 className={`text-sm leading-snug font-semibold ${banner.text}`}
               >
-                {STATUS_LABELS[spot.status]}
+                {isCurrentUserOwner && spot.status === 'occupied'
+                  ? 'Your Spot'
+                  : STATUS_LABELS[spot.status]}
               </p>
               <p className="text-muted-foreground text-xs">{bannerSubtext}</p>
             </div>
@@ -510,24 +554,28 @@ export function SpotModal() {
               </span>
               {spot.owner_name ? (
                 <div className="min-w-0">
-                  {spot.owner_name.split('/').map((name) => {
-                    const isInOffice =
-                      spot.in_office_owner?.toLowerCase() ===
-                      name.trim().toLowerCase()
-                    return (
-                      <p
-                        key={name}
-                        className="flex items-center gap-1.5 text-sm leading-snug font-medium"
-                      >
-                        {name.trim()}
-                        {isInOffice && (
-                          <span className="text-spot-occupied bg-spot-occupied/10 rounded-full px-1.5 py-0.5 text-xs font-medium">
-                            in office
-                          </span>
-                        )}
-                      </p>
-                    )
-                  })}
+                  {isCurrentUserOwner ? (
+                    <p className="text-sm leading-snug font-medium">You</p>
+                  ) : (
+                    spot.owner_name.split('/').map((name) => {
+                      const isInOffice =
+                        spot.in_office_owner?.toLowerCase() ===
+                        name.trim().toLowerCase()
+                      return (
+                        <p
+                          key={name}
+                          className="flex items-center gap-1.5 text-sm leading-snug font-medium"
+                        >
+                          {name.trim()}
+                          {isInOffice && (
+                            <span className="text-spot-occupied bg-spot-occupied/10 rounded-full px-1.5 py-0.5 text-xs font-medium">
+                              in office
+                            </span>
+                          )}
+                        </p>
+                      )
+                    })
+                  )}
                   {spot.owner_vehicle_plate && (
                     <p className="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-xs">
                       <Car className="size-3" />
@@ -772,25 +820,55 @@ export function SpotModal() {
                   </p>
                 </div>
 
-                <Button
-                  className="h-11 w-full gap-2 text-[15px] font-semibold"
-                  style={{ display: 'flex', justifySelf: 'stretch' }}
-                  disabled={bookingPending}
-                  onClick={handleBook}
-                >
-                  {myReservedElsewhere ? (
-                    <>
-                      <ArrowRightLeft className="size-5" />
-                      Move to This Spot
-                    </>
-                  ) : (
-                    <>
-                      <CalendarCheck className="size-5" />
-                      Reserve Parking Spot
-                    </>
-                  )}
-                </Button>
-                {myReservedElsewhere && (
+                {ownerWarningOpen ? (
+                  <div className="space-y-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+                    <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                      Your spot #{myOwnedSpot?.number} is always available
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      As the owner, spot #{myOwnedSpot?.number} is always
+                      reserved for you. Do you still want to reserve spot #
+                      {spot.number} instead?
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        className="h-9 flex-1 gap-2 text-sm font-semibold"
+                        disabled={bookingPending}
+                        onClick={handleBook}
+                      >
+                        <CalendarCheck className="size-4" />
+                        Reserve #{spot.number}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="h-9 px-3 text-sm"
+                        onClick={() => setOwnerWarningOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    className="h-11 w-full gap-2 text-[15px] font-semibold"
+                    style={{ display: 'flex', justifySelf: 'stretch' }}
+                    disabled={bookingPending}
+                    onClick={handleBook}
+                  >
+                    {myReservedElsewhere ? (
+                      <>
+                        <ArrowRightLeft className="size-5" />
+                        Move to This Spot
+                      </>
+                    ) : (
+                      <>
+                        <CalendarCheck className="size-5" />
+                        Reserve Parking Spot
+                      </>
+                    )}
+                  </Button>
+                )}
+                {!ownerWarningOpen && myReservedElsewhere && (
                   <p className="text-muted-foreground text-center text-xs">
                     Spot #{myReservedElsewhere.number} reservation will be
                     cancelled

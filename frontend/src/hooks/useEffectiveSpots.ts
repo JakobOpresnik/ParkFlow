@@ -1,19 +1,21 @@
 import { useMemo } from 'react'
 
 import { usePresence } from '@/hooks/usePresence'
-import { useSpots } from '@/hooks/useSpots'
+import { useSpotDayOverrides, useSpots } from '@/hooks/useSpots'
 import type { Spot } from '@/types'
 
 /**
- * Returns all spots with presence-aware status overrides applied.
- * For spots whose owner appears in the timesheet for the given date:
- *   - in_office  → occupied
- *   - anything else (remote / sick / care / vacation / no_entry) → free
- * Spots with no owner, or whose owner is not in the timesheet, keep their DB status.
+ * Returns all spots with effective status for a given date.
+ * Priority (matches backend booking logic):
+ *   1. Active booking on this date → reserved
+ *   2. Manual override (spot_day_status) → free / occupied
+ *   3. Presence/timesheet → in_office = occupied, away = free
+ *   4. Fallback → spots.status
  */
 export function useEffectiveSpots(date: string) {
   const spotsQuery = useSpots()
   const presenceQuery = usePresence(date)
+  const overridesQuery = useSpotDayOverrides(date)
 
   const isWorkFreeDay = useMemo(() => {
     return presenceQuery.data?.work_free_days.includes(date) ?? false
@@ -26,7 +28,14 @@ export function useEffectiveSpots(date: string) {
     const today = new Date().toISOString().slice(0, 10)
     const isToday = date === today
 
-    // Map lowercase name → 'in_office' | 'absent' for the selected date
+    // Override lookup: spot_id → 'free' | 'occupied'
+    const overrides = overridesQuery.data ?? []
+    const overrideBySpot = new Map<string, 'free' | 'occupied'>()
+    for (const o of overrides) {
+      overrideBySpot.set(o.spot_id, o.status)
+    }
+
+    // Presence lookup: lowercase name → 'in_office' | 'absent'
     const presenceByName = new Map<string, 'in_office' | 'absent'>()
 
     // If it's a work-free day (holiday), everyone is absent
@@ -59,15 +68,14 @@ export function useEffectiveSpots(date: string) {
       )
         return spot
 
-      // No owner → presence has no effect; reset any non-today reservation to free.
-      if (spot.owner_name === null) {
-        return spot.status === 'reserved'
-          ? { ...spot, status: 'free' as const }
-          : spot
+      // 2. Manual override → authoritative
+      const override = overrideBySpot.get(spot.id)
+      if (override) {
+        return { ...spot, status: override }
       }
 
       // Support shared spots: owner_name may be "Name1 / Name2"
-      const ownerNames = spot.owner_name
+      const ownerNames = (spot.owner_name ?? '')
         .split('/')
         .map((n) => n.trim())
         .filter(Boolean)
@@ -94,7 +102,6 @@ export function useEffectiveSpots(date: string) {
     })
 
     // Deduplicate: a spot with bookings on multiple days produces multiple rows.
-    // Keep the entry whose booking matches the selected date; fall back to reserved > other.
     const byId = new Map<string, Spot>()
     for (const spot of processed) {
       const existing = byId.get(spot.id)
@@ -117,7 +124,7 @@ export function useEffectiveSpots(date: string) {
       }
     }
     return Array.from(byId.values())
-  }, [spotsQuery.data, presenceQuery.data, date])
+  }, [spotsQuery.data, presenceQuery.data, overridesQuery.data, date])
 
   return {
     ...spotsQuery,

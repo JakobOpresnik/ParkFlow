@@ -235,28 +235,19 @@ export function ProfilePage() {
           </div>
         </div>
 
-        {/* Parking summary strip */}
-        {!isLoading && (
-          <div className="mt-5 grid grid-cols-3 gap-3 border-t pt-4">
-            <div className="bg-muted/50 rounded-lg p-3">
-              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                Total Bookings
-              </p>
-              <p className="mt-1 text-lg font-bold">{totalBookings}</p>
-            </div>
-            <div className="bg-muted/50 rounded-lg p-3">
-              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                Utilization
-              </p>
-              <p className="mt-1 text-lg font-bold">{utilizationPct}%</p>
-            </div>
-            <div className="bg-muted/50 rounded-lg p-3">
-              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                Floors Used
-              </p>
-              <p className="mt-1 text-lg font-bold">
-                {uniqueFloors.length > 0 ? uniqueFloors.join(', ') : '—'}
-              </p>
+        {/* Floors used — unique info not in the stat grid below */}
+        {!isLoading && uniqueFloors.length > 0 && (
+          <div className="mt-4 flex items-center gap-2 border-t pt-4">
+            <span className="text-muted-foreground text-xs">Floors used:</span>
+            <div className="flex flex-wrap gap-1.5">
+              {uniqueFloors.map((floor) => (
+                <span
+                  key={floor}
+                  className="bg-muted rounded-md px-2 py-0.5 text-xs font-medium"
+                >
+                  {floor}
+                </span>
+              ))}
             </div>
           </div>
         )}

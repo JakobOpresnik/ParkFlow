@@ -1,6 +1,7 @@
-import { Accessibility, Clock, User, Zap } from 'lucide-react'
+import { Accessibility, Car, Clock, Crown, User, Zap } from 'lucide-react'
 
 import { ReservationTimer } from '@/components/ReservationTimer'
+import { useAuthStore } from '@/store/authStore'
 import { useParkingStore } from '@/store/parkingStore'
 import { useUIStore } from '@/store/uiStore'
 import type { Spot, SpotStatus } from '@/types'
@@ -30,6 +31,7 @@ interface SpotGridProps {
 export function SpotGrid({ spots }: SpotGridProps) {
   const setSelectedSpot = useParkingStore((s) => s.setSelectedSpot)
   const setSpotModalOpen = useUIStore((s) => s.setSpotModalOpen)
+  const currentUsername = useAuthStore((s) => s.user?.username)
 
   function handleClick(spot: Spot) {
     setSelectedSpot(spot)
@@ -40,95 +42,121 @@ export function SpotGrid({ spots }: SpotGridProps) {
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-      {spots.map((spot) => (
-        <button
-          key={spot.id}
-          onClick={() => handleClick(spot)}
-          className="bg-card group relative cursor-pointer overflow-hidden rounded-xl border text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-        >
-          {/* Colored top accent strip */}
-          <div
-            className={`absolute inset-x-0 top-0 h-1 ${STATUS_ACCENT[spot.status]}`}
-          />
+      {spots.map((spot) => {
+        const isMySpot =
+          !!currentUsername && spot.owner_user_id === currentUsername
+        const displayStatus: SpotStatus =
+          isMySpot && spot.status === 'occupied' ? 'reserved' : spot.status
 
-          {/* Header: number + status */}
-          <div className="flex items-start justify-between px-4 pt-3 pb-2">
-            <div>
-              <div className="mb-0.5 flex items-center gap-1.5">
-                <p className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">
-                  Spot
-                </p>
-                {spot.type === 'ev' && (
-                  <Zap className="size-3 text-yellow-500" />
-                )}
-                {spot.type === 'handicap' && (
-                  <Accessibility className="size-3 text-blue-500" />
-                )}
-              </div>
-              <p className="text-2xl leading-none font-bold tracking-tight">
-                #{spot.number}
-              </p>
-              {spot.label && (
-                <p className="text-muted-foreground mt-0.5 text-xs">
-                  {spot.label}
-                </p>
-              )}
-            </div>
-            <span
-              className={`mt-1 text-xs font-semibold ${STATUS_TEXT[spot.status]}`}
-            >
-              {STATUS_LABELS[spot.status]}
-            </span>
-          </div>
+        return (
+          <button
+            key={spot.id}
+            onClick={() => handleClick(spot)}
+            className="bg-card group relative cursor-pointer overflow-hidden rounded-xl border text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+          >
+            {/* Colored top accent strip */}
+            <div
+              className={`absolute inset-x-0 top-0 h-1 ${STATUS_ACCENT[displayStatus]}`}
+            />
 
-          {/* Divider + owner row */}
-          <div className="border-t px-4 py-2.5">
-            <div className="flex items-start gap-2">
-              <User className="text-muted-foreground mt-0.5 size-3.5 shrink-0" />
-              <div className="min-w-0">
-                {spot.owner_name ? (
-                  spot.owner_name.split('/').map((name) => (
-                    <p
-                      key={name}
-                      className={`text-xs ${
-                        spot.in_office_owner?.toLowerCase() === name.trim().toLowerCase()
-                          ? 'text-spot-occupied font-medium'
-                          : 'text-muted-foreground'
-                      }`}
-                    >
-                      {name.trim()}
-                      {spot.in_office_owner?.toLowerCase() === name.trim().toLowerCase() && (
-                        <span className="ml-1 opacity-70">· in office</span>
-                      )}
-                    </p>
-                  ))
-                ) : (
-                  <p className="text-muted-foreground text-xs italic">
-                    Unassigned
+            {/* Header: number + status */}
+            <div className="flex items-start justify-between px-4 pt-3 pb-2">
+              <div>
+                <div className="mb-0.5 flex items-center gap-1.5">
+                  <p className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">
+                    Spot
+                  </p>
+                  {spot.type === 'ev' && (
+                    <Zap className="size-3 text-yellow-500" />
+                  )}
+                  {spot.type === 'handicap' && (
+                    <Accessibility className="size-3 text-blue-500" />
+                  )}
+                </div>
+                <p className="text-2xl leading-none font-bold tracking-tight">
+                  #{spot.number}
+                </p>
+                {spot.label && (
+                  <p className="text-muted-foreground mt-0.5 text-xs">
+                    {spot.label}
                   </p>
                 )}
-                {spot.status === 'reserved' &&
-                  spot.active_booking_reserved_by &&
-                  spot.active_booking_reserved_by !== spot.owner_name && (
-                    <p className="text-spot-reserved mt-0.5 flex items-center gap-1 text-xs">
-                      <Clock className="size-3 shrink-0" />
-                      {spot.active_booking_reserved_by}
-                    </p>
-                  )}
-                {spot.status === 'reserved' &&
-                  spot.active_booking_expires_at && (
-                    <p className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
-                      <Clock className="size-3 shrink-0" />
-                      <ReservationTimer
-                        expiresAt={spot.active_booking_expires_at}
-                      />
-                    </p>
-                  )}
+              </div>
+              <div className="mt-1 flex items-center gap-1">
+                {isMySpot && <Crown className="text-primary size-3 shrink-0" />}
+                <span
+                  className={`text-xs font-semibold ${STATUS_TEXT[displayStatus]}`}
+                >
+                  {isMySpot && spot.status === 'occupied'
+                    ? 'Your Spot'
+                    : STATUS_LABELS[displayStatus]}
+                </span>
               </div>
             </div>
-          </div>
-        </button>
-      ))}
+
+            {/* Divider + owner row */}
+            <div className="border-t px-4 py-2.5">
+              <div className="flex items-start gap-2">
+                <User className="text-muted-foreground mt-0.5 size-3.5 shrink-0" />
+                <div className="min-w-0">
+                  {isMySpot ? (
+                    <>
+                      <p className="text-spot-reserved text-xs font-medium">
+                        You
+                      </p>
+                      {spot.owner_vehicle_plate && (
+                        <p className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
+                          <Car className="size-3 shrink-0" />
+                          {spot.owner_vehicle_plate}
+                        </p>
+                      )}
+                    </>
+                  ) : spot.owner_name ? (
+                    spot.owner_name.split('/').map((name) => (
+                      <p
+                        key={name}
+                        className={`text-xs ${
+                          spot.in_office_owner?.toLowerCase() ===
+                          name.trim().toLowerCase()
+                            ? 'text-spot-occupied font-medium'
+                            : 'text-muted-foreground'
+                        }`}
+                      >
+                        {name.trim()}
+                        {spot.in_office_owner?.toLowerCase() ===
+                          name.trim().toLowerCase() && (
+                          <span className="ml-1 opacity-70">· in office</span>
+                        )}
+                      </p>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground text-xs italic">
+                      Unassigned
+                    </p>
+                  )}
+                  {spot.status === 'reserved' &&
+                    spot.active_booking_reserved_by &&
+                    spot.active_booking_reserved_by !== spot.owner_name && (
+                      <p className="text-spot-reserved mt-0.5 flex items-center gap-1 text-xs">
+                        <Clock className="size-3 shrink-0" />
+                        {spot.active_booking_reserved_by}
+                      </p>
+                    )}
+                  {spot.status === 'reserved' &&
+                    spot.active_booking_expires_at && (
+                      <p className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
+                        <Clock className="size-3 shrink-0" />
+                        <ReservationTimer
+                          expiresAt={spot.active_booking_expires_at}
+                        />
+                      </p>
+                    )}
+                </div>
+              </div>
+            </div>
+          </button>
+        )
+      })}
     </div>
   )
 }

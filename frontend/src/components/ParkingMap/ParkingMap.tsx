@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 
+import { useAuthStore } from '@/store/authStore'
 import type { ParkingLot, Spot, SpotCoordinates } from '@/types'
 
 const STATUS_FILL: Record<string, string> = {
@@ -62,6 +63,7 @@ export const ParkingMap = forwardRef<ParkingMapHandle, ParkingMapProps>(
     },
     ref,
   ) {
+    const currentUsername = useAuthStore((s) => s.user?.username)
     const containerRef = useRef<HTMLDivElement>(null)
     // Combined view state — single setter prevents double-render and satisfies
     // the react-hooks/set-state-in-effect rule in the lot-change effect below.
@@ -256,9 +258,16 @@ export const ParkingMap = forwardRef<ParkingMapHandle, ParkingMapProps>(
               const cy = y + height / 2
               const isSelected = spot.id === selectedSpotId
               const isHighlighted = spot.id === highlightedSpotId
-              const fill = STATUS_FILL[spot.status] ?? 'rgba(100,100,100,0.3)'
-              const stroke =
-                STATUS_STROKE[spot.status] ?? 'rgba(100,100,100,0.7)'
+              const isMySpot =
+                !!currentUsername && spot.owner_user_id === currentUsername
+              const displayStatus =
+                isMySpot && spot.status === 'occupied'
+                  ? 'reserved'
+                  : spot.status
+              const fill = STATUS_FILL[displayStatus] ?? 'rgba(100,100,100,0.3)'
+              const stroke = isMySpot
+                ? 'rgba(99,102,241,0.95)'
+                : (STATUS_STROKE[displayStatus] ?? 'rgba(100,100,100,0.7)')
               const tp = textPosition(coords)
               const fontSize = Math.max(10, Math.min(22, height * 0.45))
               const labelRot = coords.labelRotation ?? 0
@@ -294,7 +303,9 @@ export const ParkingMap = forwardRef<ParkingMapHandle, ParkingMapProps>(
                     stroke={
                       isSelected ? '#6366f1' : isHighlighted ? 'white' : stroke
                     }
-                    strokeWidth={isSelected || isHighlighted ? 3 : 1.5}
+                    strokeWidth={
+                      isSelected || isHighlighted ? 3 : isMySpot ? 2.5 : 1.5
+                    }
                     className="transition-all duration-150 hover:brightness-110"
                   />
                   <text
