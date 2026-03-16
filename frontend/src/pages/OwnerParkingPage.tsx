@@ -39,11 +39,19 @@ import type {
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString('sl-SI', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
     hour: '2-digit',
     minute: '2-digit',
+  })
+}
+
+function fmtDate(dateStr: string) {
+  return new Date(dateStr + 'T12:00:00').toLocaleDateString('sl-SI', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
   })
 }
 
@@ -67,6 +75,11 @@ function isNonWorkDay(
   const dow = new Date(date + 'T00:00:00').getDay()
   if (dow === 0 || dow === 6) return true
   return workFreeDays.includes(date)
+}
+
+/** Reservations close at 19:00 on the current day. */
+function isPastBookingCutoff(date: string, today: string): boolean {
+  return date === today && new Date().getHours() >= 19
 }
 
 type DayStatus = 'free' | 'occupied' | 'reserved'
@@ -217,6 +230,7 @@ function SpotCard({
   status,
   isOverridden,
   isNonWorkDay,
+  isPastCutoff,
   switchedToSpotNumber,
   onSetDayStatus,
   onClearOverride,
@@ -230,6 +244,7 @@ function SpotCard({
   status: DayStatus
   isOverridden: boolean
   isNonWorkDay: boolean
+  isPastCutoff: boolean
   switchedToSpotNumber?: number
   onSetDayStatus: (s: 'free' | 'occupied') => void
   onClearOverride: () => void
@@ -307,7 +322,7 @@ function SpotCard({
         {status === 'occupied' && (
           <Button
             onClick={() => onSetDayStatus('free')}
-            disabled={isToggling || isNonWorkDay}
+            disabled={isToggling || isNonWorkDay || isPastCutoff}
             color="orange"
             className="h-11 flex-1 gap-2 text-sm font-semibold"
           >
@@ -318,7 +333,7 @@ function SpotCard({
         {status === 'free' && (
           <Button
             onClick={() => onSetDayStatus('occupied')}
-            disabled={isToggling || isNonWorkDay}
+            disabled={isToggling || isNonWorkDay || isPastCutoff}
             color="green"
             className="h-11 flex-1 gap-2 text-sm font-semibold"
           >
@@ -340,7 +355,7 @@ function SpotCard({
         {isOverridden && status !== 'reserved' && (
           <Button
             onClick={onClearOverride}
-            disabled={isToggling || isNonWorkDay}
+            disabled={isToggling || isNonWorkDay || isPastCutoff}
             variant="ghost"
             className="text-muted-foreground h-11 gap-2 px-3 text-sm"
           >
@@ -518,7 +533,7 @@ export function OwnerParkingPage() {
             cancelBooking.mutate(bookingToCancel.id, {
               onSuccess: () =>
                 notifications.show({
-                  message: `Mesto #${spot.number} zasedeno za ${selectedDate}`,
+                  message: `Mesto #${spot.number} zasedeno za ${fmtDate(selectedDate)}`,
                   color: 'green',
                 }),
               onError: (err) =>
@@ -532,8 +547,8 @@ export function OwnerParkingPage() {
             notifications.show({
               message:
                 status === 'free'
-                  ? `Mesto #${spot.number} sproščeno za ${selectedDate}`
-                  : `Mesto #${spot.number} zasedeno za ${selectedDate}`,
+                  ? `Mesto #${spot.number} sproščeno za ${fmtDate(selectedDate)}`
+                  : `Mesto #${spot.number} zasedeno za ${fmtDate(selectedDate)}`,
               color: 'green',
             })
           }
@@ -694,6 +709,7 @@ export function OwnerParkingPage() {
                 status={status}
                 isOverridden={isOverridden}
                 isNonWorkDay={isNonWorkDay(selectedDate, today, workFreeDays)}
+                isPastCutoff={isPastBookingCutoff(selectedDate, today)}
                 switchedToSpotNumber={
                   isSwitchedFree ? myBookingElsewhere.spot_number : undefined
                 }
