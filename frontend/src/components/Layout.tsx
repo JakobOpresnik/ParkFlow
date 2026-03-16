@@ -44,6 +44,7 @@ export function Layout({ children, noPadding }: LayoutProps) {
   const user = useAuthStore((s) => s.user)
   const isLoading = useAuthStore((s) => s.isLoading)
   const logout = useAuthStore((s) => s.logout)
+  const sessionExpired = useAuthStore((s) => s.sessionExpired)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
 
   const isAdminSection =
@@ -71,6 +72,14 @@ export function Layout({ children, noPadding }: LayoutProps) {
 
   return (
     <div className="flex h-screen overflow-hidden">
+      {sessionExpired && (
+        <div className="bg-background/70 fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 backdrop-blur-md">
+          <Loader2 className="text-primary size-8 animate-spin" />
+          <p className="text-sm font-medium">
+            Seja je potekla — preusmerjanje na prijavo…
+          </p>
+        </div>
+      )}
       {/* Sidebar */}
       <aside className="bg-card flex w-14 shrink-0 flex-col border-r sm:w-56">
         {/* Logo */}
