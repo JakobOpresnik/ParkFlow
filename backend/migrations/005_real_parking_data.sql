@@ -82,7 +82,7 @@ INSERT INTO owners (id, name) VALUES
   ('b0000000-0000-0000-0000-000000000041', 'Tilen Marc / Demijan Lesjak / Timotej Vesel'),
   ('b0000000-0000-0000-0000-000000000042', 'Boštjan Kovač / Aljaž Konečnik'),
   ('b0000000-0000-0000-0000-000000000043', 'Reduxi')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO NOTHING; 
 
 -- ── 4. Insert spots ───────────────────────────────────────────────────────────
 -- number  = actual parking spot / card number from the CSV (integer)

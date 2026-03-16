@@ -23,6 +23,7 @@ const SPOT_SELECT = `
     o.email         AS owner_email,
     o.phone         AS owner_phone,
     o.vehicle_plate AS owner_vehicle_plate,
+    o.user_id       AS owner_user_id,
     o.notes         AS owner_notes,
     b.id            AS active_booking_id,
     b.user_id       AS active_booking_user_id,
