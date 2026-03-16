@@ -1,5 +1,6 @@
 import { notifications } from '@mantine/notifications'
 import {
+  ArrowRightLeft,
   ChevronUp,
   Clock,
   DoorOpen,
@@ -8,6 +9,8 @@ import {
   ParkingCircle,
   RotateCcw,
   ShieldX,
+  Star,
+  Sun,
   User,
   UserCheck,
 } from 'lucide-react'
@@ -15,7 +18,7 @@ import { useMemo, useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { useCancelBooking } from '@/hooks/useBookings'
+import { useCancelBooking, useMyBookings } from '@/hooks/useBookings'
 import {
   useOwnerMe,
   useOwnerOverrides,
@@ -53,6 +56,17 @@ function getNext7Days(today: string): string[] {
     days.push(d.toISOString().slice(0, 10))
   }
   return days
+}
+
+function isNonWorkDay(
+  date: string,
+  today: string,
+  workFreeDays: string[],
+): boolean {
+  if (date < today) return true
+  const dow = new Date(date + 'T00:00:00').getDay()
+  if (dow === 0 || dow === 6) return true
+  return workFreeDays.includes(date)
 }
 
 type DayStatus = 'free' | 'occupied' | 'reserved'
@@ -128,11 +142,13 @@ function WeekStrip({
   today,
   selectedDate,
   onSelect,
+  workFreeDays,
 }: {
   days: string[]
   today: string
   selectedDate: string
   onSelect: (date: string) => void
+  workFreeDays: string[]
 }) {
   return (
     <div className="bg-card rounded-2xl border p-1.5">
@@ -142,6 +158,8 @@ function WeekStrip({
           const isSelected = date === selectedDate
           const isToday = date === today
           const isWeekend = [0, 6].includes(d.getDay())
+          const isHoliday = !isWeekend && workFreeDays.includes(date)
+          const isNonWork = isWeekend || isHoliday
           const weekday = d.toLocaleDateString('sl-SI', { weekday: 'short' })
           const dayNum = d.getDate()
 
@@ -152,7 +170,7 @@ function WeekStrip({
               className={`relative flex flex-col items-center gap-0.5 rounded-xl py-2.5 transition-all ${
                 isSelected
                   ? 'bg-primary text-primary-foreground shadow-sm'
-                  : isWeekend
+                  : isNonWork
                     ? 'text-muted-foreground/60 hover:bg-muted'
                     : 'hover:bg-muted'
               }`}
@@ -167,11 +185,21 @@ function WeekStrip({
                 {weekday}
               </span>
               <span className="text-lg leading-tight font-bold">{dayNum}</span>
-              {isToday && (
+              {isToday && !isNonWork && (
                 <div
-                  className={`mt-0.5 size-1 rounded-full ${
+                  className={`size-1 rounded-full ${
                     isSelected ? 'bg-primary-foreground' : 'bg-primary'
                   }`}
+                />
+              )}
+              {isWeekend && (
+                <Sun
+                  className={`size-2.5 ${isSelected ? 'opacity-70' : 'opacity-50'}`}
+                />
+              )}
+              {isHoliday && (
+                <Star
+                  className={`size-2.5 ${isSelected ? 'opacity-70' : 'opacity-50'}`}
                 />
               )}
             </button>
@@ -188,6 +216,8 @@ function SpotCard({
   spot,
   status,
   isOverridden,
+  isNonWorkDay,
+  switchedToSpotNumber,
   onSetDayStatus,
   onClearOverride,
   onCancelBooking,
@@ -199,6 +229,8 @@ function SpotCard({
   spot: OwnerSpot
   status: DayStatus
   isOverridden: boolean
+  isNonWorkDay: boolean
+  switchedToSpotNumber?: number
   onSetDayStatus: (s: 'free' | 'occupied') => void
   onClearOverride: () => void
   onCancelBooking: () => void
@@ -230,6 +262,12 @@ function SpotCard({
               <span className="text-muted-foreground text-xs">(override)</span>
             )}
           </div>
+          {switchedToSpotNumber && (
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-indigo-500 dark:text-indigo-400">
+              <ArrowRightLeft className="size-3 shrink-0" />
+              Preklop na mesto #{switchedToSpotNumber} — dostopno ostalim
+            </div>
+          )}
         </div>
         <button
           onClick={onToggleHistory}
@@ -269,8 +307,8 @@ function SpotCard({
         {status === 'occupied' && (
           <Button
             onClick={() => onSetDayStatus('free')}
-            disabled={isToggling}
-            color="green"
+            disabled={isToggling || isNonWorkDay}
+            color="orange"
             className="h-11 flex-1 gap-2 text-sm font-semibold"
           >
             <DoorOpen className="size-4" />
@@ -280,8 +318,8 @@ function SpotCard({
         {status === 'free' && (
           <Button
             onClick={() => onSetDayStatus('occupied')}
-            disabled={isToggling}
-            color="orange"
+            disabled={isToggling || isNonWorkDay}
+            color="green"
             className="h-11 flex-1 gap-2 text-sm font-semibold"
           >
             <UserCheck className="size-4" />
@@ -302,7 +340,7 @@ function SpotCard({
         {isOverridden && status !== 'reserved' && (
           <Button
             onClick={onClearOverride}
-            disabled={isToggling}
+            disabled={isToggling || isNonWorkDay}
             variant="ghost"
             className="text-muted-foreground h-11 gap-2 px-3 text-sm"
           >
@@ -422,9 +460,26 @@ export function OwnerParkingPage() {
   const { data: presenceData } = usePresence(selectedDate)
   const { data: weekBookings = [] } = useOwnerWeek(today, weekEnd)
   const { data: overrides = [] } = useOwnerOverrides(today, weekEnd)
+  const { data: myBookings = [] } = useMyBookings()
 
   const setDayStatus = useSetSpotDayStatus()
   const cancelBooking = useCancelBooking()
+
+  const ownedSpotIds = useMemo(() => new Set(spots.map((s) => s.id)), [spots])
+
+  const myBookingElsewhere = useMemo(
+    () =>
+      myBookings.find(
+        (b) =>
+          b.status === 'active' &&
+          !ownedSpotIds.has(b.spot_id) &&
+          b.booked_at.slice(0, 10) <= selectedDate &&
+          b.expires_at.slice(0, 10) >= selectedDate,
+      ),
+    [myBookings, ownedSpotIds, selectedDate],
+  )
+
+  const workFreeDays = presenceData?.work_free_days ?? []
 
   const presenceMap = useMemo(() => {
     const map = new Map<string, string>()
@@ -449,17 +504,40 @@ export function OwnerParkingPage() {
   }
 
   function handleSetDayStatus(spot: OwnerSpot, status: 'free' | 'occupied') {
+    // Capture at call time so the closure stays consistent even if selectedDate changes
+    const bookingToCancel =
+      status === 'occupied' ? myBookingElsewhere : undefined
+
     setDayStatus.mutate(
       { spotId: spot.id, date: selectedDate, status },
       {
-        onSuccess: () =>
-          notifications.show({
-            message:
-              status === 'free'
-                ? `Mesto #${spot.number} sproščeno za ${selectedDate}`
-                : `Mesto #${spot.number} zasedeno za ${selectedDate}`,
-            color: 'green',
-          }),
+        onSuccess: () => {
+          if (bookingToCancel) {
+            // Re-occupying own spot — also cancel the switched-to booking so
+            // the other spot is freed on the map immediately.
+            cancelBooking.mutate(bookingToCancel.id, {
+              onSuccess: () =>
+                notifications.show({
+                  message: `Mesto #${spot.number} zasedeno za ${selectedDate}`,
+                  color: 'green',
+                }),
+              onError: (err) =>
+                notifications.show({
+                  message:
+                    err instanceof Error ? err.message : 'Napaka pri preklicu',
+                  color: 'red',
+                }),
+            })
+          } else {
+            notifications.show({
+              message:
+                status === 'free'
+                  ? `Mesto #${spot.number} sproščeno za ${selectedDate}`
+                  : `Mesto #${spot.number} zasedeno za ${selectedDate}`,
+              color: 'green',
+            })
+          }
+        },
         onError: (err) =>
           notifications.show({
             message: err instanceof Error ? err.message : 'Napaka',
@@ -552,6 +630,7 @@ export function OwnerParkingPage() {
         today={today}
         selectedDate={selectedDate}
         onSelect={setSelectedDate}
+        workFreeDays={workFreeDays}
       />
 
       {/* Selected date label + legend */}
@@ -563,6 +642,29 @@ export function OwnerParkingPage() {
           <Legend />
         </div>
       </div>
+
+      {/* Switched-spot banner — only when an owned spot is still freed-up */}
+      {myBookingElsewhere &&
+        spots.some((spot) => {
+          const s = getStatus(spot)
+          return (
+            hasOverrideForDay(spot.id, selectedDate, overrides) && s === 'free'
+          )
+        }) && (
+          <div className="flex items-start gap-3 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 dark:border-indigo-800 dark:bg-indigo-950/30">
+            <ArrowRightLeft className="mt-0.5 size-4 shrink-0 text-indigo-500" />
+            <div className="text-sm">
+              <p className="font-medium text-indigo-700 dark:text-indigo-300">
+                Rezervacijo ste premaknili na parkirno mesto #
+                {myBookingElsewhere.spot_number}
+              </p>
+              <p className="text-indigo-600/80 dark:text-indigo-400/80">
+                Vaše lastniško parkirno mesto je za ta dan označeno kot prosto
+                in dostopno ostalim.
+              </p>
+            </div>
+          </div>
+        )}
 
       {/* Spots */}
       {spots.length === 0 ? (
@@ -581,12 +683,20 @@ export function OwnerParkingPage() {
               selectedDate,
               overrides,
             )
+            const isSwitchedFree =
+              isOverridden &&
+              status === 'free' &&
+              myBookingElsewhere !== undefined
             return (
               <SpotCard
                 key={spot.id}
                 spot={spot}
                 status={status}
                 isOverridden={isOverridden}
+                isNonWorkDay={isNonWorkDay(selectedDate, today, workFreeDays)}
+                switchedToSpotNumber={
+                  isSwitchedFree ? myBookingElsewhere.spot_number : undefined
+                }
                 onSetDayStatus={(s) => handleSetDayStatus(spot, s)}
                 onClearOverride={() => handleClearOverride(spot)}
                 onCancelBooking={() => handleCancelBooking(spot)}

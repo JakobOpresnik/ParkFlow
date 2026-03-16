@@ -30,7 +30,6 @@ export function useOwnerWeek(from: string, to: string) {
     queryKey: ['owners', 'me', 'week', from, to],
     queryFn: () => api.getOwnerWeek(from, to),
     enabled: !!token && !!from && !!to,
-    staleTime: 60_000,
   })
 }
 
@@ -40,7 +39,6 @@ export function useOwnerOverrides(from: string, to: string) {
     queryKey: ['owners', 'me', 'overrides', from, to],
     queryFn: () => api.getOwnerOverrides(from, to),
     enabled: !!token && !!from && !!to,
-    staleTime: 30_000,
   })
 }
 
