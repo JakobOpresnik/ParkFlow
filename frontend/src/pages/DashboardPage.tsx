@@ -151,9 +151,10 @@ export function DashboardPage() {
       value: total,
       sub: 'across all lots',
       Icon: Activity,
-      iconColor: 'text-primary',
-      iconBg: 'bg-primary/10',
-      cardClass: 'bg-card',
+      iconColor: 'text-indigo-600 dark:text-indigo-400',
+      iconBg: 'bg-indigo-100 dark:bg-indigo-900/30',
+      cardClass:
+        'border-indigo-200 bg-indigo-50 dark:border-indigo-900/40 dark:bg-indigo-950/20',
     },
   ]
 
@@ -228,6 +229,8 @@ export function DashboardPage() {
           </div>
         </div>
       )}
+
+      {!isLoading && <div className="border-t" />}
 
       {/* Two-column: lot breakdown + activity feed */}
       {!isLoading && (

@@ -105,7 +105,7 @@ export function BookingCta({
           {ownerWarningOpen ? (
             <div className="space-y-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
               <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
-                Your spot #{myOwnedSpot?.number} is always available
+                Your spot #{myOwnedSpot?.number} is always available to you!
               </p>
               <p className="text-muted-foreground text-xs">
                 As the owner, spot #{myOwnedSpot?.number} is always reserved for
