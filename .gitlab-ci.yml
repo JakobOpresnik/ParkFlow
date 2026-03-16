@@ -31,11 +31,12 @@ gitleaks_MR:
     - git branch --set-upstream-to=origin/$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME
 
 trufflehog_MR:
-  variables:
-    # Only fail on secrets TruffleHog can actively verify against a live service.
-    # docker-compose files use Docker-internal hostnames (db, db-test) that are
-    # unreachable from CI runners, causing false positives for dev credentials.
-    TH_OPTS: '--since-commit=main --only-verified'
+  # Override script to add --only-verified: docker-compose files use Docker-internal
+  # hostnames (db, db-test) that are unreachable from CI, causing false positives.
+  # TH_OPTS is set as a project CI/CD variable and cannot be overridden from here.
+  script:
+    - echo "TRUFFLEHOG OPTIONS: $TH_OPTS"
+    - trufflehog git file://. --fail --only-verified --branch=$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME ${TH_OPTS}
 
 variables:
   # Dependency-Track integration used by trivy template job `repo_sbom_upload`.
