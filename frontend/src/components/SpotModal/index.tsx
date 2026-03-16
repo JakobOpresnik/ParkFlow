@@ -17,6 +17,7 @@ function buildBannerSubtext(
   spot: Spot,
   myReservedElsewhere: Spot | undefined,
   canCancelThisBooking: boolean,
+  isCurrentUserOwner: boolean,
 ): string {
   if (spot.status === 'free') {
     return myReservedElsewhere
@@ -28,6 +29,8 @@ function buildBannerSubtext(
       ? 'You have reserved this spot.'
       : 'This spot has already been reserved.'
   }
+  if (isCurrentUserOwner && spot.status === 'occupied')
+    return 'Your spot — you are currently using it.'
   return spot.owner_name
     ? 'This spot is currently in use by the owner.'
     : 'This spot is currently in use.'
@@ -56,6 +59,15 @@ export function SpotModal() {
 
   if (!spot) return null
 
+  const isCurrentUserOwner =
+    !!user && !!spot && spot.owner_user_id === user.username
+
+  const myOwnedSpot = user
+    ? allSpots.find(
+        (s) => s.owner_user_id === user.username && s.id !== spot.id,
+      )
+    : undefined
+
   // Spot the current user has reserved elsewhere ON THE SAME DAY (for auto-cancel on new reserve).
   // Reservations on other days are independent and must not be affected.
   const myReservedElsewhere = user
@@ -78,6 +90,7 @@ export function SpotModal() {
     spot,
     myReservedElsewhere,
     canCancelThisBooking,
+    isCurrentUserOwner,
   )
 
   return (
@@ -109,8 +122,16 @@ export function SpotModal() {
 
         {/* ── Body ────────────────────────────────────────────── */}
         <div className="max-h-[65vh] space-y-4 overflow-y-auto px-6 py-5">
-          <StatusBanner status={spot.status} subtext={bannerSubtext} />
-          <DetailsCard spot={spot} />
+          <StatusBanner
+            status={spot.status}
+            subtext={bannerSubtext}
+            titleOverride={
+              isCurrentUserOwner && spot.status === 'occupied'
+                ? 'Your Spot'
+                : undefined
+            }
+          />
+          <DetailsCard spot={spot} isCurrentUserOwner={isCurrentUserOwner} />
 
           {/* Management accordion (logged-in users) */}
           {user && <ManagementAccordion spot={spot} />}
@@ -126,6 +147,7 @@ export function SpotModal() {
             reservationDuration={reservationDuration}
             myReservedElsewhere={myReservedElsewhere}
             canCancelThisBooking={canCancelThisBooking}
+            myOwnedSpot={myOwnedSpot}
           />
         </div>
       </DialogContent>

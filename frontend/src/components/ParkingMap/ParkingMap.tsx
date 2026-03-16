@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 
+import { useAuthStore } from '@/store/authStore'
 import type { ParkingLot, Spot, SpotCoordinates, SpotStatus } from '@/types'
 
 // — types —
@@ -261,13 +262,22 @@ function SpotOverlay({
   isHighlighted,
   onClick,
 }: SpotOverlayProps) {
+  const currentUsername = useAuthStore((s) => s.user?.username)
   const coords = resolveCoords(spot.coordinates, imageWidth, imageHeight)
   const { x, y, width, height, rotation } = coords
   const cx = x + width / 2
   const cy = y + height / 2
-  const config = STATUS_CONFIG[spot.status]
+
+  const isMySpot = !!currentUsername && spot.owner_user_id === currentUsername
+  const displayStatus: SpotStatus =
+    isMySpot && spot.status === 'occupied' ? 'reserved' : spot.status
+
+  const config = STATUS_CONFIG[displayStatus]
   const fill = config?.fill ?? 'rgba(100,100,100,0.3)'
-  const stroke = config?.stroke ?? 'rgba(100,100,100,0.7)'
+  const stroke = isMySpot
+    ? 'rgba(99,102,241,0.95)'
+    : (config?.stroke ?? 'rgba(100,100,100,0.7)')
+
   const tp = textPosition(coords)
   const fontSize = Math.max(10, Math.min(22, height * 0.45))
   const labelRot = coords.labelRotation ?? 0
@@ -298,7 +308,7 @@ function SpotOverlay({
         height={height}
         fill={fill}
         stroke={isSelected ? '#6366f1' : isHighlighted ? '#FFF' : stroke}
-        strokeWidth={isSelected || isHighlighted ? 3 : 1.5}
+        strokeWidth={isSelected || isHighlighted ? 3 : isMySpot ? 2.5 : 1.5}
         className="transition-all duration-150 hover:brightness-110"
       />
       <text

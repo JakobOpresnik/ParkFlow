@@ -15,6 +15,7 @@ import { LoginPage } from '@/pages/LoginPage'
 import { MapEditorPage } from '@/pages/MapEditorPage'
 import { MapPage } from '@/pages/MapPage'
 import { MyBookingsPage } from '@/pages/MyBookingsPage'
+import { OwnerParkingPage } from '@/pages/OwnerParkingPage'
 import { OwnersPage } from '@/pages/OwnersPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { StatsPage } from '@/pages/StatsPage'
@@ -109,6 +110,12 @@ const mapEditorRoute = createRoute({
   component: MapEditorPage,
 })
 
+const ownerParkingRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/my-parking',
+  component: OwnerParkingPage,
+})
+
 const profileRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/profile',
@@ -124,6 +131,7 @@ const routeTree = rootRoute.addChildren([
     ownersRoute,
     statsRoute,
     myBookingsRoute,
+    ownerParkingRoute,
     adminRoute,
     mapEditorRoute,
     profileRoute,

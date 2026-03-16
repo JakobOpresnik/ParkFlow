@@ -27,6 +27,7 @@ interface BookingCtaProps {
   readonly reservationDuration: number
   readonly myReservedElsewhere: Spot | undefined
   readonly canCancelThisBooking: boolean
+  readonly myOwnedSpot?: Spot
 }
 
 // — constants —
@@ -46,6 +47,7 @@ export function BookingCta({
   reservationDuration,
   myReservedElsewhere,
   canCancelThisBooking,
+  myOwnedSpot,
 }: BookingCtaProps) {
   const {
     bookingDuration,
@@ -57,11 +59,14 @@ export function BookingCta({
     unavailableMsg,
     handleBook,
     handleCancelBooking,
+    ownerWarningOpen,
+    setOwnerWarningOpen,
   } = useBookingCta(spot, {
     selectedDate,
     arrivalTime,
     reservationDuration,
     myReservedElsewhere,
+    myOwnedSpot,
   })
 
   const {
@@ -97,25 +102,54 @@ export function BookingCta({
             arrivalTime={arrivalTime}
             expiryStr={computedExpiryStr}
           />
-          <Button
-            className="h-11 w-full gap-2 text-[15px] font-semibold"
-            style={STRETCH_BUTTON_STYLE}
-            disabled={bookingPending}
-            onClick={handleBook}
-          >
-            {myReservedElsewhere ? (
-              <>
-                <ArrowRightLeft className="size-5" />
-                Move to This Spot
-              </>
-            ) : (
-              <>
-                <CalendarCheck className="size-5" />
-                Reserve Parking Spot
-              </>
-            )}
-          </Button>
-          {myReservedElsewhere && (
+          {ownerWarningOpen ? (
+            <div className="space-y-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+              <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                Your spot #{myOwnedSpot?.number} is always available
+              </p>
+              <p className="text-muted-foreground text-xs">
+                As the owner, spot #{myOwnedSpot?.number} is always reserved for
+                you. Do you still want to reserve spot #{spot.number} instead?
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  className="h-9 flex-1 gap-2 text-sm font-semibold"
+                  disabled={bookingPending}
+                  onClick={handleBook}
+                >
+                  <CalendarCheck className="size-4" />
+                  Reserve #{spot.number}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="h-9 px-3 text-sm"
+                  onClick={() => setOwnerWarningOpen(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              className="h-11 w-full gap-2 text-[15px] font-semibold"
+              style={STRETCH_BUTTON_STYLE}
+              disabled={bookingPending}
+              onClick={handleBook}
+            >
+              {myReservedElsewhere ? (
+                <>
+                  <ArrowRightLeft className="size-5" />
+                  Move to This Spot
+                </>
+              ) : (
+                <>
+                  <CalendarCheck className="size-5" />
+                  Reserve Parking Spot
+                </>
+              )}
+            </Button>
+          )}
+          {!ownerWarningOpen && myReservedElsewhere && (
             <p className="text-muted-foreground text-center text-xs">
               Spot #{myReservedElsewhere.number} reservation will be cancelled
             </p>

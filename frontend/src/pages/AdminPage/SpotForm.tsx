@@ -1,7 +1,7 @@
 import { Select } from '@mantine/core'
 
 import { Input } from '@/components/ui/input'
-import type { ParkingLot, SpotStatus, SpotType } from '@/types'
+import type { Owner, ParkingLot, SpotStatus, SpotType } from '@/types'
 
 // — types —
 
@@ -11,17 +11,19 @@ export interface SpotFormData {
   lot_id: string
   status: SpotStatus
   type: SpotType
+  owner_id: string
 }
 
 interface SpotFormProps {
   readonly value: SpotFormData
   readonly onChange: (v: SpotFormData) => void
   readonly lots: readonly ParkingLot[]
+  readonly owners: readonly Owner[]
 }
 
 // — main component —
 
-export function SpotForm({ value, onChange, lots }: SpotFormProps) {
+export function SpotForm({ value, onChange, lots, owners }: SpotFormProps) {
   return (
     <div className="grid gap-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -86,6 +88,22 @@ export function SpotForm({ value, onChange, lots }: SpotFormProps) {
             allowDeselect={false}
           />
         </div>
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium">Owner</label>
+        <select
+          className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:outline-none"
+          value={value.owner_id}
+          onChange={(e) => onChange({ ...value, owner_id: e.target.value })}
+        >
+          <option value="">No owner</option>
+          {owners.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.name}
+              {o.user_id ? ` (${o.user_id})` : ''}
+            </option>
+          ))}
+        </select>
       </div>
     </div>
   )

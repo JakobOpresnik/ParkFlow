@@ -24,6 +24,7 @@ export function useNewOwnerForm(spot: Spot, onCreatedAndAssigned: () => void) {
         phone: null,
         vehicle_plate: newPlate.trim() || null,
         notes: null,
+        user_id: null,
       },
       {
         onSuccess: (owner) => {

@@ -1,6 +1,7 @@
-import { Accessibility, Clock, User, Zap } from 'lucide-react'
+import { Accessibility, Car, Clock, Crown, User, Zap } from 'lucide-react'
 
 import { ReservationTimer } from '@/components/ReservationTimer'
+import { useAuthStore } from '@/store/authStore'
 import { useParkingStore } from '@/store/parkingStore'
 import { useUIStore } from '@/store/uiStore'
 import type { Spot, SpotStatus } from '@/types'
@@ -21,6 +22,8 @@ interface ClockRowProps {
 
 interface OwnerListProps {
   readonly spot: Spot
+  readonly isMySpot: boolean
+  readonly ownerVehiclePlate: string | null
 }
 
 interface SpotCardProps {
@@ -66,7 +69,32 @@ function ClockRow({ children, className }: ClockRowProps) {
   )
 }
 
-function OwnerList({ spot }: OwnerListProps) {
+function OwnerNameRows({ spot }: { readonly spot: Spot }) {
+  if (!spot.owner_name) {
+    return <p className="text-muted-foreground text-xs italic">Unassigned</p>
+  }
+
+  return (
+    <>
+      {spot.owner_name.split('/').map((name: string) => {
+        const isInOffice =
+          spot.in_office_owner?.toLowerCase() === name.trim().toLowerCase()
+
+        return (
+          <p
+            key={name}
+            className={`text-xs ${isInOffice ? 'text-spot-occupied font-medium' : 'text-muted-foreground'}`}
+          >
+            {name.trim()}
+            {isInOffice && <span className="ml-1 opacity-70">· in office</span>}
+          </p>
+        )
+      })}
+    </>
+  )
+}
+
+function OwnerList({ spot, isMySpot, ownerVehiclePlate }: OwnerListProps) {
   const isReservedByOther =
     spot.status === 'reserved' &&
     spot.active_booking_reserved_by &&
@@ -77,25 +105,18 @@ function OwnerList({ spot }: OwnerListProps) {
 
   return (
     <div className="min-w-0">
-      {spot.owner_name ? (
-        spot.owner_name.split('/').map((name: string) => {
-          const isInOffice =
-            spot.in_office_owner?.toLowerCase() === name.trim().toLowerCase()
-
-          return (
-            <p
-              key={name}
-              className={`text-xs ${isInOffice ? 'text-spot-occupied font-medium' : 'text-muted-foreground'}`}
-            >
-              {name.trim()}
-              {isInOffice && (
-                <span className="ml-1 opacity-70">· in office</span>
-              )}
+      {isMySpot ? (
+        <>
+          <p className="text-spot-reserved text-xs font-medium">You</p>
+          {ownerVehiclePlate && (
+            <p className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
+              <Car className="size-3 shrink-0" />
+              {ownerVehiclePlate}
             </p>
-          )
-        })
+          )}
+        </>
       ) : (
-        <p className="text-muted-foreground text-xs italic">Unassigned</p>
+        <OwnerNameRows spot={spot} />
       )}
 
       {isReservedByOther && (
@@ -114,7 +135,15 @@ function OwnerList({ spot }: OwnerListProps) {
 }
 
 function SpotCard({ spot, onClick }: SpotCardProps) {
-  const config = STATUS_CONFIG[spot.status]
+  const currentUsername = useAuthStore((s) => s.user?.username)
+
+  const isMySpot = !!currentUsername && spot.owner_user_id === currentUsername
+  const displayStatus: SpotStatus =
+    isMySpot && spot.status === 'occupied' ? 'reserved' : spot.status
+  const config = STATUS_CONFIG[displayStatus]
+
+  const badgeLabel =
+    isMySpot && spot.status === 'occupied' ? 'Your Spot' : config.label
 
   return (
     <button
@@ -144,18 +173,25 @@ function SpotCard({ spot, onClick }: SpotCardProps) {
             <p className="text-muted-foreground mt-0.5 text-xs">{spot.label}</p>
           )}
         </div>
-        <span
-          className={`mt-1 rounded-full px-2 py-0.5 text-xs font-semibold ${config.badgeText} ${config.badgeBg}`}
-        >
-          {config.label}
-        </span>
+        <div className="mt-1 flex items-center gap-1">
+          {isMySpot && <Crown className="text-primary size-3 shrink-0" />}
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-semibold ${config.badgeText} ${config.badgeBg}`}
+          >
+            {badgeLabel}
+          </span>
+        </div>
       </div>
 
       {/* Divider + owner row */}
       <div className="border-t px-4 py-2.5">
         <div className="flex items-start gap-2">
           <User className="text-muted-foreground mt-0.5 size-3.5 shrink-0" />
-          <OwnerList spot={spot} />
+          <OwnerList
+            spot={spot}
+            isMySpot={isMySpot}
+            ownerVehiclePlate={spot.owner_vehicle_plate}
+          />
         </div>
       </div>
     </button>

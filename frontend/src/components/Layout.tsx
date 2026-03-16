@@ -11,6 +11,7 @@ import {
   ParkingCircle,
   PenLine,
   Settings,
+  SquareParking,
   User,
   Users,
 } from 'lucide-react'
@@ -25,6 +26,7 @@ const topNavItems = [
   { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
   { to: '/stats', label: 'Statistics', Icon: BarChart2 },
   { to: '/my-bookings', label: 'My Bookings', Icon: Calendar },
+  { to: '/my-parking', label: 'My Parking', Icon: SquareParking },
 ]
 
 const adminSubItems = [
@@ -42,6 +44,7 @@ export function Layout({ children, noPadding }: LayoutProps) {
   const user = useAuthStore((s) => s.user)
   const isLoading = useAuthStore((s) => s.isLoading)
   const logout = useAuthStore((s) => s.logout)
+  const sessionExpired = useAuthStore((s) => s.sessionExpired)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
 
   const isAdminSection =
@@ -63,18 +66,28 @@ export function Layout({ children, noPadding }: LayoutProps) {
   }
 
   const linkClass =
-    'text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-3 rounded-md px-2 py-2.5 text-sm transition-colors sm:px-3'
+    'relative text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-3 rounded-lg px-2 py-2.5 text-sm transition-colors sm:px-3'
   const activeLinkClass =
-    'bg-primary/10 text-primary font-medium hover:bg-primary/10 hover:text-primary'
+    'bg-primary/10 text-primary font-semibold hover:bg-primary/10 hover:text-primary before:absolute before:inset-y-1.5 before:left-0.5 before:w-0.5 before:rounded-full before:bg-primary'
 
   return (
     <div className="flex h-screen overflow-hidden">
+      {sessionExpired && (
+        <div className="bg-background/70 fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 backdrop-blur-md">
+          <Loader2 className="text-primary size-8 animate-spin" />
+          <p className="text-sm font-medium">
+            Seja je potekla — preusmerjanje na prijavo…
+          </p>
+        </div>
+      )}
       {/* Sidebar */}
       <aside className="bg-card flex w-14 shrink-0 flex-col border-r sm:w-56">
         {/* Logo */}
         <div className="flex h-14 items-center border-b px-3 sm:px-4">
-          <ParkingCircle className="text-primary size-5 shrink-0" />
-          <span className="ml-2 hidden text-sm font-semibold tracking-tight sm:block">
+          <div className="bg-primary/10 flex size-7 shrink-0 items-center justify-center rounded-lg">
+            <ParkingCircle className="text-primary size-4" />
+          </div>
+          <span className="ml-2.5 hidden text-sm font-semibold tracking-tight sm:block">
             ParkFlow
           </span>
         </div>

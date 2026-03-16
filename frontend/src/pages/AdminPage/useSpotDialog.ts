@@ -1,7 +1,7 @@
 import { notifications } from '@mantine/notifications'
 import { useState } from 'react'
 
-import { useCreateSpot, useUpdateSpot } from '@/hooks/useSpots'
+import { useAssignOwner, useCreateSpot, useUpdateSpot } from '@/hooks/useSpots'
 import type { ParkingLot, Spot } from '@/types'
 
 import type { SpotFormData } from './SpotForm'
@@ -21,16 +21,18 @@ const EMPTY_SPOT: SpotFormData = {
   lot_id: '',
   status: 'free',
   type: 'standard',
+  owner_id: '',
 }
 
 // — hook —
 
-export function useSpotDialog(lots: ParkingLot[]) {
+export function useSpotDialog(lots: ParkingLot[], allSpots: Spot[]) {
   const [dialog, setDialog] = useState<SpotDialogState>({ mode: null })
   const [form, setForm] = useState<SpotFormData>(EMPTY_SPOT)
 
   const createSpot = useCreateSpot()
   const updateSpot = useUpdateSpot()
+  const assignOwner = useAssignOwner()
 
   const isSaving = createSpot.isPending || updateSpot.isPending
 
@@ -46,6 +48,7 @@ export function useSpotDialog(lots: ParkingLot[]) {
       lot_id: spot.lot_id ?? '',
       status: spot.status,
       type: spot.type ?? 'standard',
+      owner_id: spot.owner_id ?? '',
     })
     setDialog({ mode: 'edit', id: spot.id })
   }
@@ -78,7 +81,10 @@ export function useSpotDialog(lots: ParkingLot[]) {
           type: form.type,
         },
         {
-          onSuccess: () => {
+          onSuccess: (spot) => {
+            if (form.owner_id) {
+              assignOwner.mutate({ id: spot.id, owner_id: form.owner_id })
+            }
             notifications.show({
               message: `Spot #${num} created`,
               color: 'green',
@@ -94,6 +100,10 @@ export function useSpotDialog(lots: ParkingLot[]) {
         },
       )
     } else if (dialog.mode === 'edit') {
+      const currentSpot = allSpots.find((s) => s.id === dialog.id)
+      const ownerChanged =
+        (form.owner_id || null) !== (currentSpot?.owner_id ?? null)
+
       updateSpot.mutate(
         {
           id: dialog.id,
@@ -107,6 +117,12 @@ export function useSpotDialog(lots: ParkingLot[]) {
         },
         {
           onSuccess: () => {
+            if (ownerChanged) {
+              assignOwner.mutate({
+                id: dialog.id,
+                owner_id: form.owner_id || null,
+              })
+            }
             notifications.show({
               message: `Spot #${num} updated`,
               color: 'green',

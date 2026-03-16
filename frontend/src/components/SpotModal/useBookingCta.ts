@@ -1,7 +1,8 @@
 import { notifications } from '@mantine/notifications'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { useCancelBooking, useCreateBooking } from '@/hooks/useBookings'
+import { useSetSpotDayStatus } from '@/hooks/useOwnerParking'
 import type { Spot } from '@/types'
 
 import { fmtTime } from './utils'
@@ -13,6 +14,7 @@ export interface UseBookingCtaOptions {
   readonly arrivalTime: string
   readonly reservationDuration: number
   readonly myReservedElsewhere: Spot | undefined
+  readonly myOwnedSpot?: Spot
 }
 
 // — helpers —
@@ -36,12 +38,16 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
     arrivalTime,
     reservationDuration,
     myReservedElsewhere,
+    myOwnedSpot,
   } = options
 
   const [bookingDuration, setBookingDuration] = useState(reservationDuration)
+  const [ownerWarningOpen, setOwnerWarningOpen] = useState(false)
+  const bookingInFlight = useRef(false)
 
   const createBooking = useCreateBooking()
   const cancelBooking = useCancelBooking()
+  const setSpotDayStatus = useSetSpotDayStatus()
 
   const today = new Date().toISOString().slice(0, 10)
   const isBookableDate = selectedDate >= today
@@ -61,6 +67,16 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
       : 'Spot unavailable — already reserved'
 
   async function handleBook() {
+    if (bookingInFlight.current) return
+
+    if (myOwnedSpot && !ownerWarningOpen) {
+      setOwnerWarningOpen(true)
+      return
+    }
+
+    setOwnerWarningOpen(false)
+    bookingInFlight.current = true
+
     const expiresAt = computeExpiresAt(
       arrivalTime,
       bookingDuration,
@@ -68,41 +84,57 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
     )
     const expiryStr = fmtTime(expiresAt)
 
-    if (myReservedElsewhere?.active_booking_id) {
+    try {
+      if (myReservedElsewhere?.active_booking_id) {
+        try {
+          await cancelBooking.mutateAsync(myReservedElsewhere.active_booking_id)
+        } catch (err) {
+          notifications.show({
+            message:
+              err instanceof Error
+                ? err.message
+                : 'Could not cancel existing reservation',
+            color: 'red',
+          })
+          return
+        }
+      }
+
       try {
-        await cancelBooking.mutateAsync(myReservedElsewhere.active_booking_id)
+        const [hh, mm] = arrivalTime.split(':').map(Number)
+        const startsAtDate = new Date(selectedDate + 'T12:00:00')
+        startsAtDate.setHours(hh ?? 9, mm ?? 0, 0, 0)
+        await createBooking.mutateAsync({
+          spot_id: spot.id,
+          starts_at: startsAtDate.toISOString(),
+          expires_at: expiresAt.toISOString(),
+        })
+        notifications.show({
+          message: myReservedElsewhere
+            ? `Moved to spot #${spot.number} — spot #${myReservedElsewhere.number} reservation cancelled.`
+            : `Spot #${spot.number} reserved until ${expiryStr}!`,
+          color: 'green',
+        })
+
+        if (myOwnedSpot) {
+          try {
+            await setSpotDayStatus.mutateAsync({
+              spotId: myOwnedSpot.id,
+              date: selectedDate,
+              status: 'free',
+            })
+          } catch {
+            // Non-critical — ignore failure
+          }
+        }
       } catch (err) {
         notifications.show({
-          message:
-            err instanceof Error
-              ? err.message
-              : 'Could not cancel existing reservation',
+          message: err instanceof Error ? err.message : 'Booking failed',
           color: 'red',
         })
-        return
       }
-    }
-
-    try {
-      const [hh, mm] = arrivalTime.split(':').map(Number)
-      const startsAtDate = new Date(selectedDate + 'T12:00:00')
-      startsAtDate.setHours(hh ?? 9, mm ?? 0, 0, 0)
-      await createBooking.mutateAsync({
-        spot_id: spot.id,
-        starts_at: startsAtDate.toISOString(),
-        expires_at: expiresAt.toISOString(),
-      })
-      notifications.show({
-        message: myReservedElsewhere
-          ? `Moved to spot #${spot.number} — spot #${myReservedElsewhere.number} reservation cancelled.`
-          : `Spot #${spot.number} reserved until ${expiryStr}!`,
-        color: 'green',
-      })
-    } catch (err) {
-      notifications.show({
-        message: err instanceof Error ? err.message : 'Booking failed',
-        color: 'red',
-      })
+    } finally {
+      bookingInFlight.current = false
     }
   }
 
@@ -133,5 +165,7 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
     unavailableMsg,
     handleBook,
     handleCancelBooking,
+    ownerWarningOpen,
+    setOwnerWarningOpen,
   }
 }

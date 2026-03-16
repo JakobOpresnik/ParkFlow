@@ -52,8 +52,6 @@ export function ProfilePage() {
 
       <UserProfileCard
         user={user}
-        totalBookings={totalBookings}
-        utilizationPct={utilizationPct}
         uniqueFloors={uniqueFloors}
         isLoading={isLoading}
       />

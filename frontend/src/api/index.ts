@@ -1,14 +1,17 @@
-import { notifications } from '@mantine/notifications'
-
+import { useAuthStore } from '@/store/authStore'
 import type {
   AppUser,
   Booking,
   Owner,
+  OwnerSpot,
+  OwnerWeekBooking,
   ParkingLot,
   PresenceResponse,
   Spot,
+  SpotBooking,
   SpotChange,
   SpotCoordinates,
+  SpotDayOverride,
   SpotStatus,
   SpotType,
 } from '@/types'
@@ -38,12 +41,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       localStorage.removeItem(ID_TOKEN_KEY)
       if (!sessionExpiredNotified) {
         sessionExpiredNotified = true
-        notifications.show({
-          title: 'Session expired',
-          message: 'Please log in again.',
-          color: 'red',
-          autoClose: 3000,
-        })
+        useAuthStore.getState().setSessionExpired()
         setTimeout(() => {
           window.location.href = '/login'
         }, 3000)
@@ -72,6 +70,33 @@ export const api = {
     }),
 
   // Owners
+  getOwnerMe: () => request<Owner>('/api/owners/me'),
+  getOwnerSpots: () => request<OwnerSpot[]>('/api/owners/me/spots'),
+  getOwnerWeek: (from: string, to: string) =>
+    request<OwnerWeekBooking[]>(
+      `/api/owners/me/week?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+    ),
+  getOwnerOverrides: (from: string, to: string) =>
+    request<SpotDayOverride[]>(
+      `/api/owners/me/overrides?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+    ),
+  setSpotDayStatus: (
+    spotId: string,
+    date: string,
+    status: 'free' | 'occupied' | null,
+  ) =>
+    request<SpotDayOverride | { ok: boolean }>(
+      `/api/owners/me/spots/${spotId}/day-status`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ date, status }),
+      },
+    ),
+  linkOwner: (id: string, username: string | null) =>
+    request<Owner>(`/api/owners/${id}/link`, {
+      method: 'PATCH',
+      body: JSON.stringify({ username }),
+    }),
   getOwners: () => request<Owner[]>('/api/owners'),
   createOwner: (data: Omit<Owner, 'id' | 'created_at'>) =>
     request<Owner>('/api/owners', {
@@ -137,6 +162,16 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ coordinates }),
     }),
+
+  // Per-day overrides (public, all spots)
+  getSpotDayOverrides: (date: string) =>
+    request<SpotDayOverride[]>(
+      `/api/spots/day-overrides?date=${encodeURIComponent(date)}`,
+    ),
+
+  // Spot booking history
+  getSpotBookings: (spotId: string) =>
+    request<SpotBooking[]>(`/api/spots/${spotId}/bookings`),
 
   // Changes (audit log)
   getChanges: (lot_id?: string) =>

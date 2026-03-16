@@ -64,27 +64,38 @@ describe("POST /api/bookings", () => {
   });
 
   it("auto-cancels existing booking and creates new one", async () => {
-    const cancelMockClient = {
+    const mockClient = {
       query: vi
         .fn()
         .mockResolvedValueOnce({}) // BEGIN
-        .mockResolvedValueOnce({}) // UPDATE bookings (cancel old)
-        .mockResolvedValueOnce({ rows: [] }) // SELECT other active bookings
-        .mockResolvedValueOnce({}) // UPDATE spots (free old spot)
-        .mockResolvedValueOnce({}), // COMMIT
-      release: vi.fn(),
-    };
-    const bookMockClient = {
-      query: vi
-        .fn()
-        .mockResolvedValueOnce({}) // BEGIN
-        .mockResolvedValueOnce({}) // UPDATE spots (reserve new)
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: "spot-1",
+              status: "free",
+              number: 5,
+              label: "A5",
+              floor: "P1",
+              owner_name: null,
+            },
+          ],
+        }) // SELECT spot FOR UPDATE
+        .mockResolvedValueOnce({
+          rows: [{ id: "old-booking", spot_id: "spot-2" }],
+        }) // SELECT existing booking FOR UPDATE
+        .mockResolvedValueOnce({}) // UPDATE bookings cancel old
+        .mockResolvedValueOnce({ rows: [] }) // SELECT other active for old spot
+        .mockResolvedValueOnce({}) // UPDATE spots free old spot
+        .mockResolvedValueOnce({ rows: [] }) // SELECT booking conflict
+        .mockResolvedValueOnce({ rows: [] }) // SELECT spot_day_status
+        .mockResolvedValueOnce({}) // UPDATE spots reserved
         .mockResolvedValueOnce({
           rows: [
             {
               id: "booking-2",
               status: "active",
               booked_at: new Date().toISOString(),
+              starts_at: null,
               expires_at: new Date(Date.now() + 8 * 3600 * 1000).toISOString(),
               ended_at: null,
             },
@@ -94,21 +105,8 @@ describe("POST /api/bookings", () => {
       release: vi.fn(),
     };
 
-    mockQuery
-      .mockResolvedValueOnce({ rows: [] }) // expire stale
-      .mockResolvedValueOnce({
-        rows: [{ id: "old-booking", spot_id: "spot-2" }],
-      }) // existing booking
-      .mockResolvedValueOnce({
-        rows: [{ id: "spot-1", status: "free", owner_name: null }],
-      }) // spot check
-      .mockResolvedValueOnce({
-        rows: [{ number: 5, label: "A5", floor: "P1" }],
-      }); // spot info
-
-    mockConnect
-      .mockResolvedValueOnce(cancelMockClient)
-      .mockResolvedValueOnce(bookMockClient);
+    mockQuery.mockResolvedValueOnce({ rows: [] }); // expire stale
+    mockConnect.mockResolvedValueOnce(mockClient);
 
     const res = await request(app)
       .post("/api/bookings")
@@ -117,14 +115,35 @@ describe("POST /api/bookings", () => {
 
     expect(res.status).toBe(201);
     expect(res.body.status).toBe("active");
-    expect(cancelMockClient.release).toHaveBeenCalled();
+    expect(mockClient.release).toHaveBeenCalled();
   });
 
   it("returns 409 when spot is not free", async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [] }) // expire stale
-      .mockResolvedValueOnce({ rows: [] }) // no existing booking
-      .mockResolvedValueOnce({ rows: [{ id: "spot-1", status: "occupied" }] }); // spot status
+    const mockClient = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: "spot-1",
+              status: "occupied",
+              number: 5,
+              label: null,
+              floor: 1,
+              owner_name: null,
+            },
+          ],
+        }) // SELECT spot FOR UPDATE
+        .mockResolvedValueOnce({ rows: [] }) // SELECT existing booking
+        .mockResolvedValueOnce({ rows: [] }) // SELECT booking conflict
+        .mockResolvedValueOnce({ rows: [] }) // SELECT spot_day_status
+        .mockResolvedValueOnce({}), // ROLLBACK
+      release: vi.fn(),
+    };
+
+    mockQuery.mockResolvedValueOnce({ rows: [] }); // expire stale
+    mockConnect.mockResolvedValueOnce(mockClient);
 
     const res = await request(app)
       .post("/api/bookings")
@@ -140,13 +159,29 @@ describe("POST /api/bookings", () => {
       query: vi
         .fn()
         .mockResolvedValueOnce({}) // BEGIN
-        .mockResolvedValueOnce({}) // UPDATE spots
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: "spot-1",
+              status: "free",
+              number: 5,
+              label: "A5",
+              floor: "P1",
+              owner_name: null,
+            },
+          ],
+        }) // SELECT spot FOR UPDATE
+        .mockResolvedValueOnce({ rows: [] }) // SELECT existing booking
+        .mockResolvedValueOnce({ rows: [] }) // SELECT booking conflict
+        .mockResolvedValueOnce({ rows: [] }) // SELECT spot_day_status
+        .mockResolvedValueOnce({}) // UPDATE spots reserved
         .mockResolvedValueOnce({
           rows: [
             {
               id: "booking-1",
               status: "active",
               booked_at: new Date().toISOString(),
+              starts_at: null,
               expires_at: new Date(Date.now() + 8 * 3600 * 1000).toISOString(),
               ended_at: null,
             },
@@ -156,14 +191,7 @@ describe("POST /api/bookings", () => {
       release: vi.fn(),
     };
 
-    mockQuery
-      .mockResolvedValueOnce({ rows: [] }) // expire stale
-      .mockResolvedValueOnce({ rows: [] }) // no existing booking
-      .mockResolvedValueOnce({ rows: [{ id: "spot-1", status: "free" }] }) // spot check
-      .mockResolvedValueOnce({
-        rows: [{ number: 5, label: "A5", floor: "P1" }],
-      }); // spot info after booking
-
+    mockQuery.mockResolvedValueOnce({ rows: [] }); // expire stale
     mockConnect.mockResolvedValueOnce(mockClient);
 
     const res = await request(app)
@@ -185,7 +213,15 @@ describe("PATCH /api/bookings/:id/cancel", () => {
   });
 
   it("returns 404 for non-existent booking", async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
+    const mockClient = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({ rows: [] }) // SELECT booking JOIN spots LEFT JOIN owners
+        .mockResolvedValueOnce({}), // ROLLBACK
+      release: vi.fn(),
+    };
+    mockConnect.mockResolvedValueOnce(mockClient);
 
     const res = await request(app)
       .patch("/api/bookings/non-existent/cancel")
@@ -195,16 +231,25 @@ describe("PATCH /api/bookings/:id/cancel", () => {
   });
 
   it("returns 409 when booking is already cancelled", async () => {
-    mockQuery.mockResolvedValueOnce({
-      rows: [
-        {
-          id: "b1",
-          user_id: TEST_USER.userId,
-          spot_id: "s1",
-          status: "cancelled",
-        },
-      ],
-    });
+    const mockClient = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: "b1",
+              user_id: TEST_USER.userId,
+              spot_id: "s1",
+              status: "cancelled",
+              spot_owner_username: null,
+            },
+          ],
+        }) // SELECT booking
+        .mockResolvedValueOnce({}), // ROLLBACK
+      release: vi.fn(),
+    };
+    mockConnect.mockResolvedValueOnce(mockClient);
 
     const res = await request(app)
       .patch("/api/bookings/b1/cancel")
@@ -218,23 +263,23 @@ describe("PATCH /api/bookings/:id/cancel", () => {
       query: vi
         .fn()
         .mockResolvedValueOnce({}) // BEGIN
-        .mockResolvedValueOnce({}) // UPDATE bookings
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: "b1",
+              user_id: TEST_USER.userId,
+              spot_id: "s1",
+              status: "active",
+              spot_owner_username: null,
+            },
+          ],
+        }) // SELECT booking JOIN spots LEFT JOIN owners FOR UPDATE
+        .mockResolvedValueOnce({}) // UPDATE bookings cancel
         .mockResolvedValueOnce({ rows: [] }) // SELECT remaining active bookings
-        .mockResolvedValueOnce({}) // UPDATE spots
+        .mockResolvedValueOnce({}) // UPDATE spots free
         .mockResolvedValueOnce({}), // COMMIT
       release: vi.fn(),
     };
-
-    mockQuery.mockResolvedValueOnce({
-      rows: [
-        {
-          id: "b1",
-          user_id: TEST_USER.userId,
-          spot_id: "s1",
-          status: "active",
-        },
-      ],
-    });
     mockConnect.mockResolvedValueOnce(mockClient);
 
     const res = await request(app)

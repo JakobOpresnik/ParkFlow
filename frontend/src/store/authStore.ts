@@ -12,7 +12,9 @@ interface AuthStore {
   user: AppUser | null
   accessToken: string | null
   isLoading: boolean
+  sessionExpired: boolean
   setAuth: (user: AppUser, accessToken: string, idToken?: string) => void
+  setSessionExpired: () => void
   initialize: () => Promise<void>
   logout: () => void
 }
@@ -21,6 +23,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   accessToken: localStorage.getItem(ACCESS_TOKEN_KEY),
   isLoading: true,
+  sessionExpired: false,
+
+  setSessionExpired: () => set({ sessionExpired: true }),
 
   setAuth: (user, accessToken, idToken) => {
     localStorage.setItem(ACCESS_TOKEN_KEY, accessToken)

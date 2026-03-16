@@ -10,55 +10,10 @@ import {
 } from '@/components/ui/dialog'
 import { useLots } from '@/hooks/useLots'
 import { useSpots } from '@/hooks/useSpots'
-import type { ParkingLot } from '@/types'
 
 import { LotForm } from './LotForm'
 import { useLotDelete } from './useLotDelete'
 import { useLotDialog } from './useLotDialog'
-
-// — types —
-
-interface LotCardProps {
-  readonly lot: ParkingLot
-  readonly spotCount: number
-  readonly onEdit: (lot: ParkingLot) => void
-  readonly onDelete: (lot: ParkingLot) => void
-}
-
-// — sub-components —
-
-function LotCard({ lot, spotCount, onEdit, onDelete }: LotCardProps) {
-  return (
-    <div className="bg-card flex items-start justify-between rounded-lg border p-4 shadow-sm">
-      <div className="space-y-1">
-        <p className="font-semibold">{lot.name}</p>
-        <p className="text-muted-foreground text-xs">
-          {lot.image_filename} · {lot.image_width}×{lot.image_height}
-        </p>
-        <p className="text-muted-foreground text-xs">{spotCount} spots</p>
-      </div>
-      <div className="flex gap-1">
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => onEdit(lot)}
-          aria-label="Edit lot"
-        >
-          <Pencil className="size-3.5" />
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="text-destructive hover:text-destructive"
-          onClick={() => onDelete(lot)}
-          aria-label="Delete lot"
-        >
-          <Trash2 className="size-3.5" />
-        </Button>
-      </div>
-    </div>
-  )
-}
 
 // — main component —
 
@@ -85,30 +40,63 @@ export function LotsSection() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-base font-semibold">
+        <div className="flex items-center gap-2">
           <Layers className="text-primary size-4" />
-          Parking Lots
-        </h2>
-        <Button size="sm" onClick={handleOpenAdd} className="gap-2">
-          <Plus className="size-4" />
+          <h2 className="text-base font-semibold">Parking Lots</h2>
+        </div>
+        <Button size="sm" onClick={handleOpenAdd} className="gap-1.5">
+          <Plus className="size-3.5" />
           Add Lot
         </Button>
       </div>
 
       {isLoading ? (
-        <div className="bg-muted h-24 animate-pulse rounded-lg" />
+        <div className="bg-muted h-20 animate-pulse rounded-lg" />
+      ) : lots.length === 0 ? (
+        <div className="rounded-lg border border-dashed p-8 text-center">
+          <Layers className="text-muted-foreground mx-auto mb-2 size-6" />
+          <p className="text-muted-foreground text-sm">
+            No lots yet. Add the first one.
+          </p>
+        </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {lots.map((lot) => (
-            <LotCard
+        <div className="bg-card overflow-hidden rounded-lg border shadow-sm">
+          {lots.map((lot, i) => (
+            <div
               key={lot.id}
-              lot={lot}
-              spotCount={getSpotCount(lot.id)}
-              onEdit={handleOpenEdit}
-              onDelete={setDeleteTarget}
-            />
+              className={`flex items-center gap-3 px-4 py-3 ${i < lots.length - 1 ? 'border-b' : ''}`}
+            >
+              <div className="bg-primary/10 flex size-7 shrink-0 items-center justify-center rounded-md">
+                <Layers className="text-primary size-3.5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">{lot.name}</p>
+                <p className="text-muted-foreground text-xs">
+                  {getSpotCount(lot.id)} spots · {lot.image_filename}
+                </p>
+              </div>
+              <div className="flex shrink-0 gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleOpenEdit(lot)}
+                  aria-label={`Edit ${lot.name}`}
+                >
+                  <Pencil className="size-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setDeleteTarget(lot)}
+                  aria-label={`Delete ${lot.name}`}
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </div>
+            </div>
           ))}
         </div>
       )}

@@ -27,7 +27,6 @@ services:
     environment:
       DATABASE_URL: postgresql://parkflow:parkflow@db:5432/parkflow
       PORT: 3001
-      JWT_SECRET: local-dev-secret-change-in-prod
     volumes:
       - ./backend:/app
       - backend-node-modules:/app/node_modules

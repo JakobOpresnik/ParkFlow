@@ -19,6 +19,7 @@ export function useCreateBooking() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['spots'] })
       void qc.invalidateQueries({ queryKey: ['bookings'] })
+      void qc.invalidateQueries({ queryKey: ['owners', 'me'] })
     },
   })
 }
@@ -49,6 +50,7 @@ export function useCancelBooking() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['spots'] })
       void qc.invalidateQueries({ queryKey: ['bookings'] })
+      void qc.invalidateQueries({ queryKey: ['owners', 'me'] })
     },
   })
 }
