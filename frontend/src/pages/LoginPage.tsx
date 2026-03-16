@@ -10,21 +10,21 @@ const FEATURES = [
   {
     Icon: Map,
     label: 'Live map',
-    desc: 'Real-time spot availability',
+    desc: 'Inspect real-time spot availability',
     color: 'text-blue-500',
     bg: 'bg-blue-500/10',
   },
   {
     Icon: Calendar,
     label: 'Reservations',
-    desc: 'Book your spot ahead',
+    desc: 'Book your spot ahead of time',
     color: 'text-green-500',
     bg: 'bg-green-500/10',
   },
   {
     Icon: BarChart2,
     label: 'Analytics',
-    desc: 'Occupancy & usage trends',
+    desc: 'View occupancy & usage trends',
     color: 'text-violet-500',
     bg: 'bg-violet-500/10',
   },
@@ -94,7 +94,7 @@ export function LoginPage() {
             {loading ? 'Redirecting…' : 'Sign in with SSO'}
           </Button>
           <p className="text-muted-foreground mt-4 text-center text-xs">
-            Single sign-on via your company account
+            Use single sign-on via your company account
           </p>
         </div>
 
