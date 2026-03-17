@@ -22,42 +22,279 @@ import {
 import { useLots } from '@/hooks/useLots'
 import { useOwners } from '@/hooks/useOwners'
 import { useSpots } from '@/hooks/useSpots'
-import type { SpotStatus, SpotType } from '@/types'
+import type { ParkingLot, Spot, SpotStatus, SpotType } from '@/types'
 
 import { SpotForm } from './SpotForm'
 import { useSpotDelete } from './useSpotDelete'
 import { useSpotDialog } from './useSpotDialog'
 import { useSpotFilters } from './useSpotFilters'
 
+// — types —
+
+interface SpotFilterBarProps {
+  readonly lots: ParkingLot[]
+  readonly lotFilter: string
+  readonly onLotFilter: (id: string) => void
+  readonly statusFilter: SpotStatus | 'all'
+  readonly onStatusFilter: (v: SpotStatus | 'all') => void
+  readonly typeFilter: SpotType | 'all'
+  readonly onTypeFilter: (v: SpotType | 'all') => void
+  readonly spotSearch: string
+  readonly onSpotSearch: (v: string) => void
+  readonly onAddSpot: () => void
+}
+
+interface SpotRowProps {
+  readonly spot: Spot
+  readonly spotSearch: string
+  readonly getLotName: (id: string | null) => string
+  readonly onEdit: (spot: Spot) => void
+  readonly onDelete: (spot: Spot) => void
+}
+
+interface SpotDeleteDialogProps {
+  readonly target: Spot | null
+  readonly isDeleting: boolean
+  readonly onConfirm: () => void
+  readonly onCancel: () => void
+}
+
 // — constants —
 
-const STATUS_CLASS: Record<SpotStatus, string> = {
+const StatusClass: Record<SpotStatus, string> = {
   free: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   occupied: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   reserved:
     'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
 }
 
-const TYPE_LABELS: Record<SpotType, string> = {
-  standard: 'Standard',
-  ev: 'EV Charging',
-  handicap: 'Handicap',
-  compact: 'Compact',
+const SpotTypeConfig: Record<
+  SpotType,
+  { label: string; badgeClass: string | null }
+> = {
+  standard: { label: 'Standard', badgeClass: null },
+  ev: {
+    label: 'EV Charging',
+    badgeClass:
+      'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  },
+  handicap: {
+    label: 'Handicap',
+    badgeClass:
+      'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
+  },
+  compact: { label: 'Compact', badgeClass: 'bg-muted text-muted-foreground' },
 }
 
-const TYPE_BADGE_CLASS: Partial<Record<SpotType, string>> = {
-  ev: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  handicap:
-    'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
-  compact: 'bg-muted text-muted-foreground',
-}
+const STICKY_ACTIONS_CLASS =
+  "bg-card before:bg-border sticky right-0 before:absolute before:inset-y-0 before:left-0 before:w-px before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100"
 
-function pill(active: boolean) {
+// — helpers —
+
+function buildPillClass(active: boolean) {
   return `cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
     active
       ? 'bg-primary text-primary-foreground border-primary'
       : 'text-muted-foreground border-border hover:text-foreground'
   }`
+}
+
+// — sub-components —
+
+function SpotFilterBar({
+  lots,
+  lotFilter,
+  onLotFilter,
+  statusFilter,
+  onStatusFilter,
+  typeFilter,
+  onTypeFilter,
+  spotSearch,
+  onSpotSearch,
+  onAddSpot,
+}: SpotFilterBarProps) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {/* Lot pills */}
+      <div className="flex flex-wrap gap-1">
+        <button
+          onClick={() => onLotFilter('all')}
+          className={buildPillClass(lotFilter === 'all')}
+        >
+          All
+        </button>
+        {lots.map((lot) => (
+          <button
+            key={lot.id}
+            onClick={() => onLotFilter(lot.id)}
+            className={buildPillClass(lotFilter === lot.id)}
+          >
+            {lot.name}
+          </button>
+        ))}
+      </div>
+
+      {lots.length > 0 && <div className="bg-border h-4 w-px shrink-0" />}
+
+      {/* Status filter */}
+      <Select
+        value={statusFilter}
+        onChange={(v) => onStatusFilter((v ?? 'all') as SpotStatus | 'all')}
+        data={[
+          { value: 'all', label: 'All statuses' },
+          { value: 'free', label: 'Free' },
+          { value: 'occupied', label: 'Occupied' },
+          { value: 'reserved', label: 'Reserved' },
+        ]}
+        size="xs"
+        allowDeselect={false}
+        className="w-32"
+      />
+
+      {/* Type filter */}
+      <Select
+        value={typeFilter}
+        onChange={(v) => onTypeFilter((v ?? 'all') as SpotType | 'all')}
+        data={[
+          { value: 'all', label: 'All types' },
+          { value: 'standard', label: 'Standard' },
+          { value: 'ev', label: 'EV Charging' },
+          { value: 'handicap', label: 'Handicap' },
+          { value: 'compact', label: 'Compact' },
+        ]}
+        size="xs"
+        allowDeselect={false}
+        className="w-32"
+      />
+
+      {/* Search + Add — pinned to the right */}
+      <div className="ml-auto flex items-center gap-2">
+        <div className="relative">
+          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
+          <Input
+            value={spotSearch}
+            onChange={(e) => onSpotSearch(e.target.value)}
+            placeholder="Search spots…"
+            className="h-8 w-44 pr-7 pl-8 text-sm"
+          />
+          {spotSearch && (
+            <button
+              onClick={() => onSpotSearch('')}
+              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer"
+              aria-label="Clear search"
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
+        </div>
+        <Button size="sm" onClick={onAddSpot} className="shrink-0 gap-1.5">
+          <Plus className="size-3.5" />
+          Add Spot
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function SpotRow({
+  spot,
+  spotSearch,
+  getLotName,
+  onEdit,
+  onDelete,
+}: SpotRowProps) {
+  const typeConf = SpotTypeConfig[spot.type]
+  return (
+    <TableRow>
+      <TableCell className="font-semibold tabular-nums">
+        {spot.number}
+      </TableCell>
+      <TableCell className="text-muted-foreground">
+        {spot.label ? <Highlight text={spot.label} query={spotSearch} /> : '—'}
+      </TableCell>
+      <TableCell className="text-muted-foreground text-sm">
+        <Highlight text={getLotName(spot.lot_id)} query={spotSearch} />
+      </TableCell>
+      <TableCell>
+        <span
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${StatusClass[spot.status]}`}
+        >
+          {spot.status}
+        </span>
+      </TableCell>
+      <TableCell>
+        {typeConf.badgeClass ? (
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${typeConf.badgeClass}`}
+          >
+            {typeConf.label}
+          </span>
+        ) : (
+          <span className="text-muted-foreground text-xs">—</span>
+        )}
+      </TableCell>
+      <TableCell className="text-muted-foreground text-sm">
+        {spot.owner_name ? (
+          <Highlight text={spot.owner_name} query={spotSearch} />
+        ) : (
+          '—'
+        )}
+      </TableCell>
+      <TableCell className={STICKY_ACTIONS_CLASS}>
+        <div className="flex items-center justify-center gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onEdit(spot)}
+            aria-label="Edit spot"
+          >
+            <Pencil className="size-3.5" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-destructive hover:text-destructive"
+            onClick={() => onDelete(spot)}
+            aria-label="Delete spot"
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  )
+}
+
+function SpotDeleteDialog({
+  target,
+  isDeleting,
+  onConfirm,
+  onCancel,
+}: SpotDeleteDialogProps) {
+  return (
+    <Dialog open={target !== null} onOpenChange={(o) => !o && onCancel()}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Delete Spot</DialogTitle>
+        </DialogHeader>
+        <p className="text-muted-foreground text-sm">
+          Delete spot <strong>#{target?.number}</strong>? This cannot be undone.
+        </p>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={isDeleting}
+          >
+            Delete
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 // — main component —
@@ -114,90 +351,18 @@ export function SpotsSection() {
         )}
       </div>
 
-      {/* Unified filter bar */}
-      <div className="flex flex-wrap items-center gap-2">
-        {/* Lot pills */}
-        <div className="flex flex-wrap gap-1">
-          <button
-            onClick={() => setLotFilter('all')}
-            className={pill(lotFilter === 'all')}
-          >
-            All
-          </button>
-          {lots.map((lot) => (
-            <button
-              key={lot.id}
-              onClick={() => setLotFilter(lot.id)}
-              className={pill(lotFilter === lot.id)}
-            >
-              {lot.name}
-            </button>
-          ))}
-        </div>
-
-        {lots.length > 0 && <div className="bg-border h-4 w-px shrink-0" />}
-
-        {/* Status filter */}
-        <Select
-          value={statusFilter}
-          onChange={(v) => setStatusFilter((v ?? 'all') as SpotStatus | 'all')}
-          data={[
-            { value: 'all', label: 'All statuses' },
-            { value: 'free', label: 'Free' },
-            { value: 'occupied', label: 'Occupied' },
-            { value: 'reserved', label: 'Reserved' },
-          ]}
-          size="xs"
-          allowDeselect={false}
-          className="w-32"
-        />
-
-        {/* Type filter */}
-        <Select
-          value={typeFilter}
-          onChange={(v) => setTypeFilter((v ?? 'all') as SpotType | 'all')}
-          data={[
-            { value: 'all', label: 'All types' },
-            { value: 'standard', label: 'Standard' },
-            { value: 'ev', label: 'EV Charging' },
-            { value: 'handicap', label: 'Handicap' },
-            { value: 'compact', label: 'Compact' },
-          ]}
-          size="xs"
-          allowDeselect={false}
-          className="w-32"
-        />
-
-        {/* Search + Add — pinned to the right */}
-        <div className="ml-auto flex items-center gap-2">
-          <div className="relative">
-            <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
-            <Input
-              value={spotSearch}
-              onChange={(e) => setSpotSearch(e.target.value)}
-              placeholder="Search spots…"
-              className="h-8 w-44 pr-7 pl-8 text-sm"
-            />
-            {spotSearch && (
-              <button
-                onClick={() => setSpotSearch('')}
-                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer"
-                aria-label="Clear search"
-              >
-                <X className="size-3.5" />
-              </button>
-            )}
-          </div>
-          <Button
-            size="sm"
-            onClick={handleOpenAdd}
-            className="shrink-0 gap-1.5"
-          >
-            <Plus className="size-3.5" />
-            Add Spot
-          </Button>
-        </div>
-      </div>
+      <SpotFilterBar
+        lots={lots}
+        lotFilter={lotFilter}
+        onLotFilter={setLotFilter}
+        statusFilter={statusFilter}
+        onStatusFilter={setStatusFilter}
+        typeFilter={typeFilter}
+        onTypeFilter={setTypeFilter}
+        spotSearch={spotSearch}
+        onSpotSearch={setSpotSearch}
+        onAddSpot={handleOpenAdd}
+      />
 
       {/* Table */}
       {isLoading ? (
@@ -213,7 +378,9 @@ export function SpotsSection() {
                 <TableHead>Status</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Owner</TableHead>
-                <TableHead className="bg-card before:bg-border sticky right-0 w-22 text-center before:absolute before:inset-y-0 before:left-0 before:w-px before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
+                <TableHead
+                  className={`${STICKY_ACTIONS_CLASS} w-22 text-center`}
+                >
                   Actions
                 </TableHead>
               </TableRow>
@@ -232,70 +399,14 @@ export function SpotsSection() {
                 </TableRow>
               ) : (
                 displayedSpots.map((spot) => (
-                  <TableRow key={spot.id}>
-                    <TableCell className="font-semibold tabular-nums">
-                      {spot.number}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {spot.label ? (
-                        <Highlight text={spot.label} query={spotSearch} />
-                      ) : (
-                        '—'
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      <Highlight
-                        text={getLotName(spot.lot_id)}
-                        query={spotSearch}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASS[spot.status]}`}
-                      >
-                        {spot.status}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {spot.type !== 'standard' ? (
-                        <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${TYPE_BADGE_CLASS[spot.type] ?? 'bg-muted text-muted-foreground'}`}
-                        >
-                          {TYPE_LABELS[spot.type]}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {spot.owner_name ? (
-                        <Highlight text={spot.owner_name} query={spotSearch} />
-                      ) : (
-                        '—'
-                      )}
-                    </TableCell>
-                    <TableCell className="bg-card before:bg-border sticky right-0 before:absolute before:inset-y-0 before:left-0 before:w-px before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
-                      <div className="flex items-center justify-center gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleOpenEdit(spot)}
-                          aria-label="Edit spot"
-                        >
-                          <Pencil className="size-3.5" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => setDeleteTarget(spot)}
-                          aria-label="Delete spot"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                  <SpotRow
+                    key={spot.id}
+                    spot={spot}
+                    spotSearch={spotSearch}
+                    getLotName={getLotName}
+                    onEdit={handleOpenEdit}
+                    onDelete={setDeleteTarget}
+                  />
                 ))
               )}
             </TableBody>
@@ -330,32 +441,12 @@ export function SpotsSection() {
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={deleteTarget !== null}
-        onOpenChange={(o) => !o && setDeleteTarget(null)}
-      >
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Delete Spot</DialogTitle>
-          </DialogHeader>
-          <p className="text-muted-foreground text-sm">
-            Delete spot <strong>#{deleteTarget?.number}</strong>? This cannot be
-            undone.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleConfirmDelete}
-              disabled={isDeleting}
-            >
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SpotDeleteDialog
+        target={deleteTarget}
+        isDeleting={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   )
 }
