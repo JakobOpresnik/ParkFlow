@@ -33,8 +33,7 @@ export function useOwnerParkingData(selectedDate: string, today: string) {
         (b) =>
           b.status === 'active' &&
           !ownedSpotIds.has(b.spot_id) &&
-          b.booked_at.slice(0, 10) <= selectedDate &&
-          b.expires_at.slice(0, 10) >= selectedDate,
+          b.expires_at.slice(0, 10) === selectedDate,
       ),
     [myBookings, ownedSpotIds, selectedDate],
   )
