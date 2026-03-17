@@ -56,17 +56,17 @@ export function useEffectiveSpots(date: string) {
     }
 
     const processed = spots.map((spot) => {
-      // Preserve reserved status when there's an active booking for the selected date.
-      // For today with no booking (manually reserved): always keep reserved.
-      // For booking-backed reservations: keep only if the booking's date matches.
       const bookingIsForDate =
         spot.active_booking_expires_at?.slice(0, 10) === date
       const hasNoBooking = spot.active_booking_expires_at == null
-      if (
-        spot.status === 'reserved' &&
-        (bookingIsForDate || (isToday && hasNoBooking))
-      )
-        return spot
+
+      // An active booking for this specific date → always show as reserved,
+      // regardless of the spot's base status. This matters for ACEX-owned spots
+      // whose status is masked as 'free' by the API even when reserved.
+      if (bookingIsForDate) return { ...spot, status: 'reserved' as const }
+
+      // Manually reserved today with no booking → preserve reserved.
+      if (spot.status === 'reserved' && isToday && hasNoBooking) return spot
 
       // 2. Manual override → authoritative
       const override = overrideBySpot.get(spot.id)

@@ -76,7 +76,7 @@ export function Layout({ children, noPadding }: LayoutProps) {
         <div className="bg-background/70 fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 backdrop-blur-md">
           <Loader2 className="text-primary size-8 animate-spin" />
           <p className="text-sm font-medium">
-            Seja je potekla — preusmerjanje na prijavo…
+            Seja je potekla — preusmerjanje na ponovno prijavo…
           </p>
         </div>
       )}

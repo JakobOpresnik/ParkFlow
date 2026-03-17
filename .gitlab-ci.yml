@@ -30,6 +30,17 @@ gitleaks_MR:
   before_script:
     - git branch --set-upstream-to=origin/$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME
 
+trufflehog_MR:
+  # script: override does not work for component-sourced jobs — the template script always wins.
+  # before_script: runs in the same shell as script:, so mutating TH_OPTS here is picked up
+  # when the template expands ${TH_OPTS}.
+  #   --only-verified: dev postgres credentials use Docker-internal hostnames (db, db-test)
+  #                    that are unreachable from CI, so they can never be verified → no failure.
+  before_script:
+    - git fetch origin main --depth=1
+    - git branch -f main FETCH_HEAD
+    - export TH_OPTS="$TH_OPTS --only-verified"
+
 variables:
   # Dependency-Track integration used by trivy template job `repo_sbom_upload`.
   # Set these in GitLab CI/CD variables (project/group):
