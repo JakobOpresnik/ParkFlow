@@ -55,6 +55,7 @@ deploy_test:
   stage: deploy
   image: cr.matheo.si/pub/alpine-runner
   before_script:
+    - set -x
     - eval $(ssh-agent -s)
     - echo "$SSH_PRIVATE_KEY_BASE64" | base64 -d | ssh-add -
     - !reference [.ssh_helper, load]
