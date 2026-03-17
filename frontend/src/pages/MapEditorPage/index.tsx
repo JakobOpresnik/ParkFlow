@@ -1,18 +1,20 @@
 import { notifications } from '@mantine/notifications'
-import { MousePointer, Pencil } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { useLots } from '@/hooks/useLots'
 import { useCreateSpot, usePatchCoordinates, useSpots } from '@/hooks/useSpots'
 import type { Spot, SpotCoordinates } from '@/types'
 
-import { LotTabs } from './LotTabs'
+import { EditorSidebar } from './EditorSidebar'
+import { EditorToolbar } from './EditorToolbar'
 import { ParkingMapCanvas } from './ParkingMapCanvas'
-import { PendingPanel } from './PendingPanel'
-import { SelectedPanel } from './SelectedPanel'
 import type { Mode, PendingRect } from './types'
 import { useAutoSave } from './useAutoSave'
 import { getSvgPoint, MIN_RECT_SIZE, normalizeRect } from './utils'
+
+// — constants —
+
+const CANVAS_SKELETON_STYLE = { aspectRatio: '13/10' }
 
 // — main component —
 
@@ -82,7 +84,7 @@ export function MapEditorPage() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [pendingRect])
 
-  // ── Mouse handlers ─────────────────────────────────────────────
+  // — mouse handlers —
 
   function handleSvgMouseDown(e: React.MouseEvent<SVGSVGElement>) {
     if (!svgRef.current || mode !== 'draw') return
@@ -130,7 +132,36 @@ export function MapEditorPage() {
     setPendingRect(null)
   }
 
-  // ── Mutations ──────────────────────────────────────────────────
+  function handleMouseLeave() {
+    setDragStart(null)
+    setDragCurrent(null)
+  }
+
+  // — toolbar handlers —
+
+  function handleSetDrawMode() {
+    setMode('draw')
+    setSelectedSpotId(null)
+    setPendingRect(null)
+  }
+
+  function handleLotSelect(id: string) {
+    setSelectedLotId(id)
+    setSelectedSpotId(null)
+    setPendingRect(null)
+  }
+
+  // — sidebar handlers —
+
+  function handleDiscard() {
+    setPendingRect(null)
+  }
+
+  function handlePendingChange(patch: Partial<PendingRect>) {
+    setPendingRect((p) => (p ? { ...p, ...patch } : p))
+  }
+
+  // — mutations —
 
   async function handleSaveToSpot(spotId: string, relCoords: SpotCoordinates) {
     try {
@@ -186,8 +217,6 @@ export function MapEditorPage() {
     }
   }
 
-  // ── Derived render values ──────────────────────────────────────
-
   const previewRect =
     dragStart && dragCurrent && mode === 'draw'
       ? normalizeRect(dragStart.x, dragStart.y, dragCurrent.x, dragCurrent.y)
@@ -195,7 +224,6 @@ export function MapEditorPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold">Map Editor</h1>
         <p className="text-muted-foreground mt-0.5 text-sm">
@@ -204,65 +232,22 @@ export function MapEditorPage() {
         </p>
       </div>
 
-      {/* Toolbar */}
-      <div className="bg-card flex items-center gap-3 rounded-lg border p-3">
-        {/* Left: mode toggle */}
-        <div className="flex items-center">
-          <div className="flex rounded-md border">
-            <button
-              className={`flex cursor-pointer items-center gap-1.5 rounded-l-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                mode === 'draw'
-                  ? 'bg-muted text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-              onClick={() => {
-                setMode('draw')
-                setSelectedSpotId(null)
-                setPendingRect(null)
-              }}
-            >
-              <Pencil className="size-4" />
-              Draw
-            </button>
-            <button
-              className={`flex cursor-pointer items-center gap-1.5 rounded-r-md border-l px-3 py-1.5 text-sm font-medium transition-colors ${
-                mode === 'select'
-                  ? 'bg-muted text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-              onClick={() => setMode('select')}
-            >
-              <MousePointer className="size-4" />
-              Select
-            </button>
-          </div>
-        </div>
-
-        {/* Center: lot tabs */}
-        <div className="flex flex-1 items-center justify-center">
-          {!isLoading && (
-            <LotTabs
-              lots={lots}
-              selectedId={activeLotId}
-              onSelect={(id) => {
-                setSelectedLotId(id)
-                setSelectedSpotId(null)
-                setPendingRect(null)
-              }}
-            />
-          )}
-        </div>
-
-        {/* Right: mapped count */}
-        <div className="text-muted-foreground text-xs">
-          {mappedSpots.length}/{lotSpots.length} mapped
-        </div>
-      </div>
+      <EditorToolbar
+        mode={mode}
+        onDrawMode={handleSetDrawMode}
+        onSelectMode={() => setMode('select')}
+        isLoading={isLoading}
+        lots={lots}
+        activeLotId={activeLotId}
+        onLotSelect={handleLotSelect}
+        mappedCount={mappedSpots.length}
+        totalCount={lotSpots.length}
+      />
 
       {isLoading && (
         <div
           className="bg-muted animate-pulse rounded-lg border"
-          style={{ aspectRatio: '13/10' }}
+          style={CANVAS_SKELETON_STYLE}
         />
       )}
 
@@ -291,81 +276,32 @@ export function MapEditorPage() {
             onMouseDown={handleSvgMouseDown}
             onMouseMove={handleSvgMouseMove}
             onMouseUp={handleSvgMouseUp}
-            onMouseLeave={() => {
-              setDragStart(null)
-              setDragCurrent(null)
-            }}
+            onMouseLeave={handleMouseLeave}
             onSpotClick={handleSpotClick}
           />
 
-          {/* Sidebar */}
-          <div className="w-64 shrink-0 space-y-3">
-            {/* Stats */}
-            <div className="bg-card rounded-lg border p-3">
-              <p className="text-muted-foreground mb-1 text-xs font-medium tracking-wide uppercase">
-                {activeLot.name}
-              </p>
-              <p className="text-2xl font-bold">{mappedSpots.length}</p>
-              <p className="text-muted-foreground text-xs">
-                of {lotSpots.length} spots mapped
-              </p>
-            </div>
-
-            {/* Pending panel */}
-            {pendingRect && (
-              <PendingPanel
-                pending={pendingRect}
-                unmappedSpots={unmappedSpots}
-                imgW={imgW}
-                imgH={imgH}
-                onSaveToSpot={handleSaveToSpot}
-                onCreateSpot={handleCreateSpot}
-                onDiscard={() => setPendingRect(null)}
-                onPendingChange={(patch) =>
-                  setPendingRect((p) => (p ? { ...p, ...patch } : p))
-                }
-                isSaving={isMutating}
-              />
-            )}
-
-            {/* Selected spot panel */}
-            {!pendingRect && selectedSpot && (
-              <SelectedPanel
-                key={selectedSpot.id}
-                spot={selectedSpot}
-                imgW={imgW}
-                imgH={imgH}
-                onAutoSave={(relCoords) =>
-                  scheduleAutoSave(selectedSpot.id, relCoords)
-                }
-                onCoordsChange={setSelectedSpotLiveCoords}
-                onRemove={handleRemoveCoords}
-                saveStatus={saveStatus}
-              />
-            )}
-
-            {/* Empty state */}
-            {!pendingRect && !selectedSpot && (
-              <div className="bg-card text-muted-foreground rounded-lg border border-dashed p-4 text-center text-sm">
-                {mode === 'draw'
-                  ? 'Click and drag to place a spot'
-                  : 'Click a spot to edit'}
-              </div>
-            )}
-
-            {/* Instructions */}
-            <div className="text-muted-foreground space-y-1 rounded-lg border p-3 text-xs">
-              <p className="text-foreground font-medium">How to use</p>
-              <p>
-                1. <strong>Draw</strong> — drag to place a rectangle
-              </p>
-              <p>2. Assign to an existing spot or create a new one</p>
-              <p>
-                3. <strong>Select</strong> — click to edit; changes auto-save
-              </p>
-              <p>4. Use Reset to revert or Delete to remove coordinates</p>
-            </div>
-          </div>
+          <EditorSidebar
+            activeLot={activeLot}
+            mappedCount={mappedSpots.length}
+            totalCount={lotSpots.length}
+            pendingRect={pendingRect}
+            selectedSpot={selectedSpot}
+            unmappedSpots={unmappedSpots}
+            imgW={imgW}
+            imgH={imgH}
+            isMutating={isMutating}
+            mode={mode}
+            saveStatus={saveStatus}
+            onSaveToSpot={handleSaveToSpot}
+            onCreateSpot={handleCreateSpot}
+            onDiscard={handleDiscard}
+            onPendingChange={handlePendingChange}
+            onAutoSave={(relCoords) => {
+              if (selectedSpot) scheduleAutoSave(selectedSpot.id, relCoords)
+            }}
+            onCoordsChange={setSelectedSpotLiveCoords}
+            onRemove={handleRemoveCoords}
+          />
         </div>
       )}
     </div>
