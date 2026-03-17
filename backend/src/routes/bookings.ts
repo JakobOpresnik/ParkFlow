@@ -6,6 +6,10 @@ import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
+// ACEX-owned spots are company spots displayed as 'free' on the map regardless of db status.
+// Must match the constant in spots.ts to keep booking logic consistent with map display.
+const ACEX_OWNER_NAME = "ACEX - kdor prej pride, prej melje";
+
 async function expireStaleBookings(): Promise<void> {
   await pool.query(`
     WITH expired AS (
@@ -151,6 +155,7 @@ router.post("/", requireAuth, async (req, res, next) => {
       );
       if (conflict.rows.length > 0) {
         await client.query("ROLLBACK");
+        console.log(`[booking] 409 CONFLICT: spot ${spotRow.number} already has active booking on ${targetDate}`);
         res.status(409).json({ error: "Spot is not available for booking" });
         return;
       }
@@ -164,11 +169,24 @@ router.post("/", requireAuth, async (req, res, next) => {
       if (overrideResult.rows.length > 0) {
         // Owner override is authoritative
         isBookable = overrideResult.rows[0].status === "free";
+      } else if (spotRow.owner_name === ACEX_OWNER_NAME) {
+        // ACEX-owned spots are company spots — always bookable (map shows them as 'free'
+        // regardless of their db status, booking logic must stay consistent).
+        isBookable = true;
       } else if (spotRow.status === "occupied" && spotRow.owner_name) {
-        // No override — fall back to presence/timesheet
+        // No override — fall back to presence/timesheet.
+        // Support shared spots: owner_name may be "Name1 / Name2 / Name3".
+        // Bookable only when ALL co-owners are absent (same logic as the frontend).
+        const ownerNames = spotRow.owner_name
+          .split("/")
+          .map((n: string) => n.trim())
+          .filter(Boolean);
         isBookable =
           presenceData !== null &&
-          isOwnerAbsent(presenceData, spotRow.owner_name, targetDate);
+          ownerNames.length > 0 &&
+          ownerNames.every((name: string) =>
+            isOwnerAbsent(presenceData, name, targetDate),
+          );
       } else {
         // No override — use spot's base status.
         // 'reserved' with no active-booking conflict (already checked above) is bookable.
@@ -178,6 +196,7 @@ router.post("/", requireAuth, async (req, res, next) => {
 
       if (!isBookable) {
         await client.query("ROLLBACK");
+        console.log(`[booking] 409 NOT BOOKABLE: spot ${spotRow.number}, status=${spotRow.status}, owner=${spotRow.owner_name}, targetDate=${targetDate}, presenceData=${presenceData ? "loaded" : "null"}`);
         res.status(409).json({ error: "Spot is not available for booking" });
         return;
       }
