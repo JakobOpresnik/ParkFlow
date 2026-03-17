@@ -5,22 +5,48 @@ import { useLots } from '@/hooks/useLots'
 import { useSpots } from '@/hooks/useSpots'
 import type { SpotStatus } from '@/types'
 
-// ─── Donut chart ─────────────────────────────────────────────────────────────
+// — types —
 
 interface Segment {
-  label: string
-  count: number
-  pct: number
-  colorVar: string
+  readonly label: string
+  readonly count: number
+  readonly pct: number
+  readonly colorVar: string
 }
 
 interface DonutSlice extends Segment {
-  dashLen: number
-  startAngle: number
+  readonly dashLen: number
+  readonly startAngle: number
+}
+
+interface DonutChartProps {
+  readonly segments: Segment[]
+  readonly total: number
+}
+
+interface StatusProgressRowProps {
+  readonly segment: Segment
+  readonly total: number
+}
+
+// — constants —
+
+const DONUT_RADIUS = 72
+
+const StatusMeta: Record<SpotStatus, { label: string; colorVar: string }> = {
+  free: { label: 'Free', colorVar: '--color-spot-free' },
+  occupied: { label: 'Occupied', colorVar: '--color-spot-occupied' },
+  reserved: { label: 'Reserved', colorVar: '--color-spot-reserved' },
+}
+
+// — helpers —
+
+function computePct(n: number, total: number): number {
+  return total > 0 ? Math.round((n / total) * 100) : 0
 }
 
 function buildSlices(segments: Segment[], total: number): DonutSlice[] {
-  const circ = 2 * Math.PI * 72
+  const circ = 2 * Math.PI * DONUT_RADIUS
   const GAP_DEG = total > 1 ? 2 : 0
   let accumulated = 0
   return segments.map((seg) => {
@@ -33,14 +59,10 @@ function buildSlices(segments: Segment[], total: number): DonutSlice[] {
   })
 }
 
-function DonutChart({
-  segments,
-  total,
-}: {
-  segments: Segment[]
-  total: number
-}) {
-  const r = 72
+// — sub-components —
+
+function DonutChart({ segments, total }: DonutChartProps) {
+  const r = DONUT_RADIUS
   const cx = 100
   const cy = 100
   const circ = 2 * Math.PI * r
@@ -89,48 +111,43 @@ function DonutChart({
   )
 }
 
-function StatusProgressRow({ seg, total }: { seg: Segment; total: number }) {
-  const barWidth = total > 0 ? (seg.count / total) * 100 : 0
+function StatusProgressRow({ segment, total }: StatusProgressRowProps) {
+  const barWidth = total > 0 ? (segment.count / total) * 100 : 0
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-sm">
         <div className="flex items-center gap-2">
           <span
             className="size-2.5 shrink-0 rounded-full"
-            style={{ background: `var(${seg.colorVar})` }}
+            style={{ background: `var(${segment.colorVar})` }}
           />
-          <span className="font-medium">{seg.label}</span>
+          <span className="font-medium">{segment.label}</span>
         </div>
         <span className="text-muted-foreground tabular-nums">
-          {seg.count} · {seg.pct}%
+          {segment.count} · {segment.pct}%
         </span>
       </div>
       <div className="bg-muted h-2.5 w-full overflow-hidden rounded-full">
         <div
           className="h-full rounded-full transition-all duration-500"
-          style={{ width: `${barWidth}%`, background: `var(${seg.colorVar})` }}
+          style={{
+            width: `${barWidth}%`,
+            background: `var(${segment.colorVar})`,
+          }}
         />
       </div>
     </div>
   )
 }
 
-const STATUS_META: Record<SpotStatus, { label: string; colorVar: string }> = {
-  free: { label: 'Free', colorVar: '--color-spot-free' },
-  occupied: { label: 'Occupied', colorVar: '--color-spot-occupied' },
-  reserved: { label: 'Reserved', colorVar: '--color-spot-reserved' },
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// — main component —
 
 export function StatsPage() {
-  const { data: allSpots = [], isLoading: spotsLoading } = useSpots()
-  const { data: lots = [], isLoading: lotsLoading } = useLots()
+  const { data: allSpots = [], isLoading: isSpotsLoading } = useSpots()
+  const { data: lots = [], isLoading: isLotsLoading } = useLots()
   const [selectedLotId, setSelectedLotId] = useState<string>('__all__')
 
-  const isLoading = spotsLoading || lotsLoading
-
-  // Filter spots for the selected lot
+  const isLoading = isSpotsLoading || isLotsLoading
 
   const spots =
     selectedLotId === '__all__'
@@ -144,15 +161,13 @@ export function StatsPage() {
     reserved: spots.filter((s) => s.status === 'reserved').length,
   }
 
-  const pct = (n: number) => (total ? Math.round((n / total) * 100) : 0)
-
   const segments: Segment[] = (
     ['free', 'occupied', 'reserved'] as SpotStatus[]
   ).map((s) => ({
-    label: STATUS_META[s].label,
+    label: StatusMeta[s].label,
     count: counts[s],
-    pct: pct(counts[s]),
-    colorVar: STATUS_META[s].colorVar,
+    pct: computePct(counts[s], total),
+    colorVar: StatusMeta[s].colorVar,
   }))
 
   return (
@@ -166,7 +181,6 @@ export function StatsPage() {
           </p>
         </div>
 
-        {/* Lot filter */}
         {!isLoading && lots.length > 0 && (
           <Select
             value={selectedLotId}
@@ -243,21 +257,25 @@ export function StatsPage() {
               </p>
               <div className="space-y-5">
                 {segments.map((seg) => (
-                  <StatusProgressRow key={seg.label} seg={seg} total={total} />
+                  <StatusProgressRow
+                    key={seg.label}
+                    segment={seg}
+                    total={total}
+                  />
                 ))}
               </div>
               <div className="mt-6 border-t pt-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Occupancy rate</span>
                   <span className="font-semibold">
-                    {pct(counts.occupied + counts.reserved)}%
+                    {computePct(counts.occupied + counts.reserved, total)}%
                   </span>
                 </div>
                 <div className="bg-muted mt-2 h-2.5 w-full overflow-hidden rounded-full">
                   <div
                     className="bg-primary h-full rounded-full transition-all duration-500"
                     style={{
-                      width: `${pct(counts.occupied + counts.reserved)}%`,
+                      width: `${computePct(counts.occupied + counts.reserved, total)}%`,
                     }}
                   />
                 </div>
