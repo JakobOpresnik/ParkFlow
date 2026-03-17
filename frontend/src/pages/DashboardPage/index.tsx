@@ -67,10 +67,18 @@ export function DashboardPage() {
 
   const totalFree = countByStatus(allSpots, 'free')
   const totalOccupied = countByStatus(allSpots, 'occupied')
-  const totalReserved = countByStatus(allSpots, 'reserved')
+  const totalReservedByStatus = countByStatus(allSpots, 'reserved')
+  // Also count occupied spots with an active booking (owner has booked their own spot —
+  // backend marks these as 'occupied' rather than 'reserved').
+  const totalReserved =
+    totalReservedByStatus +
+    allSpots.filter(
+      (s) => s.status === 'occupied' && s.active_booking_id !== null,
+    ).length
   const total = allSpots.length
+  // Occupancy % uses raw status counts to avoid double-counting self-booked occupied spots.
   const occupancyPct = total
-    ? Math.round(((totalOccupied + totalReserved) / total) * 100)
+    ? Math.round(((totalOccupied + totalReservedByStatus) / total) * 100)
     : 0
 
   const supportingCards: readonly StatCard[] = [
