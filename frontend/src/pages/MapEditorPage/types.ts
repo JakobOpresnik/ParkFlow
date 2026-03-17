@@ -7,8 +7,8 @@ export type Mode = 'draw' | 'select'
 export type SaveStatus = 'idle' | 'saving' | 'saved'
 
 export interface PendingRect {
-  readonly x: number
-  readonly y: number
+  x: number
+  y: number
   readonly width: number
   readonly height: number
   readonly rotation: number
@@ -71,7 +71,7 @@ export interface SelectedPanelProps {
 }
 
 export interface ParkingMapCanvasProps {
-  readonly svgRef: React.RefObject<SVGSVGElement>
+  readonly svgRef: React.RefObject<SVGSVGElement | null>
   readonly imgW: number
   readonly imgH: number
   readonly activeLot: ParkingLot
