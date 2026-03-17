@@ -68,7 +68,6 @@ deploy_test:
     CI_SSH_HOST: deploy.example.com
     CI_SSH_USER: deployuser
     CI_SSH_PORT: '22'
-    SSH_PRIVATE_KEY: $SSH_PRIVATE_KEY
     DEPLOY_DIR: /srv/parkflow
     DEPLOY_BRANCH: $CI_COMMIT_BRANCH
     CI_COMPOSE_FILE: compose.yml
@@ -180,7 +179,6 @@ deploy_production:
     CI_SSH_HOST: parkflow.int.matheo.si
     CI_SSH_USER: deploy
     CI_SSH_PORT: '22'
-    SSH_PRIVATE_KEY: $SSH_PRIVATE_KEY
     DEPLOY_DIR: /home/parkflow
     CI_COMPOSE_FILE: compose.yml
   rules:
