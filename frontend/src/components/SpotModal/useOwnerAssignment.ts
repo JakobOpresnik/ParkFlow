@@ -1,5 +1,6 @@
 import { notifications } from '@mantine/notifications'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { useOwners } from '@/hooks/useOwners'
 import { useAssignOwner } from '@/hooks/useSpots'
@@ -8,6 +9,7 @@ import type { Spot } from '@/types'
 // — hook —
 
 export function useOwnerAssignment(spot: Spot) {
+  const { t } = useTranslation()
   const [assignOpen, setAssignOpen] = useState(false)
   const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null)
 
@@ -25,12 +27,17 @@ export function useOwnerAssignment(spot: Spot) {
       {
         onSuccess: () =>
           notifications.show({
-            message: `Spot #${spot.number} unassigned`,
+            message: t('spotModal.toastSpotUnassigned', {
+              number: spot.number,
+            }),
             color: 'green',
           }),
         onError: (err) =>
           notifications.show({
-            message: err instanceof Error ? err.message : 'Failed',
+            message:
+              err instanceof Error
+                ? err.message
+                : t('spotModal.toastAssignFailed'),
             color: 'red',
           }),
       },
@@ -46,8 +53,8 @@ export function useOwnerAssignment(spot: Spot) {
         onSuccess: () => {
           notifications.show({
             message: ownerId
-              ? `Owner assigned to spot #${spot.number}`
-              : `Spot #${spot.number} unassigned`,
+              ? t('spotModal.toastOwnerAssigned', { number: spot.number })
+              : t('spotModal.toastSpotUnassigned', { number: spot.number }),
             color: 'green',
           })
           setAssignOpen(false)
@@ -56,7 +63,9 @@ export function useOwnerAssignment(spot: Spot) {
         onError: (err) =>
           notifications.show({
             message:
-              err instanceof Error ? err.message : 'Failed to assign owner',
+              err instanceof Error
+                ? err.message
+                : t('spotModal.toastAssignOwnerFailed'),
             color: 'red',
           }),
       },

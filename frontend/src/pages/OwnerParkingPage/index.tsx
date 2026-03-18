@@ -1,5 +1,6 @@
 import { ArrowRightLeft, Loader2, ParkingCircle } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import type { OwnerSpot } from '@/types'
 
@@ -20,6 +21,7 @@ import { WeekStrip } from './WeekStrip'
 // — main component —
 
 export function OwnerParkingPage() {
+  const { t, i18n } = useTranslation()
   const today = new Date().toISOString().slice(0, 10)
   const [selectedDate, setSelectedDate] = useState(today)
   const [historySpotId, setHistorySpotId] = useState<string | null>(null)
@@ -63,7 +65,7 @@ export function OwnerParkingPage() {
 
   const selectedDateLabel = new Date(
     selectedDate + 'T00:00:00',
-  ).toLocaleDateString('sl-SI', {
+  ).toLocaleDateString(i18n.language, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -82,12 +84,13 @@ export function OwnerParkingPage() {
   if (ownerError) {
     return (
       <div className="pt-8">
-        <h1 className="mb-4 text-2xl font-semibold">Moj Parking</h1>
+        <h1 className="mb-4 text-2xl font-semibold">
+          {t('ownerParking.title')}
+        </h1>
         <div className="rounded-2xl border border-dashed p-10 text-center">
           <ParkingCircle className="text-muted-foreground mx-auto mb-3 size-8" />
           <p className="text-muted-foreground text-sm">
-            Vaš račun ni povezan z nobenim lastnikom parkirnega mesta.
-            Kontaktirajte administratorja.
+            {t('ownerParking.notAnOwner')}
           </p>
         </div>
       </div>
@@ -106,9 +109,9 @@ export function OwnerParkingPage() {
     <div className="space-y-5 pb-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold">Moj Parking</h1>
+        <h1 className="text-2xl font-semibold">{t('ownerParking.title')}</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          {owner?.name} — upravljanje parkirnih mest
+          {t('ownerParking.subtitle', { name: owner?.name })}
         </p>
       </div>
 
@@ -136,12 +139,12 @@ export function OwnerParkingPage() {
           <ArrowRightLeft className="mt-0.5 size-4 shrink-0 text-indigo-500" />
           <div className="text-sm">
             <p className="font-medium text-indigo-700 dark:text-indigo-300">
-              Rezervacijo ste premaknili na parkirno mesto #
-              {myBookingElsewhere.spot_number}
+              {t('ownerParking.movedToSpotBanner', {
+                number: myBookingElsewhere.spot_number,
+              })}
             </p>
             <p className="text-indigo-600/80 dark:text-indigo-400/80">
-              Vaše lastniško parkirno mesto je za ta dan označeno kot prosto in
-              dostopno ostalim.
+              {t('ownerParking.movedToSpotDesc')}
             </p>
           </div>
         </div>
@@ -152,7 +155,7 @@ export function OwnerParkingPage() {
         <div className="rounded-2xl border border-dashed p-10 text-center">
           <ParkingCircle className="text-muted-foreground mx-auto mb-3 size-8" />
           <p className="text-muted-foreground text-sm">
-            Nimate dodeljenih parkirnih mest.
+            {t('ownerParking.noSpotsAssigned')}
           </p>
         </div>
       ) : (

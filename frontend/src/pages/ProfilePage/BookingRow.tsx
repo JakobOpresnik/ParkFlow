@@ -1,4 +1,5 @@
 import { MapPin } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { Badge } from '@/components/ui/badge'
 import type { Booking, BookingStatus } from '@/types'
@@ -13,25 +14,21 @@ interface BookingRowProps {
 
 // — constants —
 
-const STATUS_CONFIG: Record<BookingStatus, { badge: string; label: string }> = {
-  active: {
-    badge: 'bg-spot-free text-white border-transparent',
-    label: 'Active',
-  },
-  cancelled: {
-    badge: 'bg-muted text-muted-foreground border-transparent',
-    label: 'Cancelled',
-  },
-  expired: {
-    badge: 'bg-muted text-muted-foreground border-transparent',
-    label: 'Expired',
-  },
+const STATUS_BADGE: Record<BookingStatus, string> = {
+  active: 'bg-spot-free text-white border-transparent',
+  cancelled: 'bg-muted text-muted-foreground border-transparent',
+  expired: 'bg-muted text-muted-foreground border-transparent',
 }
 
 // — main component —
 
 export function BookingRow({ booking }: BookingRowProps) {
-  const config = STATUS_CONFIG[booking.status]
+  const { t } = useTranslation()
+  const STATUS_LABELS: Record<BookingStatus, string> = {
+    active: t('bookings.statusActive'),
+    cancelled: t('bookings.statusCancelled'),
+    expired: t('bookings.statusExpired'),
+  }
   return (
     <div className="flex items-center justify-between gap-3 py-3">
       <div className="flex items-center gap-3">
@@ -52,7 +49,9 @@ export function BookingRow({ booking }: BookingRowProps) {
           </p>
         </div>
       </div>
-      <Badge className={config.badge}>{config.label}</Badge>
+      <Badge className={STATUS_BADGE[booking.status]}>
+        {STATUS_LABELS[booking.status]}
+      </Badge>
     </div>
   )
 }

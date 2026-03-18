@@ -1,4 +1,5 @@
 import { MousePointer, Pencil } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import type { ParkingLot } from '@/types'
 
@@ -32,6 +33,7 @@ export function EditorToolbar({
   mappedCount,
   totalCount,
 }: EditorToolbarProps) {
+  const { t } = useTranslation()
   return (
     <div className="bg-card flex items-center gap-3 rounded-lg border p-3">
       {/* Mode toggle */}
@@ -46,7 +48,7 @@ export function EditorToolbar({
             onClick={onDrawMode}
           >
             <Pencil className="size-4" />
-            Draw
+            {t('mapEditor.draw')}
           </button>
           <button
             className={`flex cursor-pointer items-center gap-1.5 rounded-r-md border-l px-3 py-1.5 text-sm font-medium transition-colors ${
@@ -57,7 +59,7 @@ export function EditorToolbar({
             onClick={onSelectMode}
           >
             <MousePointer className="size-4" />
-            Select
+            {t('mapEditor.select')}
           </button>
         </div>
       </div>
@@ -75,7 +77,7 @@ export function EditorToolbar({
 
       {/* Mapped count */}
       <div className="text-muted-foreground text-xs">
-        {mappedCount}/{totalCount} mapped
+        {t('mapEditor.mapped', { count: mappedCount, total: totalCount })}
       </div>
     </div>
   )

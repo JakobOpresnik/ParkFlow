@@ -1,4 +1,5 @@
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { SpotSearch } from '@/components/SpotSearch/SpotSearch'
 import type { ParkingLot, Spot } from '@/types'
@@ -25,6 +26,8 @@ export function MapSidebar({
   isLoading,
   onClose,
 }: MapSidebarProps) {
+  const { t } = useTranslation()
+
   return (
     <>
       {/* Backdrop (mobile tap-to-close) */}
@@ -44,7 +47,9 @@ export function MapSidebar({
       >
         {/* Header */}
         <div className="flex h-14 shrink-0 items-center justify-between border-b px-4">
-          <p className="font-semibold">{activeLot?.name ?? 'Parking Map'}</p>
+          <p className="font-semibold">
+            {activeLot?.name ?? t('map.parkingMap')}
+          </p>
           <button
             onClick={onClose}
             aria-label="Close sidebar"
@@ -67,7 +72,7 @@ export function MapSidebar({
 
           {!isLoading && activeLot && lotSpots.length === 0 && (
             <p className="text-muted-foreground text-center text-sm">
-              No spots in this lot yet.
+              {t('map.noSpotsYet')}
             </p>
           )}
         </div>

@@ -1,4 +1,5 @@
 import { CalendarDays } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import type { ParkingLot, Spot } from '@/types'
 
@@ -57,6 +58,7 @@ export function LotDaySelector({
   onLotSelect,
   onDateSelect,
 }: LotDaySelectorProps) {
+  const { t, i18n } = useTranslation()
   return (
     <div className="absolute top-3 left-3 z-20 max-w-[calc(100vw-96px)]">
       <div
@@ -127,7 +129,7 @@ export function LotDaySelector({
           }`}
         >
           {weekDays.map((date) => {
-            const { short, num } = formatDayLabel(date)
+            const { short, num } = formatDayLabel(date, i18n.language)
             const isToday = date === today
             const isSelected = date === selectedDate
             return (
@@ -167,9 +169,7 @@ export function LotDaySelector({
             }`}
           >
             <CalendarDays className="size-3 shrink-0" />
-            {selectedDate < today
-              ? 'Historical · based on recorded attendance'
-              : 'Projected · based on scheduled attendance'}
+            {selectedDate < today ? t('map.historical') : t('map.projected')}
           </div>
         )}
       </div>

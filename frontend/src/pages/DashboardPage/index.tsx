@@ -1,5 +1,6 @@
 import { Activity, CheckCircle2, Clock, ParkingCircle } from 'lucide-react'
 import type { ComponentType } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { useChanges } from '@/hooks/useChanges'
 import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
@@ -24,40 +25,12 @@ interface StatCard extends StatCardConfig {
   readonly sub: string
 }
 
-// — constants —
-
-const STAT_CARD_CONFIG = [
-  {
-    label: 'Occupied',
-    Icon: ParkingCircle,
-    iconColor: 'text-red-600 dark:text-red-400',
-    iconBg: 'bg-red-100 dark:bg-red-900/30',
-    cardClass:
-      'border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20',
-  },
-  {
-    label: 'Reserved',
-    Icon: Clock,
-    iconColor: 'text-amber-600 dark:text-amber-400',
-    iconBg: 'bg-amber-100 dark:bg-amber-900/30',
-    cardClass:
-      'border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20',
-  },
-  {
-    label: 'Total spots',
-    Icon: Activity,
-    iconColor: 'text-indigo-600 dark:text-indigo-400',
-    iconBg: 'bg-indigo-100 dark:bg-indigo-900/30',
-    cardClass:
-      'border-indigo-200 bg-indigo-50 dark:border-indigo-900/40 dark:bg-indigo-950/20',
-  },
-] satisfies ReadonlyArray<StatCardConfig>
-
 // — main component —
 
 const TODAY = new Date().toISOString().slice(0, 10)
 
 export function DashboardPage() {
+  const { t } = useTranslation()
   const { data: allSpots = [], isLoading: spotsLoading } =
     useEffectiveSpots(TODAY)
   const { data: lots = [], isLoading: lotsLoading } = useLots()
@@ -81,21 +54,48 @@ export function DashboardPage() {
     ? Math.round(((totalOccupied + totalReservedByStatus) / total) * 100)
     : 0
 
+  const STAT_CARD_CONFIG = [
+    {
+      label: t('dashboard.occupied'),
+      Icon: ParkingCircle,
+      iconColor: 'text-red-600 dark:text-red-400',
+      iconBg: 'bg-red-100 dark:bg-red-900/30',
+      cardClass:
+        'border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20',
+    },
+    {
+      label: t('dashboard.reserved'),
+      Icon: Clock,
+      iconColor: 'text-amber-600 dark:text-amber-400',
+      iconBg: 'bg-amber-100 dark:bg-amber-900/30',
+      cardClass:
+        'border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20',
+    },
+    {
+      label: t('dashboard.totalSpots'),
+      Icon: Activity,
+      iconColor: 'text-indigo-600 dark:text-indigo-400',
+      iconBg: 'bg-indigo-100 dark:bg-indigo-900/30',
+      cardClass:
+        'border-indigo-200 bg-indigo-50 dark:border-indigo-900/40 dark:bg-indigo-950/20',
+    },
+  ] satisfies ReadonlyArray<StatCardConfig>
+
   const supportingCards: readonly StatCard[] = [
     {
       ...STAT_CARD_CONFIG[0],
       value: totalOccupied,
-      sub: `${occupancyPct}% occupancy`,
+      sub: t('dashboard.occupancyPct', { pct: occupancyPct }),
     } as StatCard,
     {
       ...STAT_CARD_CONFIG[1],
       value: totalReserved,
-      sub: 'booked spots',
+      sub: t('dashboard.bookedSpots'),
     } as StatCard,
     {
       ...STAT_CARD_CONFIG[2],
       value: total,
-      sub: 'across all lots',
+      sub: t('dashboard.acrossAllLots'),
     } as StatCard,
   ]
 
@@ -103,9 +103,9 @@ export function DashboardPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <h1 className="text-2xl font-semibold">{t('dashboard.title')}</h1>
         <p className="text-muted-foreground mt-0.5 text-sm">
-          Live overview · auto-refreshes every 15s
+          {t('dashboard.subtitle')}
         </p>
       </div>
 
@@ -134,10 +134,10 @@ export function DashboardPage() {
                 {totalFree}
               </p>
               <p className="mt-1.5 text-sm font-medium">
-                spots available right now
+                {t('dashboard.spotsAvailable')}
               </p>
               <p className="text-muted-foreground text-xs">
-                of {total} total · {occupancyPct}% occupied
+                {t('dashboard.ofTotal', { total, pct: occupancyPct })}
               </p>
             </div>
           </div>

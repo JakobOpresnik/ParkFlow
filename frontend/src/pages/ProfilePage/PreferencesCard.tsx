@@ -1,4 +1,5 @@
 import { Bell, BellOff, Clock, ParkingCircle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { PreferenceRow } from '@/components/PreferenceRow/PreferenceRow'
 import { Select } from '@/components/ui/select'
@@ -35,20 +36,22 @@ export function PreferencesCard({
   onArrivalTimeChange,
   onReservationDurationChange,
 }: PreferencesCardProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="bg-card rounded-lg border shadow-sm">
       <div className="border-b px-5 py-3">
-        <h3 className="text-sm font-semibold">Preferences</h3>
+        <h3 className="text-sm font-semibold">{t('profile.preferences')}</h3>
         <p className="text-muted-foreground mt-0.5 text-xs">
-          Saved locally on this device
+          {t('profile.prefsSavedLocally')}
         </p>
       </div>
       <div className="divide-y px-5">
         <div className="py-4">
           <PreferenceRow
             icon={Bell}
-            title="Reservation confirmations"
-            description="Get notified when you book or cancel a spot"
+            title={t('profile.notifyOnBooking')}
+            description={t('profile.notifyOnBookingDesc')}
           >
             <Switch
               checked={notifyOnBooking}
@@ -59,8 +62,8 @@ export function PreferencesCard({
         <div className="py-4">
           <PreferenceRow
             icon={BellOff}
-            title="Availability alerts"
-            description="Get notified when preferred spots become available"
+            title={t('profile.notifyOnAvailability')}
+            description={t('profile.notifyOnAvailabilityDesc')}
           >
             <Switch
               checked={notifyOnAvailability}
@@ -72,14 +75,14 @@ export function PreferencesCard({
           <div className="py-4">
             <PreferenceRow
               icon={ParkingCircle}
-              title="Preferred parking lot"
-              description="Default lot shown when browsing the map"
+              title={t('profile.preferredLot')}
+              description={t('profile.preferredLotDesc')}
             >
               <Select
                 value={preferredLotId ?? ''}
                 onChange={(v) => onPreferredLotChange(v ?? null)}
                 clearable
-                placeholder="Any lot"
+                placeholder={t('profile.anyLot')}
                 className="w-36 text-xs"
                 data={lots.map((lot) => ({ value: lot.id, label: lot.name }))}
               />
@@ -89,8 +92,8 @@ export function PreferencesCard({
         <div className="py-4">
           <PreferenceRow
             icon={Clock}
-            title="Typical arrival time"
-            description="Reservations default to starting at this time"
+            title={t('profile.arrivalTime')}
+            description={t('profile.arrivalTimeDesc')}
           >
             <input
               type="time"
@@ -103,8 +106,8 @@ export function PreferencesCard({
         <div className="py-4">
           <PreferenceRow
             icon={Clock}
-            title="Default reservation duration"
-            description="How many hours your spot is held by default"
+            title={t('profile.reservationDuration')}
+            description={t('profile.reservationDurationDesc')}
           >
             <div className="flex items-center gap-1.5">
               <input

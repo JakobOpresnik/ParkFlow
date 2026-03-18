@@ -1,37 +1,39 @@
 import { notifications } from '@mantine/notifications'
 import { BarChart2, Calendar, LogIn, Map, ParkingCircle } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import { oauthConfig } from '@/lib/oauth'
 import { generateCodeChallenge, generateCodeVerifier } from '@/lib/pkce'
 
-const FEATURES = [
-  {
-    Icon: Map,
-    label: 'Live map',
-    desc: 'Inspect real-time spot availability',
-    color: 'text-blue-500',
-    bg: 'bg-blue-500/10',
-  },
-  {
-    Icon: Calendar,
-    label: 'Reservations',
-    desc: 'Book your spot ahead of time',
-    color: 'text-green-500',
-    bg: 'bg-green-500/10',
-  },
-  {
-    Icon: BarChart2,
-    label: 'Analytics',
-    desc: 'View occupancy & usage trends',
-    color: 'text-violet-500',
-    bg: 'bg-violet-500/10',
-  },
-]
-
 export function LoginPage() {
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
+
+  const FEATURES = [
+    {
+      Icon: Map,
+      label: t('login.featureLiveMap'),
+      desc: t('login.featureLiveMapDesc'),
+      color: 'text-blue-500',
+      bg: 'bg-blue-500/10',
+    },
+    {
+      Icon: Calendar,
+      label: t('login.featureReservations'),
+      desc: t('login.featureReservationsDesc'),
+      color: 'text-green-500',
+      bg: 'bg-green-500/10',
+    },
+    {
+      Icon: BarChart2,
+      label: t('login.featureAnalytics'),
+      desc: t('login.featureAnalyticsDesc'),
+      color: 'text-violet-500',
+      bg: 'bg-violet-500/10',
+    },
+  ]
 
   async function handleLogin() {
     setLoading(true)
@@ -56,7 +58,8 @@ export function LoginPage() {
       window.location.href = `${oauthConfig.authorizeUrl}?${params.toString()}`
     } catch (err) {
       notifications.show({
-        message: err instanceof Error ? err.message : 'Failed to start login',
+        message:
+          err instanceof Error ? err.message : t('login.failedToStartLogin'),
         color: 'red',
       })
       setLoading(false)
@@ -79,7 +82,7 @@ export function LoginPage() {
           </div>
           <h1 className="text-2xl font-bold tracking-tight">ParkFlow</h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Smart parking for your team
+            {t('login.tagline')}
           </p>
         </div>
 
@@ -91,10 +94,10 @@ export function LoginPage() {
             onClick={() => void handleLogin()}
           >
             <LogIn className="size-4" />
-            {loading ? 'Redirecting…' : 'Sign in with SSO'}
+            {loading ? t('login.redirecting') : t('login.signInWithSSO')}
           </Button>
           <p className="text-muted-foreground mt-4 text-center text-xs">
-            Use single sign-on via your company account
+            {t('login.ssoNote')}
           </p>
         </div>
 

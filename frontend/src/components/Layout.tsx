@@ -16,24 +16,12 @@ import {
   Users,
 } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/store/authStore'
-
-const topNavItems = [
-  { to: '/', label: 'Map', Icon: Map },
-  { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
-  { to: '/stats', label: 'Statistics', Icon: BarChart2 },
-  { to: '/my-bookings', label: 'My Bookings', Icon: Calendar },
-  { to: '/my-parking', label: 'My Parking', Icon: SquareParking },
-]
-
-const adminSubItems = [
-  { to: '/admin', label: 'Parking', Icon: ParkingCircle },
-  { to: '/owners', label: 'Owners', Icon: Users },
-  { to: '/map-editor', label: 'Map Editor', Icon: PenLine },
-]
 
 interface LayoutProps {
   children: ReactNode
@@ -41,11 +29,26 @@ interface LayoutProps {
 }
 
 export function Layout({ children, noPadding }: LayoutProps) {
+  const { t } = useTranslation()
   const user = useAuthStore((s) => s.user)
   const isLoading = useAuthStore((s) => s.isLoading)
   const logout = useAuthStore((s) => s.logout)
   const sessionExpired = useAuthStore((s) => s.sessionExpired)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+
+  const topNavItems = [
+    { to: '/', label: t('nav.map'), Icon: Map },
+    { to: '/dashboard', label: t('nav.dashboard'), Icon: LayoutDashboard },
+    { to: '/stats', label: t('nav.statistics'), Icon: BarChart2 },
+    { to: '/my-bookings', label: t('nav.myBookings'), Icon: Calendar },
+    { to: '/my-parking', label: t('nav.myParking'), Icon: SquareParking },
+  ]
+
+  const adminSubItems = [
+    { to: '/admin', label: t('nav.adminParking'), Icon: ParkingCircle },
+    { to: '/owners', label: t('nav.adminOwners'), Icon: Users },
+    { to: '/map-editor', label: t('nav.adminMapEditor'), Icon: PenLine },
+  ]
 
   const isAdminSection =
     pathname === '/admin' ||
@@ -75,9 +78,7 @@ export function Layout({ children, noPadding }: LayoutProps) {
       {sessionExpired && (
         <div className="bg-background/70 fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 backdrop-blur-md">
           <Loader2 className="text-primary size-8 animate-spin" />
-          <p className="text-sm font-medium">
-            Seja je potekla — preusmerjanje na ponovno prijavo…
-          </p>
+          <p className="text-sm font-medium">{t('auth.sessionExpired')}</p>
         </div>
       )}
       {/* Sidebar */}
@@ -111,11 +112,13 @@ export function Layout({ children, noPadding }: LayoutProps) {
           {/* Admin dropdown */}
           <button
             onClick={() => setAdminOpen((o) => !o)}
-            title="Admin"
+            title={t('nav.admin')}
             className={`${linkClass} w-full cursor-pointer ${isAdminSection ? activeLinkClass : ''}`}
           >
             <Settings className="size-4 shrink-0" />
-            <span className="hidden flex-1 text-left sm:block">Admin</span>
+            <span className="hidden flex-1 text-left sm:block">
+              {t('nav.admin')}
+            </span>
             {/* Mobile: dot indicator when section active */}
             {isAdminSection && (
               <span className="bg-primary ml-auto size-1.5 shrink-0 rounded-full sm:hidden" />
@@ -150,7 +153,7 @@ export function Layout({ children, noPadding }: LayoutProps) {
               <Link
                 to="/profile"
                 className="hover:bg-muted -mx-1 hidden rounded-md px-1 py-1 sm:block"
-                title="View profile"
+                title={t('nav.profile')}
               >
                 <p className="text-xs font-medium">{user.displayName}</p>
                 <p className="text-muted-foreground text-xs">{user.username}</p>
@@ -162,16 +165,17 @@ export function Layout({ children, noPadding }: LayoutProps) {
                 <Link
                   to="/profile"
                   className="text-muted-foreground hover:bg-muted flex size-8 items-center justify-center rounded-md transition-colors sm:hidden"
-                  title="Profile"
+                  title={t('nav.profile')}
                 >
                   <User className="size-4" />
                 </Link>
                 <ThemeToggle />
+                <LanguageSwitcher />
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={handleLogout}
-                  aria-label="Log out"
+                  aria-label={t('auth.logOut')}
                   className="text-muted-foreground hover:text-foreground"
                 >
                   <LogOut className="size-4" />
@@ -180,13 +184,14 @@ export function Layout({ children, noPadding }: LayoutProps) {
             </div>
           ) : (
             <div className="flex items-center gap-2">
+              <LanguageSwitcher />
               <ThemeToggle />
               <Link
                 to="/login"
                 className="text-muted-foreground hover:text-foreground flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors"
               >
                 <LogIn className="size-4 shrink-0" />
-                <span className="hidden sm:block">Sign in</span>
+                <span className="hidden sm:block">{t('nav.signIn')}</span>
               </Link>
             </div>
           )}

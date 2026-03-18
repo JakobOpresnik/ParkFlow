@@ -1,4 +1,5 @@
 import { Star, Sun } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import type { WeekStripProps } from './types'
 
@@ -9,6 +10,7 @@ export function WeekStrip({
   onSelect,
   workFreeDays,
 }: WeekStripProps) {
+  const { i18n } = useTranslation()
   return (
     <div className="bg-card rounded-2xl border p-1.5">
       <div className="grid grid-cols-7 gap-1">
@@ -19,7 +21,9 @@ export function WeekStrip({
           const isWeekend = [0, 6].includes(d.getDay())
           const isHoliday = !isWeekend && workFreeDays.includes(date)
           const isNonWork = isWeekend || isHoliday
-          const weekday = d.toLocaleDateString('sl-SI', { weekday: 'short' })
+          const weekday = d.toLocaleDateString(i18n.language, {
+            weekday: 'short',
+          })
           const dayNum = d.getDate()
 
           return (

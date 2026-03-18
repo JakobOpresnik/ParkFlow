@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -16,26 +18,26 @@ export function OwnerDeleteDialog({
   onConfirm,
   onClose,
 }: OwnerDeleteDialogProps) {
+  const { t } = useTranslation()
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete Owner</DialogTitle>
+          <DialogTitle>{t('owners.deleteOwnerTitle')}</DialogTitle>
         </DialogHeader>
         <p className="text-muted-foreground text-sm">
-          Remove <strong>{ownerName}</strong>? Their parking spots will be
-          unassigned.
+          {t('owners.deleteOwnerConfirm', { name: ownerName })}
         </p>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t('owners.cancel')}
           </Button>
           <Button
             variant="destructive"
             onClick={onConfirm}
             disabled={isPending}
           >
-            Delete
+            {t('owners.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>

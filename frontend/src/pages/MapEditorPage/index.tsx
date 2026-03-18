@@ -1,5 +1,6 @@
 import { notifications } from '@mantine/notifications'
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { useLots } from '@/hooks/useLots'
 import { useCreateSpot, usePatchCoordinates, useSpots } from '@/hooks/useSpots'
@@ -19,6 +20,7 @@ const CANVAS_SKELETON_STYLE = { aspectRatio: '13/10' }
 // — main component —
 
 export function MapEditorPage() {
+  const { t } = useTranslation()
   const svgRef = useRef<SVGSVGElement>(null)
 
   const { data: lots = [], isLoading: lotsLoading } = useLots()
@@ -166,13 +168,17 @@ export function MapEditorPage() {
   async function handleSaveToSpot(spotId: string, relCoords: SpotCoordinates) {
     try {
       await patchCoords.mutateAsync({ id: spotId, coordinates: relCoords })
-      notifications.show({ message: 'Coordinates saved', color: 'green' })
+      notifications.show({
+        message: t('mapEditor.coordinatesSaved'),
+        color: 'green',
+      })
       setPendingRect(null)
       setSelectedSpotId(spotId)
       setMode('select')
     } catch (err) {
       notifications.show({
-        message: err instanceof Error ? err.message : 'Failed to save',
+        message:
+          err instanceof Error ? err.message : t('mapEditor.failedToSave'),
         color: 'red',
       })
     }
@@ -191,13 +197,19 @@ export function MapEditorPage() {
         lot_id: activeLotId,
       })
       await patchCoords.mutateAsync({ id: spot.id, coordinates: relCoords })
-      notifications.show({ message: `Spot #${number} created`, color: 'green' })
+      notifications.show({
+        message: t('mapEditor.spotCreated', { number }),
+        color: 'green',
+      })
       setPendingRect(null)
       setSelectedSpotId(spot.id)
       setMode('select')
     } catch (err) {
       notifications.show({
-        message: err instanceof Error ? err.message : 'Failed to create spot',
+        message:
+          err instanceof Error
+            ? err.message
+            : t('mapEditor.failedToCreateSpot'),
         color: 'red',
       })
     }
@@ -207,11 +219,15 @@ export function MapEditorPage() {
     if (!selectedSpotId) return
     try {
       await patchCoords.mutateAsync({ id: selectedSpotId, coordinates: null })
-      notifications.show({ message: 'Coordinates removed', color: 'green' })
+      notifications.show({
+        message: t('mapEditor.coordinatesRemoved'),
+        color: 'green',
+      })
       setSelectedSpotId(null)
     } catch (err) {
       notifications.show({
-        message: err instanceof Error ? err.message : 'Failed to remove',
+        message:
+          err instanceof Error ? err.message : t('mapEditor.failedToRemove'),
         color: 'red',
       })
     }
@@ -225,10 +241,9 @@ export function MapEditorPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-semibold">Map Editor</h1>
+        <h1 className="text-2xl font-semibold">{t('mapEditor.title')}</h1>
         <p className="text-muted-foreground mt-0.5 text-sm">
-          Draw rectangles on the floor plan to assign coordinates to parking
-          spots
+          {t('mapEditor.subtitle')}
         </p>
       </div>
 
@@ -254,7 +269,7 @@ export function MapEditorPage() {
       {!isLoading && !activeLot && (
         <div className="rounded-lg border border-dashed p-12 text-center">
           <p className="text-muted-foreground text-sm">
-            No lots found. Add a parking lot via the Admin page first.
+            {t('mapEditor.noLotsFound')}
           </p>
         </div>
       )}

@@ -1,5 +1,6 @@
 import { notifications } from '@mantine/notifications'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { useCreateLot, useUpdateLot } from '@/hooks/useLots'
 import type { ParkingLot } from '@/types'
@@ -27,6 +28,7 @@ const EMPTY_LOT: LotFormData = {
 // — hook —
 
 export function useLotDialog() {
+  const { t } = useTranslation()
   const [dialog, setDialog] = useState<LotDialogState>({ mode: null })
   const [form, setForm] = useState<LotFormData>(EMPTY_LOT)
 
@@ -58,19 +60,22 @@ export function useLotDialog() {
 
   function handleSubmit() {
     if (!form.name.trim()) {
-      notifications.show({ message: 'Name is required', color: 'red' })
+      notifications.show({ message: t('admin.nameRequired'), color: 'red' })
       return
     }
     if (dialog.mode === 'add') {
       createLot.mutate(form, {
         onSuccess: () => {
-          notifications.show({ message: 'Parking lot added', color: 'green' })
+          notifications.show({
+            message: t('admin.parkingLotAdded'),
+            color: 'green',
+          })
           handleClose()
         },
         onError: (err) =>
           notifications.show({
             message:
-              err instanceof Error ? err.message : 'Failed to create lot',
+              err instanceof Error ? err.message : t('admin.failedToCreateLot'),
             color: 'red',
           }),
       })
@@ -80,7 +85,7 @@ export function useLotDialog() {
         {
           onSuccess: () => {
             notifications.show({
-              message: 'Parking lot updated',
+              message: t('admin.parkingLotUpdated'),
               color: 'green',
             })
             handleClose()
@@ -88,7 +93,9 @@ export function useLotDialog() {
           onError: (err) =>
             notifications.show({
               message:
-                err instanceof Error ? err.message : 'Failed to update lot',
+                err instanceof Error
+                  ? err.message
+                  : t('admin.failedToUpdateLot'),
               color: 'red',
             }),
         },

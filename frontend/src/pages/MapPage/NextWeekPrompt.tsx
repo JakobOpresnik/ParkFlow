@@ -1,4 +1,5 @@
 import { ArrowRight, CalendarDays } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -25,25 +26,24 @@ export function NextWeekPrompt({
   onGoToNextWeek,
   onDismiss,
 }: NextWeekPromptProps) {
+  const { t } = useTranslation()
+
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
       <DialogContent showCloseButton={false}>
         <DialogHeader className="gap-5">
           <DialogTitle className="flex items-center gap-2">
             <CalendarDays className="text-primary size-5 shrink-0" />
-            Switch to next week?
+            {t('map.switchToNextWeek')}
           </DialogTitle>
-          <DialogDescription>
-            This week&apos;s reservation window has closed. Would you like to
-            view next week&apos;s availability and reserve a spot in advance?
-          </DialogDescription>
+          <DialogDescription>{t('map.nextWeekDesc')}</DialogDescription>
         </DialogHeader>
         <DialogFooter className="mt-3">
           <Button variant="ghost" size="sm" onClick={onDismiss}>
-            Stay
+            {t('map.stay')}
           </Button>
           <Button size="sm" className="gap-1.5" onClick={onGoToNextWeek}>
-            Go to next week
+            {t('map.goToNextWeek')}
             <ArrowRight className="size-3.5" />
           </Button>
         </DialogFooter>

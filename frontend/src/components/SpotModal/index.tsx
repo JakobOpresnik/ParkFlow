@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
 import { useAuthStore } from '@/store/authStore'
@@ -13,32 +15,38 @@ import { StatusBanner } from './StatusBanner'
 
 // — helpers —
 
+type TFunc = (key: string, opts?: Record<string, unknown>) => string
+
 function buildBannerSubtext(
   spot: Spot,
   myReservedElsewhere: Spot | undefined,
   canCancelThisBooking: boolean,
   isCurrentUserOwner: boolean,
+  t: TFunc,
 ): string {
   if (spot.status === 'free') {
     return myReservedElsewhere
-      ? `You have spot #${myReservedElsewhere.number} reserved. Moving here will cancel it.`
-      : 'This spot is open and ready to reserve.'
+      ? t('spotModal.bannerFreeElsewhere', {
+          number: myReservedElsewhere.number,
+        })
+      : t('spotModal.bannerFree')
   }
   if (spot.status === 'reserved') {
     return canCancelThisBooking
-      ? 'You have reserved this spot.'
-      : 'This spot has already been reserved.'
+      ? t('spotModal.bannerReservedMine')
+      : t('spotModal.bannerReservedOther')
   }
   if (isCurrentUserOwner && spot.status === 'occupied')
-    return 'Your spot — you are currently using it.'
+    return t('spotModal.bannerOccupiedMine')
   return spot.owner_name
-    ? 'This spot is currently in use by the owner.'
-    : 'This spot is currently in use.'
+    ? t('spotModal.bannerOccupiedOwner')
+    : t('spotModal.bannerOccupied')
 }
 
 // — main component —
 
 export function SpotModal() {
+  const { t } = useTranslation()
   const open = useUIStore((s) => s.spotModalOpen)
   const setOpen = useUIStore((s) => s.setSpotModalOpen)
   const selectedSpot = useParkingStore((s) => s.selectedSpot)
@@ -94,6 +102,7 @@ export function SpotModal() {
     myReservedElsewhere,
     canCancelThisBooking,
     isCurrentUserOwner,
+    t as TFunc,
   )
 
   return (
@@ -107,7 +116,7 @@ export function SpotModal() {
         {/* ── Header ──────────────────────────────────────────── */}
         <div className="px-6 pt-6 pr-14 pb-5">
           <p className="text-muted-foreground mb-2 text-xs font-medium tracking-widest uppercase">
-            Parking Spot
+            {t('spotModal.parkingSpot')}
           </p>
           <div className="min-w-0">
             <h2 className="text-3xl font-bold tracking-tight">
@@ -130,7 +139,7 @@ export function SpotModal() {
             subtext={bannerSubtext}
             titleOverride={
               isCurrentUserOwner && spot.status === 'occupied'
-                ? 'Your Spot'
+                ? t('spotModal.yourSpot')
                 : undefined
             }
           />

@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 import { Input } from '@/components/ui/input'
 import type { ParkingLot } from '@/types'
 
@@ -13,11 +15,12 @@ interface LotFormProps {
 // — main component —
 
 export function LotForm({ value, onChange }: LotFormProps) {
+  const { t } = useTranslation()
   return (
     <div className="grid gap-3">
       <div>
         <label htmlFor="lot-name" className="mb-1 block text-sm font-medium">
-          Name *
+          {t('admin.lotNameLabel')}
         </label>
         <Input
           id="lot-name"
@@ -31,7 +34,7 @@ export function LotForm({ value, onChange }: LotFormProps) {
           htmlFor="lot-image-filename"
           className="mb-1 block text-sm font-medium"
         >
-          Image filename
+          {t('admin.lotImageFilename')}
         </label>
         <Input
           id="lot-image-filename"
@@ -42,7 +45,7 @@ export function LotForm({ value, onChange }: LotFormProps) {
           placeholder="parking-map-outside.png"
         />
         <p className="text-muted-foreground mt-1 text-xs">
-          Place the image in <code>frontend/public/</code>
+          {t('admin.lotImageFilenameNote')}
         </p>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -51,7 +54,7 @@ export function LotForm({ value, onChange }: LotFormProps) {
             htmlFor="lot-image-width"
             className="mb-1 block text-sm font-medium"
           >
-            Image width (px)
+            {t('admin.lotImageWidth')}
           </label>
           <Input
             id="lot-image-width"
@@ -70,7 +73,7 @@ export function LotForm({ value, onChange }: LotFormProps) {
             htmlFor="lot-image-height"
             className="mb-1 block text-sm font-medium"
           >
-            Image height (px)
+            {t('admin.lotImageHeight')}
           </label>
           <Input
             id="lot-image-height"
@@ -86,7 +89,9 @@ export function LotForm({ value, onChange }: LotFormProps) {
         </div>
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium">Sort order</label>
+        <label className="mb-1 block text-sm font-medium">
+          {t('admin.lotSortOrder')}
+        </label>
         <Input
           type="number"
           value={value.sort_order}

@@ -1,5 +1,6 @@
 import { notifications } from '@mantine/notifications'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { useCreateOwner } from '@/hooks/useOwners'
 import { useAssignOwner } from '@/hooks/useSpots'
@@ -8,6 +9,7 @@ import type { Spot } from '@/types'
 // — hook —
 
 export function useNewOwnerForm(spot: Spot, onCreatedAndAssigned: () => void) {
+  const { t } = useTranslation()
   const [createFormOpen, setCreateFormOpen] = useState(false)
   const [newName, setNewName] = useState('')
   const [newPlate, setNewPlate] = useState('')
@@ -33,7 +35,10 @@ export function useNewOwnerForm(spot: Spot, onCreatedAndAssigned: () => void) {
             {
               onSuccess: () => {
                 notifications.show({
-                  message: `Owner "${owner.name}" created and assigned to spot #${spot.number}`,
+                  message: t('spotModal.toastOwnerCreatedAndAssigned', {
+                    name: owner.name,
+                    number: spot.number,
+                  }),
                   color: 'green',
                 })
                 onCreatedAndAssigned()
@@ -44,7 +49,9 @@ export function useNewOwnerForm(spot: Spot, onCreatedAndAssigned: () => void) {
               onError: (err) =>
                 notifications.show({
                   message:
-                    err instanceof Error ? err.message : 'Failed to assign',
+                    err instanceof Error
+                      ? err.message
+                      : t('spotModal.toastAssignShortFailed'),
                   color: 'red',
                 }),
             },
@@ -53,7 +60,9 @@ export function useNewOwnerForm(spot: Spot, onCreatedAndAssigned: () => void) {
         onError: (err) =>
           notifications.show({
             message:
-              err instanceof Error ? err.message : 'Failed to create owner',
+              err instanceof Error
+                ? err.message
+                : t('spotModal.toastCreateOwnerFailed'),
             color: 'red',
           }),
       },

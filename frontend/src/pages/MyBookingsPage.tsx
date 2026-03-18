@@ -1,5 +1,6 @@
 import { notifications } from '@mantine/notifications'
 import { Calendar, Clock, MapPin, XCircle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -13,12 +14,6 @@ const STATUS_BADGE: Record<BookingStatus, string> = {
   expired: 'bg-muted text-muted-foreground border-transparent',
 }
 
-const STATUS_LABEL: Record<BookingStatus, string> = {
-  active: 'Active',
-  cancelled: 'Cancelled',
-  expired: 'Expired',
-}
-
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('sl-SI', {
     day: '2-digit',
@@ -29,28 +24,45 @@ function formatDate(iso: string) {
   })
 }
 
-function timeRemaining(expiresAt: string): string {
-  const ms = new Date(expiresAt).getTime() - Date.now()
-  if (ms <= 0) return 'Expired'
-  const h = Math.floor(ms / 3_600_000)
-  const m = Math.floor((ms % 3_600_000) / 60_000)
-  return h > 0 ? `${h}h ${m}m remaining` : `${m}m remaining`
-}
-
 interface BookingCardProps {
   booking: Booking
 }
 
+function useTimeRemaining() {
+  const { t } = useTranslation()
+  return function timeRemaining(expiresAt: string): string {
+    const ms = new Date(expiresAt).getTime() - Date.now()
+    if (ms <= 0) return t('bookings.expired')
+    const h = Math.floor(ms / 3_600_000)
+    const m = Math.floor((ms % 3_600_000) / 60_000)
+    return h > 0
+      ? t('bookings.remaining', { h, m })
+      : t('bookings.remainingMins', { m })
+  }
+}
+
 function BookingCard({ booking }: BookingCardProps) {
+  const { t } = useTranslation()
   const cancelBooking = useCancelBooking()
+  const timeRemaining = useTimeRemaining()
+
+  const STATUS_LABEL: Record<BookingStatus, string> = {
+    active: t('bookings.statusActive'),
+    cancelled: t('bookings.statusCancelled'),
+    expired: t('bookings.statusExpired'),
+  }
 
   function handleCancel() {
     cancelBooking.mutate(booking.id, {
       onSuccess: () =>
-        notifications.show({ message: 'Booking cancelled', color: 'green' }),
+        notifications.show({
+          message: t('bookings.bookingCancelled'),
+          color: 'green',
+        }),
       onError: (err) =>
         notifications.show({
-          message: err instanceof Error ? err.message : 'Failed to cancel',
+          message:
+            err instanceof Error ? err.message : t('bookings.failedToCancel'),
           color: 'red',
         }),
     })
@@ -83,28 +95,28 @@ function BookingCard({ booking }: BookingCardProps) {
 
           <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
             <Calendar className="size-3.5" />
-            Booked {formatDate(booking.booked_at)}
+            {t('bookings.booked', { date: formatDate(booking.booked_at) })}
           </div>
 
           {booking.status === 'active' && (
             <div className="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400">
               <Clock className="size-3.5" />
-              {timeRemaining(booking.expires_at)} · until{' '}
-              {formatDate(booking.expires_at)}
+              {timeRemaining(booking.expires_at)} ·{' '}
+              {t('bookings.until', { date: formatDate(booking.expires_at) })}
             </div>
           )}
 
           {booking.ended_at && booking.status !== 'active' && (
             <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
               <Clock className="size-3.5" />
-              Ended {formatDate(booking.ended_at)}
+              {t('bookings.ended', { date: formatDate(booking.ended_at) })}
             </div>
           )}
 
           {booking.cancelled_by && (
             <div className="flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400">
               <XCircle className="size-3.5" />
-              Preklical lastnik: {booking.cancelled_by}
+              {t('bookings.cancelledByOwner', { name: booking.cancelled_by })}
             </div>
           )}
         </div>
@@ -118,7 +130,7 @@ function BookingCard({ booking }: BookingCardProps) {
             onClick={handleCancel}
           >
             <XCircle className="size-4" />
-            Cancel
+            {t('bookings.cancel')}
           </Button>
         )}
       </div>
@@ -127,6 +139,7 @@ function BookingCard({ booking }: BookingCardProps) {
 }
 
 export function MyBookingsPage() {
+  const { t } = useTranslation()
   const user = useAuthStore((s) => s.user)
   const { data: bookings = [], isLoading } = useMyBookings()
 
@@ -136,9 +149,11 @@ export function MyBookingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">My Bookings</h1>
+        <h1 className="text-2xl font-semibold">{t('bookings.title')}</h1>
         <p className="text-muted-foreground mt-0.5 text-sm">
-          {user?.displayName ?? 'Your'} parking reservations
+          {user?.displayName
+            ? t('bookings.subtitle', { name: user.displayName })
+            : t('bookings.yourReservations')}
         </p>
       </div>
 
@@ -150,7 +165,7 @@ export function MyBookingsPage() {
         <div className="rounded-lg border border-dashed p-12 text-center">
           <Calendar className="text-muted-foreground mx-auto mb-3 size-8" />
           <p className="text-muted-foreground text-sm">
-            No bookings yet. Book a free spot from the parking map.
+            {t('bookings.noBookings')}
           </p>
         </div>
       )}
@@ -159,7 +174,7 @@ export function MyBookingsPage() {
         <section className="space-y-3">
           <div className="flex items-center gap-2">
             <h2 className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
-              Active
+              {t('bookings.active')}
             </h2>
             <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-semibold text-green-700 tabular-nums dark:text-green-400">
               {active.length}
@@ -175,7 +190,7 @@ export function MyBookingsPage() {
         <section className="space-y-3">
           <div className="flex items-center gap-2">
             <h2 className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
-              History
+              {t('bookings.history')}
             </h2>
             <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium tabular-nums">
               {history.length}

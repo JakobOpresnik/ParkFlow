@@ -2,6 +2,7 @@ import { notifications } from '@mantine/notifications'
 import { useNavigate } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { oauthConfig } from '@/lib/oauth'
 import { useAuthStore } from '@/store/authStore'
@@ -9,6 +10,7 @@ import type { AppUser } from '@/types'
 
 export function CallbackPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const handled = useRef(false)
 
   useEffect(() => {
@@ -97,7 +99,10 @@ export function CallbackPage() {
         void navigate({ to: '/' })
       } catch (err) {
         notifications.show({
-          message: err instanceof Error ? err.message : 'Authentication failed',
+          message:
+            err instanceof Error
+              ? err.message
+              : t('callback.authenticationFailed'),
           color: 'red',
         })
         void navigate({ to: '/login' })
@@ -109,7 +114,9 @@ export function CallbackPage() {
     <div className="flex min-h-screen items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <Loader2 className="text-primary size-8 animate-spin" />
-        <p className="text-muted-foreground text-sm">Completing sign-in…</p>
+        <p className="text-muted-foreground text-sm">
+          {t('callback.completingSignIn')}
+        </p>
       </div>
     </div>
   )

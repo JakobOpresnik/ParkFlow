@@ -1,16 +1,22 @@
 import { notifications } from '@mantine/notifications'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { useUpdateStatus } from '@/hooks/useSpots'
 import type { Spot, SpotStatus } from '@/types'
 
-import { STATUS_CONFIG } from './constants'
-
 // — hook —
 
 export function useManagementAccordion(spot: Spot) {
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState<boolean>(false)
   const updateStatus = useUpdateStatus()
+
+  const STATUS_LABELS: Record<SpotStatus, string> = {
+    free: t('spotModal.available'),
+    occupied: t('spotModal.occupied'),
+    reserved: t('spotModal.reservedStatus'),
+  }
 
   function handleStatusChange(status: SpotStatus) {
     updateStatus.mutate(
@@ -18,13 +24,18 @@ export function useManagementAccordion(spot: Spot) {
       {
         onSuccess: () =>
           notifications.show({
-            message: `Spot #${spot.number} marked as ${STATUS_CONFIG[status].label}`,
+            message: t('spotModal.toastStatusUpdated', {
+              number: spot.number,
+              status: STATUS_LABELS[status],
+            }),
             color: 'green',
           }),
         onError: (err) =>
           notifications.show({
             message:
-              err instanceof Error ? err.message : 'Failed to update status',
+              err instanceof Error
+                ? err.message
+                : t('spotModal.toastStatusFailed'),
             color: 'red',
           }),
       },

@@ -1,5 +1,6 @@
 import { Select } from '@mantine/core'
 import { ParkingCircle, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -113,59 +114,66 @@ function SpotFilterBar({
   onSpotSearch,
   onAddSpot,
 }: SpotFilterBarProps) {
+  const { t } = useTranslation()
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {/* Lot pills */}
-      <div className="flex flex-wrap gap-1">
-        <button
-          onClick={() => onLotFilter('all')}
-          className={buildPillClass(lotFilter === 'all')}
-        >
-          All
-        </button>
-        {lots.map((lot) => (
+    <div className="flex flex-row flex-wrap items-center gap-2">
+      <div className="mr-auto flex flex-col flex-wrap items-start gap-3">
+        {/* Lot pills */}
+        <div className="flex flex-wrap gap-1">
           <button
-            key={lot.id}
-            onClick={() => onLotFilter(lot.id)}
-            className={buildPillClass(lotFilter === lot.id)}
+            onClick={() => onLotFilter('all')}
+            className={buildPillClass(lotFilter === 'all')}
           >
-            {lot.name}
+            {t('admin.allLots')}
           </button>
-        ))}
+          {lots.map((lot: ParkingLot) => (
+            <button
+              key={lot.id}
+              onClick={() => onLotFilter(lot.id)}
+              className={buildPillClass(lotFilter === lot.id)}
+            >
+              {lot.name}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-row flex-wrap items-center gap-2">
+          {/* Status filter */}
+          <Select
+            value={statusFilter}
+            onChange={(v) => onStatusFilter((v ?? 'all') as SpotStatus | 'all')}
+            data={[
+              { value: 'all', label: t('admin.allStatuses') },
+              { value: 'free', label: t('admin.freeStatus') },
+              { value: 'occupied', label: t('admin.occupiedStatus') },
+              { value: 'reserved', label: t('admin.reservedStatus') },
+            ]}
+            size="xs"
+            allowDeselect={false}
+            className="w-32"
+            checkIconPosition="right"
+          />
+
+          {/* Type filter */}
+          <Select
+            value={typeFilter}
+            onChange={(v) => onTypeFilter((v ?? 'all') as SpotType | 'all')}
+            data={[
+              { value: 'all', label: t('admin.allTypes') },
+              { value: 'standard', label: t('admin.standard') },
+              { value: 'ev', label: t('admin.evCharging') },
+              { value: 'handicap', label: t('admin.handicap') },
+              { value: 'compact', label: t('admin.compact') },
+            ]}
+            size="xs"
+            allowDeselect={false}
+            className="w-32"
+            checkIconPosition="right"
+          />
+        </div>
       </div>
 
-      {lots.length > 0 && <div className="bg-border h-4 w-px shrink-0" />}
-
-      {/* Status filter */}
-      <Select
-        value={statusFilter}
-        onChange={(v) => onStatusFilter((v ?? 'all') as SpotStatus | 'all')}
-        data={[
-          { value: 'all', label: 'All statuses' },
-          { value: 'free', label: 'Free' },
-          { value: 'occupied', label: 'Occupied' },
-          { value: 'reserved', label: 'Reserved' },
-        ]}
-        size="xs"
-        allowDeselect={false}
-        className="w-32"
-      />
-
-      {/* Type filter */}
-      <Select
-        value={typeFilter}
-        onChange={(v) => onTypeFilter((v ?? 'all') as SpotType | 'all')}
-        data={[
-          { value: 'all', label: 'All types' },
-          { value: 'standard', label: 'Standard' },
-          { value: 'ev', label: 'EV Charging' },
-          { value: 'handicap', label: 'Handicap' },
-          { value: 'compact', label: 'Compact' },
-        ]}
-        size="xs"
-        allowDeselect={false}
-        className="w-32"
-      />
+      {lots.length > 0 && <div className="bg-border h-18 w-px shrink-0" />}
 
       {/* Search + Add — pinned to the right */}
       <div className="ml-auto flex items-center gap-2">
@@ -174,7 +182,7 @@ function SpotFilterBar({
           <Input
             value={spotSearch}
             onChange={(e) => onSpotSearch(e.target.value)}
-            placeholder="Search spots…"
+            placeholder={t('admin.searchSpots')}
             className="h-8 w-44 pr-7 pl-8 text-sm"
           />
           {spotSearch && (
@@ -189,7 +197,7 @@ function SpotFilterBar({
         </div>
         <Button size="sm" onClick={onAddSpot} className="shrink-0 gap-1.5">
           <Plus className="size-3.5" />
-          Add Spot
+          {t('admin.addSpot')}
         </Button>
       </div>
     </div>
@@ -203,10 +211,22 @@ function SpotRow({
   onEdit,
   onDelete,
 }: SpotRowProps) {
+  const { t } = useTranslation()
   const typeConf = SpotTypeConfig[spot.type]
+  const STATUS_LABELS: Record<string, string> = {
+    free: t('admin.freeStatus'),
+    occupied: t('admin.occupiedStatus'),
+    reserved: t('admin.reservedStatus'),
+  }
+  const TYPE_LABELS: Record<SpotType, string> = {
+    standard: t('admin.standard'),
+    ev: t('admin.evCharging'),
+    handicap: t('admin.handicap'),
+    compact: t('admin.compact'),
+  }
   return (
     <TableRow>
-      <TableCell className="font-semibold tabular-nums">
+      <TableCell className="text-center font-semibold tabular-nums">
         {spot.number}
       </TableCell>
       <TableCell className="text-muted-foreground">
@@ -219,7 +239,7 @@ function SpotRow({
         <span
           className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${StatusClass[spot.status]}`}
         >
-          {spot.status}
+          {STATUS_LABELS[spot.status] ?? spot.status}
         </span>
       </TableCell>
       <TableCell>
@@ -227,7 +247,7 @@ function SpotRow({
           <span
             className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${typeConf.badgeClass}`}
           >
-            {typeConf.label}
+            {TYPE_LABELS[spot.type]}
           </span>
         ) : (
           <span className="text-muted-foreground text-xs">—</span>
@@ -271,25 +291,26 @@ function SpotDeleteDialog({
   onConfirm,
   onCancel,
 }: SpotDeleteDialogProps) {
+  const { t } = useTranslation()
   return (
     <Dialog open={target !== null} onOpenChange={(o) => !o && onCancel()}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete Spot</DialogTitle>
+          <DialogTitle>{t('admin.deleteSpotTitle')}</DialogTitle>
         </DialogHeader>
         <p className="text-muted-foreground text-sm">
-          Delete spot <strong>#{target?.number}</strong>? This cannot be undone.
+          {t('admin.deleteSpotConfirm', { number: target?.number })}
         </p>
         <DialogFooter>
           <Button variant="outline" onClick={onCancel}>
-            Cancel
+            {t('admin.cancel')}
           </Button>
           <Button
             variant="destructive"
             onClick={onConfirm}
             disabled={isDeleting}
           >
-            Delete
+            {t('admin.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -300,6 +321,7 @@ function SpotDeleteDialog({
 // — main component —
 
 export function SpotsSection() {
+  const { t } = useTranslation()
   const { data: lots = [] } = useLots()
   const { data: allSpots = [], isLoading } = useSpots()
   const { data: owners = [] } = useOwners()
@@ -342,7 +364,7 @@ export function SpotsSection() {
       {/* Section header */}
       <div className="flex items-center gap-2">
         <ParkingCircle className="text-primary size-4" />
-        <h2 className="text-base font-semibold">Parking Spots</h2>
+        <h2 className="text-base font-semibold">{t('admin.parkingSpots')}</h2>
         {!isLoading && (
           <span className="text-muted-foreground bg-muted rounded-full px-2 py-0.5 text-xs tabular-nums">
             {displayedSpots.length}
@@ -372,16 +394,16 @@ export function SpotsSection() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-14">Spot</TableHead>
-                <TableHead>Label</TableHead>
-                <TableHead>Lot</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Owner</TableHead>
+                <TableHead className="w-14">{t('admin.spotHeader')}</TableHead>
+                <TableHead>{t('admin.labelHeader')}</TableHead>
+                <TableHead>{t('admin.lotHeader')}</TableHead>
+                <TableHead>{t('admin.statusHeader')}</TableHead>
+                <TableHead>{t('admin.typeHeader')}</TableHead>
+                <TableHead>{t('admin.ownerHeader')}</TableHead>
                 <TableHead
                   className={`${STICKY_ACTIONS_CLASS} w-22 text-center`}
                 >
-                  Actions
+                  {t('admin.actionsHeader')}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -393,8 +415,8 @@ export function SpotsSection() {
                     className="text-muted-foreground text-center text-sm"
                   >
                     {hasFilters
-                      ? 'No spots match the current filters.'
-                      : 'No spots yet. Add the first one.'}
+                      ? t('admin.noSpotsMatch')
+                      : t('admin.noSpotsYetAdd')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -421,7 +443,9 @@ export function SpotsSection() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {dialog.mode === 'add' ? 'Add Spot' : 'Edit Spot'}
+              {dialog.mode === 'add'
+                ? t('admin.addSpotTitle')
+                : t('admin.editSpotTitle')}
             </DialogTitle>
           </DialogHeader>
           <SpotForm
@@ -432,10 +456,10 @@ export function SpotsSection() {
           />
           <DialogFooter>
             <Button variant="outline" onClick={handleClose}>
-              Cancel
+              {t('admin.cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={isSaving}>
-              {dialog.mode === 'add' ? 'Create' : 'Save'}
+              {dialog.mode === 'add' ? t('admin.create') : t('admin.save')}
             </Button>
           </DialogFooter>
         </DialogContent>

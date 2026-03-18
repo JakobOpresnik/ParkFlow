@@ -1,5 +1,6 @@
 import { notifications } from '@mantine/notifications'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { useCreateOwner, useUpdateOwner } from '@/hooks/useOwners'
 import type { Owner } from '@/types'
@@ -20,6 +21,7 @@ const EMPTY_FORM: OwnerFormData = {
 // — hooks —
 
 export function useOwnerDialog() {
+  const { t } = useTranslation()
   const createOwner = useCreateOwner()
   const updateOwner = useUpdateOwner()
 
@@ -53,20 +55,28 @@ export function useOwnerDialog() {
 
   function handleSubmit() {
     if (!form.name?.trim()) {
-      notifications.show({ message: 'Name is required', color: 'red' })
+      notifications.show({
+        message: t('owners.ownerNameRequired'),
+        color: 'red',
+      })
       return
     }
 
     if (dialogMode === 'add') {
       createOwner.mutate(form, {
         onSuccess: () => {
-          notifications.show({ message: 'Owner added', color: 'green' })
+          notifications.show({
+            message: t('owners.ownerAdded'),
+            color: 'green',
+          })
           closeDialog()
         },
         onError: (err) =>
           notifications.show({
             message:
-              err instanceof Error ? err.message : 'Failed to create owner',
+              err instanceof Error
+                ? err.message
+                : t('owners.failedToCreateOwner'),
             color: 'red',
           }),
       })
@@ -75,13 +85,18 @@ export function useOwnerDialog() {
         { id: editingId, data: form },
         {
           onSuccess: () => {
-            notifications.show({ message: 'Owner updated', color: 'green' })
+            notifications.show({
+              message: t('owners.ownerUpdated'),
+              color: 'green',
+            })
             closeDialog()
           },
           onError: (err) =>
             notifications.show({
               message:
-                err instanceof Error ? err.message : 'Failed to update owner',
+                err instanceof Error
+                  ? err.message
+                  : t('owners.failedToUpdateOwner'),
               color: 'red',
             }),
         },

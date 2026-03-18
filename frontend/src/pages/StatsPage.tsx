@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { Select } from '@/components/ui/select'
 import { useLots } from '@/hooks/useLots'
@@ -33,10 +34,10 @@ interface StatusProgressRowProps {
 
 const DONUT_RADIUS = 72
 
-const StatusMeta: Record<SpotStatus, { label: string; colorVar: string }> = {
-  free: { label: 'Free', colorVar: '--color-spot-free' },
-  occupied: { label: 'Occupied', colorVar: '--color-spot-occupied' },
-  reserved: { label: 'Reserved', colorVar: '--color-spot-reserved' },
+const StatusColorVar: Record<SpotStatus, string> = {
+  free: '--color-spot-free',
+  occupied: '--color-spot-occupied',
+  reserved: '--color-spot-reserved',
 }
 
 // — helpers —
@@ -60,6 +61,28 @@ function buildSlices(segments: Segment[], total: number): DonutSlice[] {
 }
 
 // — sub-components —
+
+function TotalSpotsText({
+  cx,
+  cy,
+}: {
+  readonly cx: number
+  readonly cy: number
+}) {
+  const { t } = useTranslation()
+  return (
+    <text
+      x={cx}
+      y={cy + 18}
+      textAnchor="middle"
+      dominantBaseline="middle"
+      fontSize={11}
+      className="fill-muted-foreground"
+    >
+      {t('stats.totalSpots')}
+    </text>
+  )
+}
 
 function DonutChart({ segments, total }: DonutChartProps) {
   const r = DONUT_RADIUS
@@ -97,16 +120,7 @@ function DonutChart({ segments, total }: DonutChartProps) {
       >
         {total}
       </text>
-      <text
-        x={cx}
-        y={cy + 18}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fontSize={11}
-        className="fill-muted-foreground"
-      >
-        total spots
-      </text>
+      <TotalSpotsText cx={cx} cy={cy} />
     </svg>
   )
 }
@@ -143,6 +157,7 @@ function StatusProgressRow({ segment, total }: StatusProgressRowProps) {
 // — main component —
 
 export function StatsPage() {
+  const { t } = useTranslation()
   const { data: allSpots = [], isLoading: isSpotsLoading } = useSpots()
   const { data: lots = [], isLoading: isLotsLoading } = useLots()
   const [selectedLotId, setSelectedLotId] = useState<string>('__all__')
@@ -161,13 +176,19 @@ export function StatsPage() {
     reserved: spots.filter((s) => s.status === 'reserved').length,
   }
 
+  const STATUS_LABELS: Record<SpotStatus, string> = {
+    free: t('stats.free'),
+    occupied: t('stats.occupied'),
+    reserved: t('stats.reserved'),
+  }
+
   const segments: Segment[] = (
     ['free', 'occupied', 'reserved'] as SpotStatus[]
   ).map((s) => ({
-    label: StatusMeta[s].label,
+    label: STATUS_LABELS[s],
     count: counts[s],
     pct: computePct(counts[s], total),
-    colorVar: StatusMeta[s].colorVar,
+    colorVar: StatusColorVar[s],
   }))
 
   return (
@@ -175,9 +196,9 @@ export function StatsPage() {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Statistics</h1>
+          <h1 className="text-2xl font-semibold">{t('stats.title')}</h1>
           <p className="text-muted-foreground mt-0.5 text-sm">
-            Parking utilization overview
+            {t('stats.subtitle')}
           </p>
         </div>
 
@@ -186,10 +207,10 @@ export function StatsPage() {
             value={selectedLotId}
             onChange={(v) => v && setSelectedLotId(v)}
             data={[
-              { value: '__all__', label: 'All floors' },
+              { value: '__all__', label: t('stats.allFloors') },
               ...lots.map((lot) => ({ value: lot.id, label: lot.name })),
             ]}
-            placeholder="All floors"
+            placeholder={t('stats.allFloors')}
           />
         )}
       </div>
@@ -200,7 +221,7 @@ export function StatsPage() {
 
       {!isLoading && total === 0 && (
         <div className="text-muted-foreground rounded-lg border border-dashed p-12 text-center text-sm">
-          No data — run the database migration to add spots.
+          {t('stats.noData')}
         </div>
       )}
 
@@ -222,7 +243,7 @@ export function StatsPage() {
                 </p>
                 <p className="text-muted-foreground text-sm">{seg.label}</p>
                 <p className="text-xs font-medium">
-                  {seg.count} / {total} spots
+                  {t('stats.spots', { count: seg.count, total })}
                 </p>
               </div>
             ))}
@@ -232,7 +253,7 @@ export function StatsPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="bg-card flex flex-col items-center justify-center gap-4 rounded-lg border p-6 shadow-sm">
               <p className="text-muted-foreground self-start text-sm font-medium">
-                Distribution
+                {t('stats.distribution')}
               </p>
               <DonutChart segments={segments} total={total} />
               <div className="flex flex-wrap justify-center gap-4">
@@ -253,7 +274,7 @@ export function StatsPage() {
 
             <div className="bg-card rounded-lg border p-6 shadow-sm">
               <p className="text-muted-foreground mb-4 text-sm font-medium">
-                Breakdown
+                {t('stats.breakdown')}
               </p>
               <div className="space-y-5">
                 {segments.map((seg) => (
@@ -266,7 +287,9 @@ export function StatsPage() {
               </div>
               <div className="mt-6 border-t pt-4">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Occupancy rate</span>
+                  <span className="text-muted-foreground">
+                    {t('stats.occupancyRate')}
+                  </span>
                   <span className="font-semibold">
                     {computePct(counts.occupied + counts.reserved, total)}%
                   </span>
@@ -280,7 +303,10 @@ export function StatsPage() {
                   />
                 </div>
                 <p className="text-muted-foreground mt-1 text-xs">
-                  {counts.occupied + counts.reserved} of {total} spots in use
+                  {t('stats.spotsInUse', {
+                    used: counts.occupied + counts.reserved,
+                    total,
+                  })}
                 </p>
               </div>
             </div>

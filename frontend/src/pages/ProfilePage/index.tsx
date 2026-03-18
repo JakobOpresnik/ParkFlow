@@ -1,4 +1,5 @@
 import { CalendarCheck, Clock, TrendingUp, XCircle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { StatCard } from '@/components/StatCard/StatCard'
 
@@ -12,6 +13,7 @@ import { UserProfileCard } from './UserProfileCard'
 // — main component —
 
 export function ProfilePage() {
+  const { t } = useTranslation()
   const {
     user,
     lots,
@@ -44,9 +46,9 @@ export function ProfilePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Profile</h1>
+        <h1 className="text-2xl font-semibold">{t('profile.title')}</h1>
         <p className="text-muted-foreground mt-0.5 text-sm">
-          Your account details and parking history
+          {t('profile.subtitle')}
         </p>
       </div>
 
@@ -62,25 +64,25 @@ export function ProfilePage() {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard
-          label="Total Bookings"
+          label={t('profile.totalBookings')}
           value={isLoading ? '—' : totalBookings}
           icon={CalendarCheck}
           colorClass="bg-primary/10 text-primary"
         />
         <StatCard
-          label="Active"
+          label={t('profile.active')}
           value={isLoading ? '—' : activeBookings.length}
           icon={Clock}
           colorClass="bg-green-500/15 text-green-600 dark:text-green-400"
         />
         <StatCard
-          label="Cancelled"
+          label={t('profile.cancelled')}
           value={isLoading ? '—' : cancelledCount}
           icon={XCircle}
           colorClass="bg-muted text-muted-foreground"
         />
         <StatCard
-          label="Utilization"
+          label={t('profile.utilization')}
           value={isLoading ? '—' : `${utilizationPct}%`}
           icon={TrendingUp}
           colorClass="bg-orange-500/15 text-orange-600 dark:text-orange-400"
@@ -105,8 +107,9 @@ export function ProfilePage() {
 
       {!isLoading && expiredCount > 0 && (
         <p className="text-muted-foreground text-center text-xs">
-          {expiredCount} booking{expiredCount === 1 ? '' : 's'} expired without
-          cancellation
+          {expiredCount === 1
+            ? t('profile.expiredNote', { count: expiredCount })
+            : t('profile.expiredNotePlural', { count: expiredCount })}
         </p>
       )}
     </div>

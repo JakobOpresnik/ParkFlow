@@ -1,4 +1,5 @@
 import { Users } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import {
   Table,
@@ -32,8 +33,12 @@ export function OwnerTableSection({
   onLink,
   onDelete,
 }: OwnerTableSectionProps) {
+  const { t } = useTranslation()
+
   if (isLoading) {
-    return <p className="text-muted-foreground text-sm">Loading…</p>
+    return (
+      <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
+    )
   }
 
   if (filteredOwners.length === 0) {
@@ -42,8 +47,8 @@ export function OwnerTableSection({
         <Users className="text-muted-foreground mx-auto mb-3 size-8" />
         <p className="text-muted-foreground">
           {ownerSearch.trim()
-            ? 'No owners match your search.'
-            : 'No owners yet. Add the first one.'}
+            ? t('owners.noOwnersMatch')
+            : t('owners.noOwnersYet')}
         </p>
       </div>
     )
@@ -54,13 +59,13 @@ export function OwnerTableSection({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Phone</TableHead>
-            <TableHead>Plate</TableHead>
-            <TableHead>SSO User</TableHead>
+            <TableHead>{t('owners.nameHeader')}</TableHead>
+            <TableHead>{t('owners.emailHeader')}</TableHead>
+            <TableHead>{t('owners.phoneHeader')}</TableHead>
+            <TableHead>{t('owners.plateHeader')}</TableHead>
+            <TableHead>{t('owners.userHeader')}</TableHead>
             <TableHead className="bg-card before:bg-border sticky right-0 w-[100px] text-center before:absolute before:inset-y-0 before:left-0 before:w-px before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100">
-              Actions
+              {t('admin.actionsHeader')}
             </TableHead>
           </TableRow>
         </TableHeader>

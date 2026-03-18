@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -19,33 +21,35 @@ export function OwnerLinkDialog({
   onConfirm,
   onClose,
 }: OwnerLinkDialogProps) {
+  const { t } = useTranslation()
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>Link SSO User</DialogTitle>
+          <DialogTitle>{t('owners.linkSsoTitle')}</DialogTitle>
         </DialogHeader>
         <p className="text-muted-foreground text-sm">
-          Link <strong>{ownerName}</strong> to an SSO username so they can
-          access the &quot;My Parking&quot; page.
+          {t('owners.linkSsoDesc', { name: ownerName })}
         </p>
         <div>
-          <label className="mb-1 block text-sm font-medium">SSO Username</label>
+          <label className="mb-1 block text-sm font-medium">
+            {t('owners.ssoUsernameLabel')}
+          </label>
           <Input
             placeholder="e.g. jnovak"
             value={username}
             onChange={(e) => onUsernameChange(e.target.value)}
           />
           <p className="text-muted-foreground mt-1 text-xs">
-            Leave empty to unlink.
+            {t('owners.leaveEmptyToUnlink')}
           </p>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t('owners.cancel')}
           </Button>
           <Button onClick={onConfirm} disabled={isPending}>
-            {username.trim() ? 'Link' : 'Unlink'}
+            {username.trim() ? t('owners.link') : t('owners.unlink')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,6 +1,7 @@
 import { notifications } from '@mantine/notifications'
 import { Plus, Search, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -24,6 +25,7 @@ import { useOwnerLinkDialog } from './useOwnerLinkDialog'
 // — main component —
 
 export function OwnersPage() {
+  const { t } = useTranslation()
   const { data: owners = [], isLoading } = useOwners()
   const deleteOwner = useDeleteOwner()
 
@@ -75,13 +77,18 @@ export function OwnersPage() {
     const targetName = deleteTarget?.name
     deleteOwner.mutate(deleteTargetId, {
       onSuccess: () => {
-        notifications.show({ message: `${targetName} removed`, color: 'green' })
+        notifications.show({
+          message: t('owners.ownerRemoved', { name: targetName }),
+          color: 'green',
+        })
         setDeleteTargetId(null)
       },
       onError: (err) =>
         notifications.show({
           message:
-            err instanceof Error ? err.message : 'Failed to delete owner',
+            err instanceof Error
+              ? err.message
+              : t('owners.failedToDeleteOwner'),
           color: 'red',
         }),
     })
@@ -91,9 +98,9 @@ export function OwnersPage() {
     <div className="space-y-4">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Owners</h1>
+          <h1 className="text-2xl font-semibold">{t('owners.title')}</h1>
           <p className="text-muted-foreground mt-0.5 text-sm">
-            Manage parking spot owners
+            {t('owners.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -102,7 +109,7 @@ export function OwnersPage() {
             <Input
               value={ownerSearch}
               onChange={(e) => setOwnerSearch(e.target.value)}
-              placeholder="Search owners..."
+              placeholder={t('owners.searchOwners')}
               className="h-8 w-52 pr-7 pl-8 text-sm"
             />
             {ownerSearch && (
@@ -117,7 +124,7 @@ export function OwnersPage() {
           </div>
           <Button size="sm" onClick={openAdd} className="gap-2">
             <Plus className="size-4" />
-            Add Owner
+            {t('owners.addOwner')}
           </Button>
         </div>
       </div>
@@ -139,16 +146,18 @@ export function OwnersPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {dialogMode === 'add' ? 'Add Owner' : 'Edit Owner'}
+              {dialogMode === 'add'
+                ? t('owners.addOwnerTitle')
+                : t('owners.editOwnerTitle')}
             </DialogTitle>
           </DialogHeader>
           <OwnerForm value={form} onChange={setForm} />
           <DialogFooter>
             <Button variant="outline" onClick={closeDialog}>
-              Cancel
+              {t('owners.cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={isSaving}>
-              {dialogMode === 'add' ? 'Create' : 'Save'}
+              {dialogMode === 'add' ? t('admin.create') : t('admin.save')}
             </Button>
           </DialogFooter>
         </DialogContent>

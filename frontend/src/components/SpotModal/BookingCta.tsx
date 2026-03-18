@@ -6,6 +6,7 @@ import {
   Pencil,
   X,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { ReservationTimer } from '@/components/ReservationTimer'
 import { Button } from '@/components/ui/button'
@@ -49,6 +50,7 @@ export function BookingCta({
   canCancelThisBooking,
   myOwnedSpot,
 }: BookingCtaProps) {
+  const { t } = useTranslation()
   const {
     bookingDuration,
     setBookingDuration,
@@ -105,11 +107,15 @@ export function BookingCta({
           {ownerWarningOpen ? (
             <div className="space-y-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
               <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
-                Your spot #{myOwnedSpot?.number} is always available to you!
+                {t('spotModal.ownerWarningTitle', {
+                  number: myOwnedSpot?.number,
+                })}
               </p>
               <p className="text-muted-foreground text-xs">
-                As the owner, spot #{myOwnedSpot?.number} is always reserved for
-                you. Do you still want to reserve spot #{spot.number} instead?
+                {t('spotModal.ownerWarningDesc', {
+                  number: myOwnedSpot?.number,
+                  spotNumber: spot.number,
+                })}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -118,14 +124,14 @@ export function BookingCta({
                   onClick={handleBook}
                 >
                   <CalendarCheck className="size-4" />
-                  Reserve #{spot.number}
+                  {t('spotModal.reserveSpotNumber', { number: spot.number })}
                 </Button>
                 <Button
                   variant="ghost"
                   className="h-9 px-3 text-sm"
                   onClick={() => setOwnerWarningOpen(false)}
                 >
-                  Cancel
+                  {t('spotModal.cancelButton')}
                 </Button>
               </div>
             </div>
@@ -139,19 +145,21 @@ export function BookingCta({
               {myReservedElsewhere ? (
                 <>
                   <ArrowRightLeft className="size-5" />
-                  Move to This Spot
+                  {t('spotModal.moveToThisSpot')}
                 </>
               ) : (
                 <>
                   <CalendarCheck className="size-5" />
-                  Reserve Parking Spot
+                  {t('spotModal.reserveParkingSpot')}
                 </>
               )}
             </Button>
           )}
           {!ownerWarningOpen && myReservedElsewhere && (
             <p className="text-muted-foreground text-center text-xs">
-              Spot #{myReservedElsewhere.number} reservation will be cancelled
+              {t('spotModal.spotReservationWillBeCancelled', {
+                number: myReservedElsewhere.number,
+              })}
             </p>
           )}
         </div>
@@ -162,8 +170,10 @@ export function BookingCta({
         <div className="flex items-center gap-3 rounded-lg border border-dashed px-4 py-3">
           <Lock className="text-muted-foreground size-4 shrink-0" />
           <p className="text-muted-foreground text-sm">
-            Today&apos;s reservation window has ended — arrival at {arrivalTime}
-            , until {computedExpiryStr}
+            {t('spotModal.reservationWindowEnded', {
+              time: arrivalTime,
+              expiry: computedExpiryStr,
+            })}
           </p>
         </div>
       )}
@@ -174,8 +184,8 @@ export function BookingCta({
           <Lock className="text-muted-foreground size-4 shrink-0" />
           <p className="text-muted-foreground text-sm">
             {!isBookableDate
-              ? 'Cannot reserve spots for past dates'
-              : 'Sign in to reserve this spot'}
+              ? t('spotModal.cannotReservePast')
+              : t('spotModal.signInToReserve')}
           </p>
         </div>
       )}
@@ -223,7 +233,7 @@ export function BookingCta({
             onClick={handleCancelBooking}
           >
             <X className="size-5" />
-            Cancel Reservation
+            {t('spotModal.cancelReservation')}
           </Button>
         </div>
       )}

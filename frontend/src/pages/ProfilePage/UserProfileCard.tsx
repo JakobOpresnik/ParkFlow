@@ -1,4 +1,5 @@
 import { Hash, ShieldCheck, User } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { Badge } from '@/components/ui/badge'
 
@@ -24,6 +25,7 @@ export function UserProfileCard({
   uniqueFloors,
   isLoading,
 }: UserProfileCardProps) {
+  const { t } = useTranslation()
   const initials = getInitials(user.displayName)
   return (
     <div className="bg-card rounded-lg border p-5 shadow-sm">
@@ -37,7 +39,7 @@ export function UserProfileCard({
             {user.role === 'admin' && (
               <Badge className="border-transparent bg-violet-500/15 text-violet-600 dark:text-violet-400">
                 <ShieldCheck className="mr-1 size-3" />
-                Admin
+                {t('profile.adminBadge')}
               </Badge>
             )}
           </div>
@@ -56,7 +58,9 @@ export function UserProfileCard({
 
       {!isLoading && uniqueFloors.length > 0 && (
         <div className="mt-4 flex items-center gap-2 border-t pt-4">
-          <span className="text-muted-foreground text-xs">Floors used:</span>
+          <span className="text-muted-foreground text-xs">
+            {t('profile.floorsUsed')}
+          </span>
           <div className="flex flex-wrap gap-1.5">
             {uniqueFloors.map((floor) => (
               <span

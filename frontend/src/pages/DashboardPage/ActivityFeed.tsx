@@ -1,4 +1,5 @@
 import { Activity } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import type { SpotChange, SpotChangeType } from '@/types'
 
@@ -46,22 +47,27 @@ function getChangeDotClass(
 function getChangeDescription(
   changeType: SpotChangeType,
   newValue: string | null,
+  ownerRemovedLabel: string,
 ): string {
   if (changeType === 'status_changed' && newValue) return `→ ${newValue}`
   if (changeType === 'owner_assigned' && newValue) return `owner → ${newValue}`
-  if (changeType === 'owner_unassigned') return 'owner removed'
+  if (changeType === 'owner_unassigned') return ownerRemovedLabel
   return changeType.replace(/_/g, ' ')
 }
 
 // — main component —
 
 export function ActivityFeed({ changes, isLoading }: ActivityFeedProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="bg-card rounded-xl border shadow-sm">
       <div className="border-b px-4 py-3">
-        <h2 className="text-sm font-semibold">Recent activity</h2>
+        <h2 className="text-sm font-semibold">
+          {t('dashboard.recentActivity')}
+        </h2>
         <p className="text-muted-foreground text-xs">
-          Last 50 · auto-refreshes every 15s
+          {t('dashboard.activitySubtitle')}
         </p>
       </div>
 
@@ -77,8 +83,7 @@ export function ActivityFeed({ changes, isLoading }: ActivityFeedProps) {
         <div className="p-8 text-center">
           <Activity className="text-muted-foreground mx-auto mb-2 size-6" />
           <p className="text-muted-foreground text-sm">
-            No activity yet. Assign owners or change statuses to see events
-            here.
+            {t('dashboard.noActivity')}
           </p>
         </div>
       )}
@@ -101,7 +106,11 @@ export function ActivityFeed({ changes, isLoading }: ActivityFeedProps) {
                     </span>
                   )}
                   <span className="text-muted-foreground text-xs">
-                    {getChangeDescription(change.change_type, change.new_value)}
+                    {getChangeDescription(
+                      change.change_type,
+                      change.new_value,
+                      t('dashboard.ownerRemoved'),
+                    )}
                   </span>
                 </div>
               </div>

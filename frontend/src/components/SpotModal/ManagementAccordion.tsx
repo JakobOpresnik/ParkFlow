@@ -1,9 +1,10 @@
 import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
-import type { Spot } from '@/types'
+import type { Spot, SpotStatus } from '@/types'
 
 import { ALL_STATUSES, STATUS_CONFIG } from './constants'
 import { useManagementAccordion } from './useManagementAccordion'
@@ -19,6 +20,14 @@ interface ManagementAccordionProps {
 // — main component —
 
 export function ManagementAccordion({ spot }: ManagementAccordionProps) {
+  const { t } = useTranslation()
+
+  const STATUS_LABELS: Record<SpotStatus, string> = {
+    free: t('spotModal.available'),
+    occupied: t('spotModal.occupied'),
+    reserved: t('spotModal.reservedStatus'),
+  }
+
   const {
     expanded,
     setExpanded,
@@ -60,7 +69,7 @@ export function ManagementAccordion({ spot }: ManagementAccordionProps) {
         onClick={() => setExpanded((v) => !v)}
       >
         <span className="text-muted-foreground text-xs font-medium tracking-widest uppercase">
-          Manage spot
+          {t('spotModal.manageSpot')}
         </span>
         {expanded ? (
           <ChevronUp className="text-muted-foreground size-4" />
@@ -74,7 +83,7 @@ export function ManagementAccordion({ spot }: ManagementAccordionProps) {
           {/* Change status */}
           <div>
             <p className="text-muted-foreground mb-2.5 text-xs font-medium tracking-widest uppercase">
-              Status
+              {t('spotModal.statusSection')}
             </p>
             <div className="flex flex-wrap gap-2">
               {ALL_STATUSES.map((s) => (
@@ -89,7 +98,7 @@ export function ManagementAccordion({ spot }: ManagementAccordionProps) {
                     s === spot.status ? 'cursor-default opacity-40' : ''
                   }
                 >
-                  {STATUS_CONFIG[s].label}
+                  {STATUS_LABELS[s]}
                 </Button>
               ))}
             </div>
@@ -99,7 +108,9 @@ export function ManagementAccordion({ spot }: ManagementAccordionProps) {
           <div>
             <div className="mb-2.5 flex items-center justify-between">
               <p className="text-muted-foreground text-xs font-medium tracking-widest uppercase">
-                {spot.owner_name?.includes('/') ? 'Owners' : 'Owner'}
+                {spot.owner_name?.includes('/')
+                  ? t('spotModal.owners')
+                  : t('spotModal.owner')}
               </p>
               <div className="flex gap-1">
                 {spot.owner_id && (
@@ -111,7 +122,7 @@ export function ManagementAccordion({ spot }: ManagementAccordionProps) {
                     onClick={handleUnassign}
                   >
                     <X className="size-3" />
-                    Unassign
+                    {t('spotModal.unassign')}
                   </Button>
                 )}
                 <Button
@@ -123,7 +134,9 @@ export function ManagementAccordion({ spot }: ManagementAccordionProps) {
                     setCreateFormOpen(false)
                   }}
                 >
-                  {spot.owner_id ? 'Change' : 'Assign'}
+                  {spot.owner_id
+                    ? t('spotModal.change')
+                    : t('spotModal.assign')}
                 </Button>
               </div>
             </div>
@@ -137,7 +150,9 @@ export function ManagementAccordion({ spot }: ManagementAccordionProps) {
                       value={selectedOwnerId}
                       onChange={setSelectedOwnerId}
                       placeholder={
-                        owners.length === 0 ? 'No owners yet' : 'Select owner…'
+                        owners.length === 0
+                          ? t('spotModal.noOwnersYet')
+                          : t('spotModal.selectOwnerPlaceholder')
                       }
                       disabled={owners.length === 0}
                     />
@@ -147,7 +162,7 @@ export function ManagementAccordion({ spot }: ManagementAccordionProps) {
                         disabled={!selectedOwnerId || isAssignPending}
                         onClick={handleAssignConfirm}
                       >
-                        Confirm
+                        {t('spotModal.confirm')}
                       </Button>
                       <Button
                         size="sm"
@@ -156,20 +171,22 @@ export function ManagementAccordion({ spot }: ManagementAccordionProps) {
                         onClick={() => setCreateFormOpen(true)}
                       >
                         <Plus className="size-3" />
-                        New owner
+                        {t('spotModal.newOwner')}
                       </Button>
                     </div>
                   </>
                 ) : (
                   <>
-                    <p className="text-sm font-medium">New owner</p>
+                    <p className="text-sm font-medium">
+                      {t('spotModal.newOwner')}
+                    </p>
                     <Input
-                      placeholder="Name *"
+                      placeholder={t('spotModal.namePlaceholder')}
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
                     />
                     <Input
-                      placeholder="Vehicle plate (optional)"
+                      placeholder={t('spotModal.vehiclePlatePlaceholder')}
                       value={newPlate}
                       onChange={(e) => setNewPlate(e.target.value)}
                     />
@@ -179,14 +196,14 @@ export function ManagementAccordion({ spot }: ManagementAccordionProps) {
                         disabled={!newName.trim() || isCreatePending}
                         onClick={handleCreateAndAssign}
                       >
-                        Create & Assign
+                        {t('spotModal.createAndAssign')}
                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => setCreateFormOpen(false)}
                       >
-                        Back
+                        {t('spotModal.back')}
                       </Button>
                     </div>
                   </>
