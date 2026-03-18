@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 
 const LANGUAGES = [
-  { code: 'en', flag: '/great_britain.svg', label: 'English' },
+  { code: 'en', flag: '/united_kingdom.svg', label: 'English' },
   { code: 'sl', flag: '/slovenia.svg', label: 'Slovenščina' },
 ] as const
 
