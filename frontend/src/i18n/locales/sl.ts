@@ -17,14 +17,15 @@ const sl = {
     logOut: 'Odjava',
   },
   login: {
-    tagline: 'Pametno parkiranje za vašo ekipo',
+    tagline: 'Pametno parkiranje za vašo ekipo!',
     signInWithSSO: 'Prijava z SSO',
     redirecting: 'Preusmerjanje…',
     ssoNote: 'Uporabite enotno prijavo prek vašega poslovnega računa',
     featureLiveMap: 'Zemljevid s podatki v realnem času',
-    featureLiveMapDesc: 'Preverite razpoložljivost mest v realnem času',
+    featureLiveMapDesc:
+      'Preverite razpoložljivost parkirnih mest v realnem času',
     featureReservations: 'Rezervacije',
-    featureReservationsDesc: 'Rezervirajte svoje mesto vnaprej',
+    featureReservationsDesc: 'Rezervirajte svoje parkirno mesto vnaprej',
     featureAnalytics: 'Analitika',
     featureAnalyticsDesc: 'Oglejte si trende zasedenosti in porabe',
     failedToStartLogin: 'Napaka pri začetku prijave',
