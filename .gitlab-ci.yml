@@ -26,10 +26,6 @@ stages:
   - lint
   - build
 
-gitleaks_MR:
-  before_script:
-    - git branch --set-upstream-to=origin/$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME
-
 trufflehog_MR:
   # script: override does not work for component-sourced jobs — the template script always wins.
   # before_script: runs in the same shell as script:, so mutating TH_OPTS here is picked up
