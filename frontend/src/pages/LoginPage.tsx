@@ -3,6 +3,8 @@ import { BarChart2, Calendar, LogIn, Map, ParkingCircle } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui/button'
 import { oauthConfig } from '@/lib/oauth'
 import { generateCodeChallenge, generateCodeVerifier } from '@/lib/pkce'
@@ -68,6 +70,11 @@ export function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-linear-to-br from-slate-50 to-slate-100 p-4 dark:bg-linear-to-br dark:from-slate-950 dark:to-slate-900">
+      {/* Top-right controls */}
+      <div className="absolute top-4 right-4 flex items-center gap-1">
+        <LanguageSwitcher />
+        <ThemeToggle />
+      </div>
       {/* Background glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="bg-primary/8 absolute -top-40 -right-40 size-96 rounded-full blur-3xl" />
