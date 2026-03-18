@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 import type { Spot } from '@/types'
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -9,19 +11,22 @@ interface StatCardsProps {
 // ─── component ────────────────────────────────────────────────────────────────
 
 export function StatCards({ spots }: StatCardsProps) {
+  const { t } = useTranslation()
   const total = spots.length
   const free = spots.filter((s) => s.status === 'free').length
   const occupied = spots.filter((s) => s.status === 'occupied').length
   const reserved = spots.filter((s) => s.status === 'reserved').length
 
+  const cards = [
+    { label: t('map.total'), value: total, dot: 'bg-muted-foreground' },
+    { label: t('map.free'), value: free, dot: 'bg-spot-free' },
+    { label: t('map.occupied'), value: occupied, dot: 'bg-spot-occupied' },
+    { label: t('map.reserved'), value: reserved, dot: 'bg-spot-reserved' },
+  ]
+
   return (
     <div className="grid grid-cols-2 gap-2">
-      {[
-        { label: 'Total', value: total, dot: 'bg-muted-foreground' },
-        { label: 'Free', value: free, dot: 'bg-spot-free' },
-        { label: 'Occupied', value: occupied, dot: 'bg-spot-occupied' },
-        { label: 'Reserved', value: reserved, dot: 'bg-spot-reserved' },
-      ].map((s) => (
+      {cards.map((s) => (
         <div
           key={s.label}
           className="bg-card flex items-center gap-2 rounded-lg border p-2.5 shadow-sm"

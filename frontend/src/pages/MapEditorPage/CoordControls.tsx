@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 import type { CoordControlsProps, CoordControlsValue } from './types'
 import { LABEL_POSITIONS, LABEL_ROTATIONS } from './utils'
 
@@ -7,11 +9,14 @@ export function CoordControls<T extends CoordControlsValue>({
   value,
   onChange,
 }: CoordControlsProps<T>) {
+  const { t } = useTranslation()
   return (
     <>
       {/* Label position */}
       <div className="space-y-1.5">
-        <p className="text-muted-foreground text-xs">Label position</p>
+        <p className="text-muted-foreground text-xs">
+          {t('mapEditor.labelPosition')}
+        </p>
         <div className="grid grid-cols-2 gap-1">
           {LABEL_POSITIONS.map((pos) => (
             <button
@@ -31,7 +36,9 @@ export function CoordControls<T extends CoordControlsValue>({
 
       {/* Label rotation */}
       <div className="space-y-1.5">
-        <p className="text-muted-foreground text-xs">Label rotation</p>
+        <p className="text-muted-foreground text-xs">
+          {t('mapEditor.labelRotation')}
+        </p>
         <div className="flex gap-1">
           {LABEL_ROTATIONS.map((deg) => (
             <button
@@ -52,7 +59,9 @@ export function CoordControls<T extends CoordControlsValue>({
       {/* Rectangle rotation */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <p className="text-muted-foreground text-xs">Rect rotation</p>
+          <p className="text-muted-foreground text-xs">
+            {t('mapEditor.rectRotation')}
+          </p>
           <span className="font-mono text-xs">{value.rotation}°</span>
         </div>
         <input

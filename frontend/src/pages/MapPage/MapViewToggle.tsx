@@ -1,4 +1,5 @@
 import { LayoutGrid, Map } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -15,6 +16,7 @@ export function MapViewToggle({
   onSelectMap,
   onSelectGrid,
 }: MapViewToggleProps) {
+  const { t } = useTranslation()
   return (
     <div className="absolute top-3 right-8 z-20">
       <div
@@ -26,7 +28,7 @@ export function MapViewToggle({
       >
         <button
           onClick={onSelectMap}
-          title="Map view"
+          title={t('map.mapView')}
           className={`flex min-h-11 min-w-15 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-colors ${
             isMapMode
               ? 'bg-white/20 text-white'
@@ -34,11 +36,11 @@ export function MapViewToggle({
           }`}
         >
           <Map className="size-4 shrink-0" />
-          <span>Map</span>
+          <span>{t('map.mapView')}</span>
         </button>
         <button
           onClick={onSelectGrid}
-          title="Grid view"
+          title={t('map.gridView')}
           className={`flex min-h-11 min-w-15 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-colors ${
             !isMapMode
               ? 'bg-accent text-foreground'
@@ -46,7 +48,7 @@ export function MapViewToggle({
           }`}
         >
           <LayoutGrid className="size-4 shrink-0" />
-          <span>Grid</span>
+          <span>{t('map.gridView')}</span>
         </button>
       </div>
     </div>

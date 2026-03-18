@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 import type { ParkingLot, Spot } from '@/types'
 
 import { countByStatus } from './utils'
@@ -16,14 +18,6 @@ interface LotBreakdownProps {
   readonly lots: readonly ParkingLot[]
   readonly allSpots: readonly Spot[]
 }
-
-// — constants —
-
-const LOT_LEGEND = [
-  { label: 'Free', color: 'var(--color-spot-free)' },
-  { label: 'Occupied', color: 'var(--color-spot-occupied)' },
-  { label: 'Reserved', color: 'var(--color-spot-reserved)' },
-]
 
 // — sub-components —
 
@@ -69,10 +63,18 @@ function LotBar({ name, free, occupied, reserved, total }: LotBarProps) {
 // — main component —
 
 export function LotBreakdown({ lots, allSpots }: LotBreakdownProps) {
+  const { t } = useTranslation()
+
+  const LOT_LEGEND = [
+    { label: t('dashboard.free'), color: 'var(--color-spot-free)' },
+    { label: t('dashboard.occupied'), color: 'var(--color-spot-occupied)' },
+    { label: t('dashboard.reserved'), color: 'var(--color-spot-reserved)' },
+  ]
+
   return (
     <div className="bg-card rounded-xl border shadow-sm">
       <div className="flex items-center justify-between border-b px-4 py-3">
-        <h2 className="text-sm font-semibold">By location</h2>
+        <h2 className="text-sm font-semibold">{t('dashboard.byLocation')}</h2>
         <div className="flex items-center gap-3">
           {LOT_LEGEND.map(({ label, color }) => (
             <span

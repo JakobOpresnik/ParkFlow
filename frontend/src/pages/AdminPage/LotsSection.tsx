@@ -1,4 +1,5 @@
 import { Layers, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -18,6 +19,7 @@ import { useLotDialog } from './useLotDialog'
 // — main component —
 
 export function LotsSection() {
+  const { t } = useTranslation()
   const { data: lots = [], isLoading } = useLots()
   const { data: allSpots = [] } = useSpots()
 
@@ -44,11 +46,11 @@ export function LotsSection() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Layers className="text-primary size-4" />
-          <h2 className="text-base font-semibold">Parking Lots</h2>
+          <h2 className="text-base font-semibold">{t('admin.parkingLots')}</h2>
         </div>
         <Button size="sm" onClick={handleOpenAdd} className="gap-1.5">
           <Plus className="size-3.5" />
-          Add Lot
+          {t('admin.addLot')}
         </Button>
       </div>
 
@@ -58,7 +60,7 @@ export function LotsSection() {
         <div className="rounded-lg border border-dashed p-8 text-center">
           <Layers className="text-muted-foreground mx-auto mb-2 size-6" />
           <p className="text-muted-foreground text-sm">
-            No lots yet. Add the first one.
+            {t('admin.noLotsYet')}
           </p>
         </div>
       ) : (
@@ -74,7 +76,8 @@ export function LotsSection() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium">{lot.name}</p>
                 <p className="text-muted-foreground text-xs">
-                  {getSpotCount(lot.id)} spots · {lot.image_filename}
+                  {t('admin.lotSpots', { count: getSpotCount(lot.id) })} ·{' '}
+                  {lot.image_filename}
                 </p>
               </div>
               <div className="flex shrink-0 gap-1">
@@ -108,16 +111,18 @@ export function LotsSection() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {dialog.mode === 'add' ? 'Add Parking Lot' : 'Edit Parking Lot'}
+              {dialog.mode === 'add'
+                ? t('admin.addParkingLot')
+                : t('admin.editParkingLot')}
             </DialogTitle>
           </DialogHeader>
           <LotForm value={form} onChange={setForm} />
           <DialogFooter>
             <Button variant="outline" onClick={handleClose}>
-              Cancel
+              {t('admin.cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={isSaving}>
-              {dialog.mode === 'add' ? 'Create' : 'Save'}
+              {dialog.mode === 'add' ? t('admin.create') : t('admin.save')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -127,24 +132,23 @@ export function LotsSection() {
         open={deleteTarget !== null}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
       >
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Parking Lot</DialogTitle>
+            <DialogTitle>{t('admin.deleteParkingLot')}</DialogTitle>
           </DialogHeader>
           <p className="text-muted-foreground text-sm">
-            Delete <strong>{deleteTarget?.name}</strong>? All spots must be
-            removed or reassigned first.
+            {t('admin.deleteAllSpotsFirst', { name: deleteTarget?.name })}
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              Cancel
+              {t('admin.cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={handleConfirmDelete}
               disabled={isDeleting}
             >
-              Delete
+              {t('admin.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

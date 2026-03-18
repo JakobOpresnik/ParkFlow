@@ -2,6 +2,7 @@ import { Select } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { RotateCcw, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import { useOwners } from '@/hooks/useOwners'
@@ -29,6 +30,7 @@ export function SelectedPanel({
     ensureViewBox(spot.coordinates, imgW, imgH),
   )
 
+  const { t } = useTranslation()
   const { data: owners = [] } = useOwners()
   const assignOwner = useAssignOwner()
 
@@ -76,11 +78,16 @@ export function SelectedPanel({
       { id: spot.id, owner_id: ownerId },
       {
         onSuccess: () =>
-          notifications.show({ message: 'Owner updated', color: 'green' }),
+          notifications.show({
+            message: t('mapEditor.ownerUpdated'),
+            color: 'green',
+          }),
         onError: (err) =>
           notifications.show({
             message:
-              err instanceof Error ? err.message : 'Failed to update owner',
+              err instanceof Error
+                ? err.message
+                : t('mapEditor.failedToUpdateOwner'),
             color: 'red',
           }),
       },
@@ -91,7 +98,7 @@ export function SelectedPanel({
     <div className="bg-card space-y-4 rounded-lg border p-3">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium">
-          Spot #{spot.number}
+          {t('mapEditor.spotN', { number: spot.number })}
           {spot.label && (
             <span className="text-muted-foreground ml-1 text-xs">
               {spot.label}
@@ -104,13 +111,13 @@ export function SelectedPanel({
       {/* Owner */}
       <div className="space-y-1.5">
         <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-          Owner
+          {t('mapEditor.owner')}
         </p>
         <Select
           value={spot.owner_id}
           onChange={handleOwnerChange}
           data={owners.map((o) => ({ value: o.id, label: o.name }))}
-          placeholder="No owner"
+          placeholder={t('mapEditor.noOwner')}
           size="sm"
           clearable
           disabled={assignOwner.isPending}
@@ -121,7 +128,7 @@ export function SelectedPanel({
       {/* Position & size inputs (viewBox coords, auto-saved on change) */}
       <div className="space-y-1.5">
         <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-          Position &amp; size
+          {t('mapEditor.positionAndSize')}
         </p>
         <div className="grid grid-cols-2 gap-1.5 font-mono text-xs">
           {(
@@ -158,10 +165,10 @@ export function SelectedPanel({
           variant="outline"
           className="flex-1 gap-1.5"
           onClick={handleReset}
-          title="Revert to last saved state"
+          title={t('mapEditor.reset')}
         >
           <RotateCcw className="size-3.5" />
-          Reset
+          {t('mapEditor.reset')}
         </Button>
         <Button
           size="sm"
@@ -170,7 +177,7 @@ export function SelectedPanel({
           onClick={onRemove}
         >
           <Trash2 className="size-3.5" />
-          Delete
+          {t('mapEditor.delete')}
         </Button>
       </div>
     </div>

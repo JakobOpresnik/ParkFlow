@@ -1,5 +1,6 @@
 import { notifications } from '@mantine/notifications'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { useAssignOwner, useCreateSpot, useUpdateSpot } from '@/hooks/useSpots'
 import type { ParkingLot, Spot } from '@/types'
@@ -27,6 +28,7 @@ const EMPTY_SPOT: SpotFormData = {
 // — hook —
 
 export function useSpotDialog(lots: ParkingLot[], allSpots: Spot[]) {
+  const { t } = useTranslation()
   const [dialog, setDialog] = useState<SpotDialogState>({ mode: null })
   const [form, setForm] = useState<SpotFormData>(EMPTY_SPOT)
 
@@ -61,13 +63,16 @@ export function useSpotDialog(lots: ParkingLot[], allSpots: Spot[]) {
     const num = Number.parseInt(form.number)
     if (!form.number || Number.isNaN(num) || num < 0) {
       notifications.show({
-        message: 'Number must be a positive integer',
+        message: t('admin.numberRequired'),
         color: 'red',
       })
       return
     }
     if (!form.lot_id) {
-      notifications.show({ message: 'Parking lot is required', color: 'red' })
+      notifications.show({
+        message: t('admin.parkingLotRequired'),
+        color: 'red',
+      })
       return
     }
 
@@ -86,7 +91,7 @@ export function useSpotDialog(lots: ParkingLot[], allSpots: Spot[]) {
               assignOwner.mutate({ id: spot.id, owner_id: form.owner_id })
             }
             notifications.show({
-              message: `Spot #${num} created`,
+              message: t('admin.spotCreated', { number: num }),
               color: 'green',
             })
             handleClose()
@@ -94,7 +99,9 @@ export function useSpotDialog(lots: ParkingLot[], allSpots: Spot[]) {
           onError: (err) =>
             notifications.show({
               message:
-                err instanceof Error ? err.message : 'Failed to create spot',
+                err instanceof Error
+                  ? err.message
+                  : t('admin.failedToCreateSpot'),
               color: 'red',
             }),
         },
@@ -124,7 +131,7 @@ export function useSpotDialog(lots: ParkingLot[], allSpots: Spot[]) {
               })
             }
             notifications.show({
-              message: `Spot #${num} updated`,
+              message: t('admin.spotUpdated', { number: num }),
               color: 'green',
             })
             handleClose()
@@ -132,7 +139,9 @@ export function useSpotDialog(lots: ParkingLot[], allSpots: Spot[]) {
           onError: (err) =>
             notifications.show({
               message:
-                err instanceof Error ? err.message : 'Failed to update spot',
+                err instanceof Error
+                  ? err.message
+                  : t('admin.failedToUpdateSpot'),
               color: 'red',
             }),
         },

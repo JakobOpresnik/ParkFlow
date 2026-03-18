@@ -23,13 +23,16 @@ export function getWeekDays(referenceDate: string): string[] {
   })
 }
 
-export function formatDayLabel(dateStr: string): {
+export function formatDayLabel(
+  dateStr: string,
+  locale = 'en',
+): {
   short: string
   num: number
 } {
   const d = new Date(dateStr + 'T12:00:00')
   return {
-    short: d.toLocaleDateString('en', { weekday: 'short' }),
+    short: d.toLocaleDateString(locale, { weekday: 'short' }),
     num: d.getDate(),
   }
 }

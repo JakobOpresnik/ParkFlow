@@ -1,4 +1,5 @@
 import { History, User } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -24,14 +25,22 @@ export function BookingHistory({
   spotNumber,
   onClose,
 }: BookingHistoryProps) {
+  const { t, i18n } = useTranslation()
   const { data: bookings = [], isLoading } = useSpotBookings(spotId)
+  const BOOKING_STATUS_LABELS: Record<string, string> = {
+    active: t('ownerParking.statusActive'),
+    cancelled: t('ownerParking.statusCancelled'),
+    expired: t('ownerParking.statusExpired'),
+  }
 
   return (
     <div className="bg-card overflow-hidden rounded-2xl border">
       <div className="flex items-center justify-between px-4 py-3">
-        <h3 className="text-sm font-semibold">Zgodovina — #{spotNumber}</h3>
+        <h3 className="text-sm font-semibold">
+          {t('ownerParking.historyTitle', { number: spotNumber })}
+        </h3>
         <Button size="sm" variant="ghost" onClick={onClose} className="h-7">
-          Zapri
+          {t('ownerParking.close')}
         </Button>
       </div>
 
@@ -41,7 +50,7 @@ export function BookingHistory({
         <div className="border-t px-4 py-8 text-center">
           <History className="text-muted-foreground mx-auto mb-2 size-5" />
           <p className="text-muted-foreground text-sm">
-            Ni preteklih rezervacij.
+            {t('ownerParking.noPastBookings')}
           </p>
         </div>
       ) : (
@@ -54,20 +63,21 @@ export function BookingHistory({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="truncate text-sm font-medium">
-                    {b.reserved_by ?? 'Unknown'}
+                    {b.reserved_by ?? t('ownerParking.unknown')}
                   </span>
                   <Badge
                     className={`shrink-0 border-transparent text-[10px] ${BookingStatusStyles[b.status] ?? ''}`}
                   >
-                    {b.status}
+                    {BOOKING_STATUS_LABELS[b.status] ?? b.status}
                   </Badge>
                 </div>
                 <p className="text-muted-foreground mt-0.5 text-xs">
-                  {formatDateTime(b.booked_at)} — {formatDateTime(b.expires_at)}
+                  {formatDateTime(b.booked_at, i18n.language)} —{' '}
+                  {formatDateTime(b.expires_at, i18n.language)}
                 </p>
                 {b.cancelled_by && (
                   <p className="mt-0.5 text-xs text-red-600 dark:text-red-400">
-                    Preklical: {b.cancelled_by}
+                    {t('ownerParking.cancelledBy')} {b.cancelled_by}
                   </p>
                 )}
               </div>

@@ -6,23 +6,20 @@ import type { DayStatus } from './types'
 
 export const StatusConfig: Record<
   DayStatus,
-  { dot: string; label: string; color: string; border: string }
+  { dot: string; color: string; border: string }
 > = {
   free: {
     dot: 'bg-green-500',
-    label: 'Prosto',
     color: 'green',
     border: 'border-l-4 border-l-green-500',
   },
   occupied: {
     dot: 'bg-orange-400',
-    label: 'Zasedeno',
     color: 'orange',
     border: 'border-l-4 border-l-orange-400',
   },
   reserved: {
     dot: 'bg-blue-500',
-    label: 'Rezervirano',
     color: 'blue',
     border: 'border-l-4 border-l-blue-500',
   },
@@ -30,8 +27,8 @@ export const StatusConfig: Record<
 
 // — helpers —
 
-export function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('sl-SI', {
+export function formatDateTime(iso: string, locale = 'en'): string {
+  return new Date(iso).toLocaleString(locale, {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
@@ -40,8 +37,8 @@ export function formatDateTime(iso: string): string {
   })
 }
 
-export function formatDate(dateStr: string): string {
-  return new Date(dateStr + 'T12:00:00').toLocaleDateString('sl-SI', {
+export function formatDate(dateStr: string, locale = 'en'): string {
+  return new Date(dateStr + 'T12:00:00').toLocaleDateString(locale, {
     weekday: 'short',
     day: 'numeric',
     month: 'short',

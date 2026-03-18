@@ -1,9 +1,27 @@
 import { Link2, Pencil, Trash2, Unlink } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import { Highlight } from '@/components/ui/highlight'
 import { TableCell, TableRow } from '@/components/ui/table'
 import type { Owner } from '@/types'
+
+// — helpers —
+
+function formatPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, '')
+  let national: string
+  if (digits.startsWith('386') && digits.length === 11) {
+    national = digits.slice(3)
+  } else if (digits.startsWith('0') && digits.length === 9) {
+    national = digits.slice(1)
+  } else if (digits.length === 8) {
+    national = digits
+  } else {
+    return raw
+  }
+  return `+386 ${national.slice(0, 2)} ${national.slice(2, 5)} ${national.slice(5)}`
+}
 
 // — types —
 
@@ -24,6 +42,7 @@ export function OwnerRow({
   onLink,
   onDelete,
 }: OwnerRowProps) {
+  const { t } = useTranslation()
   return (
     <TableRow>
       <TableCell className="font-medium">
@@ -38,7 +57,7 @@ export function OwnerRow({
       </TableCell>
       <TableCell className="text-muted-foreground">
         {owner.phone ? (
-          <Highlight text={owner.phone} query={ownerSearch} />
+          <Highlight text={formatPhone(owner.phone)} query={ownerSearch} />
         ) : (
           '—'
         )}
@@ -65,7 +84,7 @@ export function OwnerRow({
             className="text-muted-foreground flex items-center gap-1 text-xs hover:underline"
           >
             <Unlink className="size-3" />
-            Not linked
+            {t('owners.notLinked')}
           </button>
         )}
       </TableCell>

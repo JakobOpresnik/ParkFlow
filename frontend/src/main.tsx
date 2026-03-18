@@ -1,4 +1,5 @@
 import './index.css'
+import '@/i18n'
 
 import { MantineProvider } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'

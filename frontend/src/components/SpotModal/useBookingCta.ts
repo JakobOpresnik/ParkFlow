@@ -1,5 +1,6 @@
 import { notifications } from '@mantine/notifications'
 import { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { useCancelBooking, useCreateBooking } from '@/hooks/useBookings'
 import { useSetSpotDayStatus } from '@/hooks/useOwnerParking'
@@ -33,6 +34,7 @@ function computeExpiresAt(
 // — hook —
 
 export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
+  const { t } = useTranslation()
   const {
     selectedDate,
     arrivalTime,
@@ -63,8 +65,8 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
 
   const unavailableMsg =
     spot.status === 'occupied'
-      ? 'Spot unavailable — currently occupied'
-      : 'Spot unavailable — already reserved'
+      ? t('spotModal.spotUnavailableOccupied')
+      : t('spotModal.spotUnavailableReserved')
 
   async function handleBook() {
     if (bookingInFlight.current) return
@@ -112,13 +114,22 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
 
       notifications.show({
         message: myReservedElsewhere
-          ? `Moved to spot #${spot.number} — spot #${myReservedElsewhere.number} reservation cancelled.`
-          : `Spot #${spot.number} reserved until ${expiryStr}!`,
+          ? t('spotModal.toastMovedToSpot', {
+              number: spot.number,
+              prevNumber: myReservedElsewhere.number,
+            })
+          : t('spotModal.toastSpotReservedUntil', {
+              number: spot.number,
+              time: expiryStr,
+            }),
         color: 'green',
       })
     } catch (err) {
       notifications.show({
-        message: err instanceof Error ? err.message : 'Booking failed',
+        message:
+          err instanceof Error
+            ? err.message
+            : t('spotModal.toastBookingFailed'),
         color: 'red',
       })
     } finally {
@@ -131,13 +142,17 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
     cancelBooking.mutate(spot.active_booking_id, {
       onSuccess: () =>
         notifications.show({
-          message: `Reservation for spot #${spot.number} cancelled.`,
+          message: t('spotModal.toastReservationCancelled', {
+            number: spot.number,
+          }),
           color: 'green',
         }),
       onError: (err) =>
         notifications.show({
           message:
-            err instanceof Error ? err.message : 'Failed to cancel reservation',
+            err instanceof Error
+              ? err.message
+              : t('spotModal.toastCancelReservationFailed'),
           color: 'red',
         }),
     })

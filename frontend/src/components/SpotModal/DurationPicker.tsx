@@ -1,4 +1,5 @@
 import { Clock, Minus, Plus } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 // — types —
 
@@ -27,12 +28,13 @@ export function DurationPicker({
   arrivalTime,
   expiryStr,
 }: DurationPickerProps) {
+  const { t } = useTranslation()
   return (
     <div className="bg-muted/50 space-y-2 rounded-lg px-4 py-3">
       <div className="flex items-center justify-between">
         <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
           <Clock className="size-3.5" />
-          From {arrivalTime}
+          {t('spotModal.durationFrom', { time: arrivalTime })}
         </span>
         <div className="flex items-center gap-2">
           <button
@@ -55,7 +57,7 @@ export function DurationPicker({
         </div>
       </div>
       <p className="text-muted-foreground text-right text-xs">
-        Until {expiryStr}
+        {t('spotModal.durationUntil', { time: expiryStr })}
       </p>
     </div>
   )

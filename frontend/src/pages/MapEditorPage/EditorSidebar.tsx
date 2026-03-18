@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 import type { ParkingLot, Spot, SpotCoordinates } from '@/types'
 
 import { PendingPanel } from './PendingPanel'
@@ -56,6 +58,7 @@ export function EditorSidebar({
   onCoordsChange,
   onRemove,
 }: EditorSidebarProps) {
+  const { t } = useTranslation()
   return (
     <div className="w-64 shrink-0 space-y-3">
       {/* Stats */}
@@ -65,7 +68,7 @@ export function EditorSidebar({
         </p>
         <p className="text-2xl font-bold">{mappedCount}</p>
         <p className="text-muted-foreground text-xs">
-          of {totalCount} spots mapped
+          {t('mapEditor.ofSpotsMapped', { n: totalCount })}
         </p>
       </div>
 
@@ -102,22 +105,18 @@ export function EditorSidebar({
       {!pendingRect && !selectedSpot && (
         <div className="bg-card text-muted-foreground rounded-lg border border-dashed p-4 text-center text-sm">
           {mode === 'draw'
-            ? 'Click and drag to place a spot'
-            : 'Click a spot to edit'}
+            ? t('mapEditor.clickAndDrag')
+            : t('mapEditor.clickToEdit')}
         </div>
       )}
 
       {/* Instructions */}
       <div className="text-muted-foreground space-y-1 rounded-lg border p-3 text-xs">
-        <p className="text-foreground font-medium">How to use</p>
-        <p>
-          1. <strong>Draw</strong> — drag to place a rectangle
-        </p>
-        <p>2. Assign to an existing spot or create a new one</p>
-        <p>
-          3. <strong>Select</strong> — click to edit; changes auto-save
-        </p>
-        <p>4. Use Reset to revert or Delete to remove coordinates</p>
+        <p className="text-foreground font-medium">{t('mapEditor.howToUse')}</p>
+        <p>{t('mapEditor.instruction1')}</p>
+        <p>{t('mapEditor.instruction2')}</p>
+        <p>{t('mapEditor.instruction3')}</p>
+        <p>{t('mapEditor.instruction4')}</p>
       </div>
     </div>
   )

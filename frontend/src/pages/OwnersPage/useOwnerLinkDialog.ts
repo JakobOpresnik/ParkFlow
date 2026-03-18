@@ -1,10 +1,12 @@
 import { notifications } from '@mantine/notifications'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { useLinkOwner } from '@/hooks/useOwners'
 import type { Owner } from '@/types'
 
 export function useOwnerLinkDialog(owners: Owner[]) {
+  const { t } = useTranslation()
   const linkOwner = useLinkOwner()
 
   const [linkTargetId, setLinkTargetId] = useState<string | null>(null)
@@ -27,8 +29,11 @@ export function useOwnerLinkDialog(owners: Owner[]) {
         onSuccess: () => {
           notifications.show({
             message: username
-              ? `${targetName} linked to ${username}`
-              : `${targetName} unlinked`,
+              ? t('owners.ownerLinked', {
+                  name: targetName,
+                  username,
+                })
+              : t('owners.ownerUnlinked', { name: targetName }),
             color: 'green',
           })
           setLinkTargetId(null)
@@ -36,7 +41,7 @@ export function useOwnerLinkDialog(owners: Owner[]) {
         onError: (err) =>
           notifications.show({
             message:
-              err instanceof Error ? err.message : 'Failed to link owner',
+              err instanceof Error ? err.message : t('owners.failedToLink'),
             color: 'red',
           }),
       },

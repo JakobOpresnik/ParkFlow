@@ -1,5 +1,6 @@
 import { notifications } from '@mantine/notifications'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { useDeleteSpot } from '@/hooks/useSpots'
 import type { Spot } from '@/types'
@@ -7,6 +8,7 @@ import type { Spot } from '@/types'
 // — hook —
 
 export function useSpotDelete() {
+  const { t } = useTranslation()
   const [deleteTarget, setDeleteTarget] = useState<Spot | null>(null)
   const deleteSpot = useDeleteSpot()
 
@@ -15,14 +17,15 @@ export function useSpotDelete() {
     deleteSpot.mutate(deleteTarget.id, {
       onSuccess: () => {
         notifications.show({
-          message: `Spot #${deleteTarget.number} deleted`,
+          message: t('admin.spotDeleted', { number: deleteTarget.number }),
           color: 'green',
         })
         setDeleteTarget(null)
       },
       onError: (err) =>
         notifications.show({
-          message: err instanceof Error ? err.message : 'Failed to delete spot',
+          message:
+            err instanceof Error ? err.message : t('admin.failedToDeleteSpot'),
           color: 'red',
         }),
     })

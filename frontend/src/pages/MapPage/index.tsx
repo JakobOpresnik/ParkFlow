@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import type { ParkingMapHandle } from '@/components/ParkingMap/ParkingMap'
 import { SpotGrid } from '@/components/SpotGrid/SpotGrid'
@@ -58,6 +59,7 @@ const SKELETON_SPOT_IDS = [
 // — sub-components —
 
 function GridContent({ isLoading, lotSpots }: GridContentProps) {
+  const { t } = useTranslation()
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -70,7 +72,7 @@ function GridContent({ isLoading, lotSpots }: GridContentProps) {
   if (lotSpots.length === 0) {
     return (
       <div className="text-muted-foreground flex h-32 items-center justify-center">
-        <p className="text-sm">No spots in this lot</p>
+        <p className="text-sm">{t('map.noSpotsInLot')}</p>
       </div>
     )
   }

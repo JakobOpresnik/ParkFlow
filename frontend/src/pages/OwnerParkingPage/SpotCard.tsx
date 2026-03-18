@@ -9,11 +9,12 @@ import {
   User,
   UserCheck,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
-import type { SpotCardProps } from './types'
+import type { DayStatus, SpotCardProps } from './types'
 import { formatDateTime, StatusConfig } from './utils'
 
 export function SpotCard({
@@ -31,7 +32,14 @@ export function SpotCard({
   isToggling,
   isCancelling,
 }: SpotCardProps) {
-  const { color, label, border } = StatusConfig[status]
+  const { t, i18n } = useTranslation()
+  const STATUS_LABELS: Record<DayStatus, string> = {
+    free: t('ownerParking.statusFree'),
+    occupied: t('ownerParking.statusOccupied'),
+    reserved: t('ownerParking.statusReserved'),
+  }
+  const { color, border } = StatusConfig[status]
+  const label = STATUS_LABELS[status]
   const canModifyStatus = !isToggling && !isNonWorkDay && !isPastCutoff
 
   return (
@@ -52,19 +60,27 @@ export function SpotCard({
               {label}
             </Badge>
             {isOverridden && (
-              <span className="text-muted-foreground text-xs">(override)</span>
+              <span className="text-muted-foreground text-xs">
+                {t('ownerParking.override')}
+              </span>
             )}
           </div>
           {switchedToSpotNumber && (
             <div className="mt-2 flex items-center gap-1.5 text-xs text-indigo-500 dark:text-indigo-400">
               <ArrowRightLeft className="size-3 shrink-0" />
-              Preklop na mesto #{switchedToSpotNumber} — dostopno ostalim
+              {t('ownerParking.switchedToSpot', {
+                number: switchedToSpotNumber,
+              })}
             </div>
           )}
         </div>
         <button
           onClick={onToggleHistory}
-          aria-label={isHistoryOpen ? 'Zapri zgodovino' : 'Prikaži zgodovino'}
+          aria-label={
+            isHistoryOpen
+              ? t('ownerParking.toggleHistoryOpen')
+              : t('ownerParking.toggleHistoryClosed')
+          }
           className="text-muted-foreground hover:bg-muted flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors"
         >
           {isHistoryOpen ? (
@@ -81,7 +97,7 @@ export function SpotCard({
           <div className="flex items-center gap-2 text-sm">
             <User className="size-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
             <span className="truncate">
-              Rezerviral:{' '}
+              {t('ownerParking.reservedBy')}{' '}
               <span className="font-medium">
                 {spot.active_booking_reserved_by}
               </span>
@@ -90,7 +106,8 @@ export function SpotCard({
           {spot.active_booking_expires_at && (
             <div className="text-muted-foreground mt-1 flex items-center gap-2 text-xs">
               <Clock className="size-3 shrink-0" />
-              Do: {formatDateTime(spot.active_booking_expires_at)}
+              {t('ownerParking.until')}{' '}
+              {formatDateTime(spot.active_booking_expires_at, i18n.language)}
             </div>
           )}
         </div>
@@ -106,7 +123,7 @@ export function SpotCard({
             className="h-11 flex-1 gap-2 text-sm font-semibold"
           >
             <DoorOpen className="size-4" />
-            Sprosti mesto
+            {t('ownerParking.freeSpot')}
           </Button>
         )}
         {status === 'free' && (
@@ -117,7 +134,7 @@ export function SpotCard({
             className="h-11 flex-1 gap-2 text-sm font-semibold"
           >
             <UserCheck className="size-4" />
-            Zasedi mesto
+            {t('ownerParking.occupySpot')}
           </Button>
         )}
         {status === 'reserved' && spot.active_booking_id && (
@@ -128,7 +145,7 @@ export function SpotCard({
             className="h-11 flex-1 gap-2 text-sm font-semibold"
           >
             <ShieldX className="size-4" />
-            Prekliči rezervacijo
+            {t('ownerParking.cancelReservation')}
           </Button>
         )}
         {isOverridden && status !== 'reserved' && (
@@ -139,7 +156,9 @@ export function SpotCard({
             className="text-muted-foreground h-11 gap-2 px-3 text-sm"
           >
             <RotateCcw className="size-4" />
-            <span className="hidden sm:inline">Ponastavi</span>
+            <span className="hidden sm:inline">
+              {t('ownerParking.resetStatus')}
+            </span>
           </Button>
         )}
       </div>

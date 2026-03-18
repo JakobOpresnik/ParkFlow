@@ -1,4 +1,5 @@
 import { notifications } from '@mantine/notifications'
+import { useTranslation } from 'react-i18next'
 
 import { useCancelBooking } from '@/hooks/useBookings'
 import { useSetSpotDayStatus } from '@/hooks/useOwnerParking'
@@ -10,6 +11,7 @@ export function useOwnerParkingActions(
   selectedDate: string,
   myBookingElsewhere: Booking | undefined,
 ) {
+  const { t, i18n } = useTranslation()
   const setDayStatus = useSetSpotDayStatus()
   const cancelBooking = useCancelBooking()
 
@@ -28,13 +30,18 @@ export function useOwnerParkingActions(
             cancelBooking.mutate(bookingToCancel.id, {
               onSuccess: () =>
                 notifications.show({
-                  message: `Mesto #${spot.number} zasedeno za ${formatDate(selectedDate)}`,
+                  message: t('ownerParking.toastSpotOccupied', {
+                    number: spot.number,
+                    date: formatDate(selectedDate, i18n.language),
+                  }),
                   color: 'green',
                 }),
               onError: (err) =>
                 notifications.show({
                   message:
-                    err instanceof Error ? err.message : 'Napaka pri preklicu',
+                    err instanceof Error
+                      ? err.message
+                      : t('ownerParking.toastCancelError'),
                   color: 'red',
                 }),
             })
@@ -42,15 +49,22 @@ export function useOwnerParkingActions(
             notifications.show({
               message:
                 status === 'free'
-                  ? `Mesto #${spot.number} sproščeno za ${formatDate(selectedDate)}`
-                  : `Mesto #${spot.number} zasedeno za ${formatDate(selectedDate)}`,
+                  ? t('ownerParking.toastSpotFreed', {
+                      number: spot.number,
+                      date: formatDate(selectedDate, i18n.language),
+                    })
+                  : t('ownerParking.toastSpotOccupied', {
+                      number: spot.number,
+                      date: formatDate(selectedDate, i18n.language),
+                    }),
               color: 'green',
             })
           }
         },
         onError: (err) =>
           notifications.show({
-            message: err instanceof Error ? err.message : 'Napaka',
+            message:
+              err instanceof Error ? err.message : t('ownerParking.toastError'),
             color: 'red',
           }),
       },
@@ -63,12 +77,13 @@ export function useOwnerParkingActions(
       {
         onSuccess: () =>
           notifications.show({
-            message: `Mesto #${spot.number} ponastavljeno na timesheet`,
+            message: t('ownerParking.toastSpotReset', { number: spot.number }),
             color: 'green',
           }),
         onError: (err) =>
           notifications.show({
-            message: err instanceof Error ? err.message : 'Napaka',
+            message:
+              err instanceof Error ? err.message : t('ownerParking.toastError'),
             color: 'red',
           }),
       },
@@ -80,12 +95,17 @@ export function useOwnerParkingActions(
     cancelBooking.mutate(spot.active_booking_id, {
       onSuccess: () =>
         notifications.show({
-          message: `Rezervacija na mestu #${spot.number} preklicana`,
+          message: t('ownerParking.toastBookingCancelled', {
+            number: spot.number,
+          }),
           color: 'green',
         }),
       onError: (err) =>
         notifications.show({
-          message: err instanceof Error ? err.message : 'Preklic ni uspel',
+          message:
+            err instanceof Error
+              ? err.message
+              : t('ownerParking.toastCancelError'),
           color: 'red',
         }),
     })

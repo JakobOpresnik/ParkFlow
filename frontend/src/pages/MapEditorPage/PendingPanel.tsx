@@ -1,6 +1,7 @@
 import { Select } from '@mantine/core'
 import { Save, X } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,6 +24,7 @@ export function PendingPanel({
   onPendingChange,
   isSaving,
 }: PendingPanelProps) {
+  const { t } = useTranslation()
   const [tab, setTab] = useState<'assign' | 'create'>('assign')
   const [assignId, setAssignId] = useState(unmappedSpots[0]?.id ?? '')
   const [newNumber, setNewNumber] = useState<number | ''>('')
@@ -63,13 +65,13 @@ export function PendingPanel({
   return (
     <div className="bg-card space-y-4 rounded-lg border p-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium">New location</p>
+        <p className="text-sm font-medium">{t('mapEditor.newLocation')}</p>
         <Button
           size="icon"
           variant="ghost"
           className="size-6"
           onClick={onDiscard}
-          aria-label="Discard new location"
+          aria-label={t('mapEditor.newLocation')}
         >
           <X className="size-3.5" />
         </Button>
@@ -110,7 +112,7 @@ export function PendingPanel({
             tab === 'assign' ? 'bg-accent' : 'text-muted-foreground'
           }`}
         >
-          Assign to spot
+          {t('mapEditor.assignToSpot')}
         </button>
         <button
           onClick={() => setTab('create')}
@@ -118,7 +120,7 @@ export function PendingPanel({
             tab === 'create' ? 'bg-accent' : 'text-muted-foreground'
           }`}
         >
-          New spot
+          {t('mapEditor.newSpot')}
         </button>
       </div>
 
@@ -126,7 +128,7 @@ export function PendingPanel({
         <div className="space-y-2">
           {unmappedSpots.length === 0 ? (
             <p className="text-muted-foreground text-xs">
-              All spots in this lot already have coordinates.
+              {t('mapEditor.allHaveCoords')}
             </p>
           ) : (
             <Select
@@ -147,7 +149,7 @@ export function PendingPanel({
           <Input
             type="number"
             min={1}
-            placeholder="Spot number"
+            placeholder={t('mapEditor.spotNumber')}
             value={newNumber}
             onChange={(e) =>
               setNewNumber(Number.parseInt(e.target.value, 10) || '')
@@ -155,7 +157,7 @@ export function PendingPanel({
             className="h-8"
           />
           <Input
-            placeholder="Label (optional)"
+            placeholder={t('mapEditor.labelOptional')}
             value={newLabel}
             onChange={(e) => setNewLabel(e.target.value)}
             className="h-8"
@@ -170,7 +172,7 @@ export function PendingPanel({
         disabled={isSaveDisabled}
       >
         <Save className="size-3.5" />
-        {isSaving ? 'Saving…' : 'Save coordinates'}
+        {isSaving ? t('mapEditor.saving') : t('mapEditor.saveCoordinates')}
       </Button>
     </div>
   )
