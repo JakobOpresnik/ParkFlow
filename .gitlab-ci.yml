@@ -1,15 +1,11 @@
 include:
   - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/gitlab-ci-local@~latest
-    rules:
-      - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
-        when: never
+    
   - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/secret-detection@~latest
     inputs:
       stage: security
   - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/trivy@~latest
-    rules:
-      - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
-        when: never
+    
     inputs:
       stage: security
       repository: true
@@ -72,9 +68,7 @@ backend_test:
     - cd backend
     - bun install --frozen-lockfile
     - bun run test
-  rules:
-    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
-      when: never
+    
 
 backend_lint:
   stage: lint
@@ -82,9 +76,7 @@ backend_lint:
     - cd backend
     - bun install --frozen-lockfile
     - bunx tsc -p tsconfig.json --noEmit
-  rules:
-    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
-      when: never
+    
 
 frontend_lint:
   stage: lint
@@ -92,9 +84,7 @@ frontend_lint:
     - cd frontend
     - bun install --frozen-lockfile
     - bun run lint
-  rules:
-    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
-      when: never
+    
 
 compose_dockerfile_guard:
   stage: lint
@@ -104,9 +94,7 @@ compose_dockerfile_guard:
       test "$(grep -c 'dockerfile: Dockerfile.dev' docker-compose.dev.yml)" -eq 2
       grep -q 'dockerfile: Dockerfile' docker-compose.yml
       test "$(grep -c 'dockerfile: Dockerfile' docker-compose.yml)" -eq 2
-  rules:
-    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
-      when: never
+    
 
 frontend_build:
   stage: build
@@ -114,9 +102,7 @@ frontend_build:
     - cd frontend
     - bun install --frozen-lockfile
     - bun run build
-  rules:
-    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
-      when: never
+    
 
 backend_container_build:
   stage: build
@@ -127,9 +113,7 @@ backend_container_build:
     DOCKER_TLS_CERTDIR: ''
   script:
     - docker build -f backend/Dockerfile backend
-  rules:
-    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
-      when: never
+  # rules removed to allow job execution
 
 frontend_container_build:
   stage: build
