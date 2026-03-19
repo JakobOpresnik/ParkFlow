@@ -1,0 +1,46 @@
+services:
+  backend:
+    image: ${CI_REGISTRY_IMAGE}/backend:${CI_COMMIT_TAG}
+    restart: always
+    env_file:
+      - backend/.env
+    ports:
+      - '3001:3001'
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/app
+    networks:
+      - parkflow
+
+  frontend:
+    image: ${CI_REGISTRY_IMAGE}/frontend:${CI_COMMIT_TAG}
+    restart: always
+    env_file:
+      - frontend/.env
+    ports:
+      - '80:5173'
+    networks:
+      - parkflow
+
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_DB: parkflow
+      POSTGRES_USER: parkflow
+      POSTGRES_PASSWORD: parkflow
+    volumes:
+      - parkflow_db:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    networks:
+      - parkflow
+
+networks:
+  parkflow:
+    driver: bridge
+
+volumes:
+  parkflow_db:
+    driver: local

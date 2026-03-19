@@ -1,15 +1,25 @@
 include:
   - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/gitlab-ci-local@~latest
+    rules:
+      - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
+        when: never
   - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/secret-detection@~latest
+    rules:
+      - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
+        when: never
     inputs:
       stage: security
   - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/trivy@~latest
+    rules:
+      - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
+        when: never
     inputs:
       stage: security
       repository: true
-  - project: 'pub/gitlab-ci-templates'
-    ref: main
-    file: '/templates/docker-multi-build.yml'
+  - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/docker-multi-build@~latest
+    rules:
+      - if: $CI_COMMIT_TAG
+      - if: $CI_COMMIT_BRANCH == 'main'
     inputs:
       stage: build
       buildList:
@@ -19,12 +29,17 @@ include:
         - IMAGE_NAME: frontend
           CONTEXT_PATH: frontend
           DOCKER_FILE: frontend/Dockerfile
+  - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/env-helper@~latest
+  - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/ssh-helper@~latest
+  - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/git-helper@~latest
+  - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/docker-compose@~latest
 
 stages:
   - security
   - test
   - lint
   - build
+  - deploy
 
 trufflehog_MR:
   # script: override does not work for component-sourced jobs — the template script always wins.
@@ -61,8 +76,8 @@ backend_test:
     - bun install --frozen-lockfile
     - bun run test
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
+      when: never
 
 backend_lint:
   stage: lint
@@ -71,8 +86,8 @@ backend_lint:
     - bun install --frozen-lockfile
     - bunx tsc -p tsconfig.json --noEmit
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
+      when: never
 
 frontend_lint:
   stage: lint
@@ -81,8 +96,8 @@ frontend_lint:
     - bun install --frozen-lockfile
     - bun run lint
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
+      when: never
 
 compose_dockerfile_guard:
   stage: lint
@@ -93,8 +108,8 @@ compose_dockerfile_guard:
       grep -q 'dockerfile: Dockerfile' docker-compose.yml
       test "$(grep -c 'dockerfile: Dockerfile' docker-compose.yml)" -eq 2
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
+      when: never
 
 frontend_build:
   stage: build
@@ -103,5 +118,54 @@ frontend_build:
     - bun install --frozen-lockfile
     - bun run build
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
+      when: never
+
+backend_container_build:
+  stage: build
+  image: docker:27
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_TLS_CERTDIR: ''
+  script:
+    - docker build -f backend/Dockerfile backend
+  rules:
+    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
+      when: never
+
+frontend_container_build:
+  stage: build
+  image: docker:27
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_TLS_CERTDIR: ''
+  script:
+    - docker build -f frontend/Dockerfile frontend
+  rules:
+    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
+      when: never
+
+deploy_production:
+  stage: deploy
+  image: cr.matheo.si/pub/alpine-runner
+  before_script:
+    - set -x
+    - !reference [.ssh_helper, load]
+    - !reference [.env_helper, load]
+  script:
+    - !reference [.git_helper, git_clone_or_pull]
+    - deploy_env ${CI_SSH_USER}@${CI_SSH_HOST}:${DEPLOY_DIR}/.env .env.example
+    - deploy_env ${CI_SSH_USER}@${CI_SSH_HOST}:${DEPLOY_DIR}/backend/.env backend/.env.example
+    - deploy_env ${CI_SSH_USER}@${CI_SSH_HOST}:${DEPLOY_DIR}/frontend/.env frontend/.env.example
+    - !reference [.docker-compose, deploy_with_ci_token]
+  variables:
+    CI_SSH_HOST: parkflow.int.matheo.si
+    CI_SSH_USER: deploy
+    CI_SSH_PORT: '22'
+    DEPLOY_DIR: /home/deploy/parkflow
+    DEPLOY_BRANCH: $CI_COMMIT_BRANCH
+    CI_COMPOSE_FILE: compose.yml
+  rules:
+     - if: $CI_COMMIT_TAG

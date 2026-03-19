@@ -1,23 +1,17 @@
-FROM node:22-alpine AS deps
-
-RUN npm install -g bun
-
+FROM oven/bun:1 as builder
 WORKDIR /app
+COPY package.json ./
+RUN bun install --production
+# Copy rest of the source
+COPY . .
+RUN bun run build
 
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
-
-FROM node:22-alpine
-
-RUN npm install -g bun
-
+FROM oven/bun:1 as production
 WORKDIR /app
-
-ENV NODE_ENV=production
-
-COPY --from=deps /app/node_modules ./node_modules
-COPY package.json bun.lock ./
-COPY src ./src
-
-EXPOSE 3001
-CMD ["bun", "run", "start"]
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package.json ./package.json
+RUN bun install --production
+# Optionally copy migrations or other runtime assets
+# COPY --from=builder /app/migrations ./migrations
+EXPOSE 3000
+CMD ["bun", "dist/index.js"]

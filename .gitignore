@@ -1,2 +1,3 @@
 # Office temporary lock files
 ~$*
+.env
