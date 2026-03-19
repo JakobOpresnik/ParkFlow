@@ -47,7 +47,7 @@ services:
       VITE_API_URL: ${VITE_API_URL:-http://localhost:3001}
       VITE_OAUTH_AUTHORITY: ${VITE_OAUTH_AUTHORITY:-https://sso.matheo.si/application/o/park-flow}
       VITE_OAUTH_CLIENT_ID: ${VITE_OAUTH_CLIENT_ID:-V9RNWkqNeQq8FhnTCxnPr3hhlQLoBXHkp0k8k95j}
-      VITE_OAUTH_REDIRECT_URI: ${VITE_OAUTH_REDIRECT_URI:-http://localhost:5173/callback}
+      VITE_OAUTH_REDIRECT_URI: ${VITE_OAUTH_REDIRECT_URI:-http://localhost:5173/callback} # override with http://localhost/callback for port 80
       VITE_OAUTH_ADMIN_GROUP: ${VITE_OAUTH_ADMIN_GROUP:-parkflow-admins}
     ports:
       - '5173:3000'
