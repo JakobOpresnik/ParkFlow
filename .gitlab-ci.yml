@@ -51,32 +51,6 @@ variables:
   MATHEO_DT_API_KEY: $DEPENDENCY_TRACK_API_KEY
   DT_PROJECT_ID: $DEPENDENCY_TRACK_PROJECT_ID
 
-deploy_test:
-  stage: deploy
-  image: cr.matheo.si/pub/alpine-runner
-  before_script:
-    - set -x
-    - !reference [.ssh_helper, load]
-    - !reference [.env_helper, load]
-  script:
-    - !reference [.git_helper, git_clone_or_pull]
-    - deploy_env ${CI_SSH_USER}@${CI_SSH_HOST}:${DEPLOY_DIR}/.env .env.example
-    - deploy_env ${CI_SSH_USER}@${CI_SSH_HOST}:${DEPLOY_DIR}/backend/.env backend/.env.example
-    - deploy_env ${CI_SSH_USER}@${CI_SSH_HOST}:${DEPLOY_DIR}/frontend/.env frontend/.env.example
-    - !reference [.docker-compose, deploy_with_ci_token]
-  variables:
-    CI_SSH_HOST: parkflow.int.matheo.si
-    CI_SSH_USER: deploy
-    CI_SSH_PORT: '22'
-    DEPLOY_DIR: /home/deploy/parkflow
-    DEPLOY_BRANCH: $CI_COMMIT_BRANCH
-    CI_COMPOSE_FILE: compose.yml
-  rules:
-    - if: $CI_COMMIT_TAG
-      when: never
-    - if: $CI_COMMIT_BRANCH
-      when: always
-
 default:
   image: oven/bun:1.2.22
 
@@ -166,18 +140,21 @@ deploy_production:
   stage: deploy
   image: cr.matheo.si/pub/alpine-runner
   before_script:
+    - set -x
     - !reference [.ssh_helper, load]
     - !reference [.env_helper, load]
   script:
     - !reference [.git_helper, git_clone_or_pull]
-    - !reference [.docker-compose, deploy]
-  environment:
-    name: production
+    - deploy_env ${CI_SSH_USER}@${CI_SSH_HOST}:${DEPLOY_DIR}/.env .env.example
+    - deploy_env ${CI_SSH_USER}@${CI_SSH_HOST}:${DEPLOY_DIR}/backend/.env backend/.env.example
+    - deploy_env ${CI_SSH_USER}@${CI_SSH_HOST}:${DEPLOY_DIR}/frontend/.env frontend/.env.example
+    - !reference [.docker-compose, deploy_with_ci_token]
   variables:
     CI_SSH_HOST: parkflow.int.matheo.si
     CI_SSH_USER: deploy
     CI_SSH_PORT: '22'
     DEPLOY_DIR: /home/deploy/parkflow
+    DEPLOY_BRANCH: $CI_COMMIT_BRANCH
     CI_COMPOSE_FILE: compose.yml
   rules:
      - if: $CI_COMMIT_TAG
