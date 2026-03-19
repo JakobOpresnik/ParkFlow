@@ -4,9 +4,6 @@ include:
       - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
         when: never
   - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/secret-detection@~latest
-    rules:
-      - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
-        when: never
     inputs:
       stage: security
   - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/trivy@~latest
@@ -51,9 +48,6 @@ trufflehog_MR:
     - git fetch origin main --depth=1
     - git branch -f main FETCH_HEAD
     - export TH_OPTS="$TH_OPTS --only-verified"
-  rules:
-    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
-      when: never
 
 variables:
   # Dependency-Track integration used by trivy template job `repo_sbom_upload`.
