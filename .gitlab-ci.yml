@@ -57,12 +57,11 @@ deploy_test:
   before_script:
     - set -x
     - !reference [.ssh_helper, load]
+    - !reference [.env_helper, load]
   script:
     - !reference [.git_helper, git_clone_or_pull]
     - deploy_env ${CI_SSH_USER}@${CI_SSH_HOST}:${DEPLOY_DIR}/.env .env.example
     - !reference [.docker-compose, deploy_with_ci_token]
-  environment:
-    name: test
   variables:
     CI_SSH_HOST: parkflow.int.matheo.si
     CI_SSH_USER: deploy
