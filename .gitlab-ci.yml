@@ -55,6 +55,7 @@ deploy_test:
   stage: deploy
   image: cr.matheo.si/pub/alpine-runner
   before_script:
+    - set -x
     - !reference [.ssh_helper, load]
   script:
     - !reference [.git_helper, git_clone_or_pull]
