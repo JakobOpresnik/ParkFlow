@@ -1,6 +1,9 @@
 services:
   backend:
-    image: ${CI_REGISTRY_IMAGE}/backend:${CI_COMMIT_TAG}
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    pull_policy: build
     restart: always
     env_file:
       - backend/.env
@@ -14,12 +17,15 @@ services:
       - parkflow
 
   frontend:
-    image: ${CI_REGISTRY_IMAGE}/frontend:${CI_COMMIT_TAG}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    pull_policy: build
     restart: always
     env_file:
       - frontend/.env
     ports:
-      - '80:5173'
+      - '80:3000'
     networks:
       - parkflow
 
