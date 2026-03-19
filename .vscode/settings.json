@@ -1,6 +1,0 @@
-{
-    "chat.tools.terminal.autoApprove": {
-        "docker build": true,
-        "bun": true
-    }
-}
