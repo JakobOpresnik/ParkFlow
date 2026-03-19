@@ -61,6 +61,8 @@ deploy_test:
   script:
     - !reference [.git_helper, git_clone_or_pull]
     - deploy_env ${CI_SSH_USER}@${CI_SSH_HOST}:${DEPLOY_DIR}/.env .env.example
+    - deploy_env ${CI_SSH_USER}@${CI_SSH_HOST}:${DEPLOY_DIR}/backend/.env backend/.env.example
+    - deploy_env ${CI_SSH_USER}@${CI_SSH_HOST}:${DEPLOY_DIR}/frontend/.env frontend/.env.example
     - !reference [.docker-compose, deploy_with_ci_token]
   variables:
     CI_SSH_HOST: parkflow.int.matheo.si
