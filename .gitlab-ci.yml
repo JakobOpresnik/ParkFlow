@@ -63,7 +63,7 @@ deploy_test:
   environment:
     name: test
   variables:
-    CI_SSH_HOST: playwright.int.matheo.si
+    CI_SSH_HOST: parkflow.int.matheo.si
     CI_SSH_USER: deploy
     CI_SSH_PORT: '22'
     DEPLOY_DIR: /home/deploy/parkflow
