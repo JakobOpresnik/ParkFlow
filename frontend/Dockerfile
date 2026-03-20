@@ -13,7 +13,7 @@ ARG VITE_OAUTH_ADMIN_GROUP
 ENV VITE_API_URL=http://localhost:80
 ENV VITE_OAUTH_AUTHORITY=https://sso.matheo.si/application/o/park-flow
 ENV VITE_OAUTH_CLIENT_ID=V9RNWkqNeQq8FhnTCxnPr3hhlQLoBXHkp0k8k95j
-ENV VITE_OAUTH_REDIRECT_URI=http://parkflow.int.matheo.si/callback
+ENV VITE_OAUTH_REDIRECT_URI=http://parkflow.matheo.si/callback
 ENV VITE_OAUTH_ADMIN_GROUP=parkflow-admins
 
 COPY package.json bun.lock ./
