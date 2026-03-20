@@ -1,11 +1,11 @@
 include:
   - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/gitlab-ci-local@~latest
-    
+
   - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/secret-detection@~latest
     inputs:
       stage: security
   - component: ${CI_SERVER_FQDN}/pub/gitlab-ci-templates/trivy@~latest
-    
+
     inputs:
       stage: security
       repository: true
@@ -45,6 +45,20 @@ trufflehog_MR:
     - git branch -f main FETCH_HEAD
     - export TH_OPTS="$TH_OPTS --only-verified"
 
+# Fix for gitleaks/secret-detection template trying to git pull without tracking info
+gitleaks_MR:
+  before_script:
+    - git fetch origin $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME
+    - git branch -f $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME origin/$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME
+    - git branch --set-upstream-to=origin/$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME
+
+# Some templates might use 'gitleaks' instead of 'gitleaks_MR'
+gitleaks:
+  before_script:
+    - git fetch origin $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME
+    - git branch -f $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME origin/$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME
+    - git branch --set-upstream-to=origin/$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME
+
 variables:
   # Dependency-Track integration used by trivy template job `repo_sbom_upload`.
   # Set these in GitLab CI/CD variables (project/group):
@@ -68,7 +82,6 @@ backend_test:
     - cd backend
     - bun install --frozen-lockfile
     - bun run test
-    
 
 backend_lint:
   stage: lint
@@ -76,7 +89,6 @@ backend_lint:
     - cd backend
     - bun install --frozen-lockfile
     - bunx tsc -p tsconfig.json --noEmit
-    
 
 frontend_lint:
   stage: lint
@@ -84,7 +96,6 @@ frontend_lint:
     - cd frontend
     - bun install --frozen-lockfile
     - bun run lint
-    
 
 compose_dockerfile_guard:
   stage: lint
@@ -94,7 +105,6 @@ compose_dockerfile_guard:
       test "$(grep -c 'dockerfile: Dockerfile.dev' docker-compose.dev.yml)" -eq 2
       grep -q 'dockerfile: Dockerfile' docker-compose.yml
       test "$(grep -c 'dockerfile: Dockerfile' docker-compose.yml)" -eq 2
-    
 
 frontend_build:
   stage: build
@@ -102,7 +112,6 @@ frontend_build:
     - cd frontend
     - bun install --frozen-lockfile
     - bun run build
-    
 
 backend_container_build:
   stage: build
@@ -149,4 +158,4 @@ deploy_production:
     DEPLOY_BRANCH: $CI_COMMIT_BRANCH
     CI_COMPOSE_FILE: compose.yml
   rules:
-     - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_TAG
