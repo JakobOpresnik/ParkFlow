@@ -118,6 +118,9 @@ frontend_build:
     - cd frontend
     - bun install --frozen-lockfile
     - bun run build
+  rules:
+    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
+      when: never
 
 backend_container_build:
   stage: build
@@ -128,7 +131,9 @@ backend_container_build:
     DOCKER_TLS_CERTDIR: ''
   script:
     - docker build -f backend/Dockerfile backend
-  # rules removed to allow job execution
+  rules:
+    - if: $CI_COMMIT_BRANCH == "$CI_COMMIT_BRANCH"
+      when: never
 
 frontend_container_build:
   stage: build
