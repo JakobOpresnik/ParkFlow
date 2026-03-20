@@ -1,10 +1,7 @@
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    pull_policy: build
-    restart: always
+    image: ${CI_REGISTRY_IMAGE}/backend:${CI_COMMIT_TAG}
+    restart: unless-stopped
     env_file:
       - backend/.env
     environment:
@@ -20,17 +17,8 @@ services:
       - parkflow
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:3001}
-        VITE_OAUTH_AUTHORITY: ${VITE_OAUTH_AUTHORITY:-https://sso.matheo.si/application/o/park-flow}
-        VITE_OAUTH_CLIENT_ID: ${VITE_OAUTH_CLIENT_ID:-V9RNWkqNeQq8FhnTCxnPr3hhlQLoBXHkp0k8k95j}
-        VITE_OAUTH_REDIRECT_URI: ${VITE_OAUTH_REDIRECT_URI:-http://localhost/callback}
-        VITE_OAUTH_ADMIN_GROUP: ${VITE_OAUTH_ADMIN_GROUP:-parkflow-admins}
-    pull_policy: build
-    restart: always
+    image: ${CI_REGISTRY_IMAGE}/frontend:${CI_COMMIT_TAG}
+    restart: unless-stopped
     ports:
       - '80:3000'
     depends_on:
