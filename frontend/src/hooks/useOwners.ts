@@ -1,12 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { api } from '@/api'
+import { useAuthStore } from '@/store/authStore'
 import type { Owner } from '@/types'
 
 export function useOwners() {
+  const isAdmin = useAuthStore((s) => s.user?.role === 'admin')
   return useQuery({
     queryKey: ['owners'],
     queryFn: api.getOwners,
+    enabled: isAdmin,
   })
 }
 

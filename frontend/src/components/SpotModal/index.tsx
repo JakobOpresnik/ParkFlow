@@ -114,12 +114,12 @@ export function SpotModal() {
     >
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md sm:p-0">
         {/* ── Header ──────────────────────────────────────────── */}
-        <div className="px-6 pt-6 pr-14 pb-5">
+        <div className="px-4 pt-4 pr-12 pb-4 sm:px-6 sm:pt-6 sm:pr-14 sm:pb-5">
           <p className="text-muted-foreground mb-2 text-xs font-medium tracking-widest uppercase">
             {t('spotModal.parkingSpot')}
           </p>
           <div className="min-w-0">
-            <h2 className="text-3xl font-bold tracking-tight">
+            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
               #{spot.number}
             </h2>
             {spot.label && (
@@ -133,7 +133,7 @@ export function SpotModal() {
         <div className="bg-border h-px" />
 
         {/* ── Body ────────────────────────────────────────────── */}
-        <div className="max-h-[80vh] space-y-4 overflow-y-auto px-6 py-5">
+        <div className="max-h-[75vh] space-y-4 overflow-y-auto px-4 py-4 sm:max-h-[80vh] sm:px-6 sm:py-5">
           <StatusBanner
             status={spot.status}
             subtext={bannerSubtext}
@@ -145,10 +145,10 @@ export function SpotModal() {
           />
           <DetailsCard spot={spot} isCurrentUserOwner={isCurrentUserOwner} />
 
-          {/* Management accordion (logged-in users) */}
-          {user && <ManagementAccordion spot={spot} />}
+          {/* Management accordion (admins only) */}
+          {user?.role === 'admin' && <ManagementAccordion spot={spot} />}
 
-          <div className="bg-border -mx-6 h-px" />
+          <div className="bg-border -mx-4 h-px sm:-mx-6" />
 
           {/* ── CTA ─────────────────────────────────────────────── */}
           {/* key resets ownerWarningOpen / bookingDuration / interval state on spot change */}
