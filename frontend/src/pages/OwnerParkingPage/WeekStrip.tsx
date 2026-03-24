@@ -12,8 +12,8 @@ export function WeekStrip({
 }: WeekStripProps) {
   const { i18n } = useTranslation()
   return (
-    <div className="bg-card rounded-2xl border p-1.5">
-      <div className="grid grid-cols-7 gap-1">
+    <div className="bg-card overflow-x-auto rounded-2xl border p-1.5">
+      <div className="grid min-w-[280px] grid-cols-7 gap-0.5 sm:gap-1">
         {days.map((date) => {
           const d = new Date(date + 'T00:00:00')
           const isSelected = date === selectedDate

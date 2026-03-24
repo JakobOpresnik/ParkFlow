@@ -109,11 +109,11 @@ export function LoginPage() {
         </div>
 
         {/* Feature tiles */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-3">
           {FEATURES.map(({ Icon, label, desc, color, bg }) => (
             <div
               key={label}
-              className="bg-card/70 flex flex-col gap-2.5 rounded-xl border p-3.5 backdrop-blur-sm"
+              className="bg-card/70 flex flex-row items-start gap-3 rounded-xl border p-3.5 backdrop-blur-sm min-[400px]:flex-col min-[400px]:gap-2.5"
             >
               <div
                 className={`flex size-7 items-center justify-center rounded-lg ${bg}`}

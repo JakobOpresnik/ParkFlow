@@ -83,7 +83,7 @@ export function PreferencesCard({
                 onChange={(v) => onPreferredLotChange(v ?? null)}
                 clearable
                 placeholder={t('profile.anyLot')}
-                className="w-36 text-xs"
+                className="min-w-28 text-xs"
                 data={lots.map((lot) => ({ value: lot.id, label: lot.name }))}
               />
             </PreferenceRow>

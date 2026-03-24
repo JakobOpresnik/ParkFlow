@@ -176,14 +176,14 @@ function SpotFilterBar({
       {lots.length > 0 && <div className="bg-border h-18 w-px shrink-0" />}
 
       {/* Search + Add — pinned to the right */}
-      <div className="ml-auto flex items-center gap-2">
-        <div className="relative">
+      <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
+        <div className="relative flex-1 sm:flex-none">
           <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
           <Input
             value={spotSearch}
             onChange={(e) => onSpotSearch(e.target.value)}
             placeholder={t('admin.searchSpots')}
-            className="h-8 w-44 pr-7 pl-8 text-sm"
+            className="h-8 w-full pr-7 pl-8 text-sm sm:w-44"
           />
           {spotSearch && (
             <button

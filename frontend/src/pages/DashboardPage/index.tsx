@@ -113,11 +113,11 @@ export function DashboardPage() {
       {isLoading ? (
         <div className="space-y-3">
           <div className="bg-muted h-24 animate-pulse rounded-xl border" />
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {([0, 1, 2] as const).map((k) => (
               <div
                 key={k}
-                className="bg-muted h-[88px] animate-pulse rounded-xl border"
+                className="bg-muted h-[72px] animate-pulse rounded-xl border sm:h-[88px]"
               />
             ))}
           </div>
@@ -130,7 +130,7 @@ export function DashboardPage() {
               <CheckCircle2 className="size-6 text-green-600 dark:text-green-400" />
             </div>
             <div className="min-w-0">
-              <p className="text-5xl leading-none font-bold tabular-nums">
+              <p className="text-4xl leading-none font-bold tabular-nums sm:text-5xl">
                 {totalFree}
               </p>
               <p className="mt-1.5 text-sm font-medium">
@@ -143,7 +143,7 @@ export function DashboardPage() {
           </div>
 
           {/* Supporting */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {supportingCards.map(
               ({ label, value, sub, Icon, iconColor, iconBg, cardClass }) => (
                 <div

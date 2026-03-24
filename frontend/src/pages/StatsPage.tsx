@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Select } from '@/components/ui/select'
+import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
 import { useLots } from '@/hooks/useLots'
-import { useSpots } from '@/hooks/useSpots'
 import type { SpotStatus } from '@/types'
 
 // — types —
@@ -92,7 +92,7 @@ function DonutChart({ segments, total }: DonutChartProps) {
   const slices = buildSlices(segments, total)
 
   return (
-    <svg viewBox="0 0 200 200" className="size-52 drop-shadow-sm">
+    <svg viewBox="0 0 200 200" className="size-44 drop-shadow-sm sm:size-52">
       {slices.map((slice) => {
         if (slice.count === 0) return null
         return (
@@ -158,7 +158,9 @@ function StatusProgressRow({ segment, total }: StatusProgressRowProps) {
 
 export function StatsPage() {
   const { t } = useTranslation()
-  const { data: allSpots = [], isLoading: isSpotsLoading } = useSpots()
+  const today = new Date().toISOString().slice(0, 10)
+  const { data: allSpots = [], isLoading: isSpotsLoading } =
+    useEffectiveSpots(today)
   const { data: lots = [], isLoading: isLotsLoading } = useLots()
   const [selectedLotId, setSelectedLotId] = useState<string>('__all__')
 
@@ -251,7 +253,7 @@ export function StatsPage() {
 
           {/* Chart + breakdown */}
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="bg-card flex flex-col items-center justify-center gap-4 rounded-lg border p-6 shadow-sm">
+            <div className="bg-card flex flex-col items-center justify-center gap-4 rounded-lg border p-4 shadow-sm sm:p-6">
               <p className="text-muted-foreground self-start text-sm font-medium">
                 {t('stats.distribution')}
               </p>
@@ -272,7 +274,7 @@ export function StatsPage() {
               </div>
             </div>
 
-            <div className="bg-card rounded-lg border p-6 shadow-sm">
+            <div className="bg-card rounded-lg border p-4 shadow-sm sm:p-6">
               <p className="text-muted-foreground mb-4 text-sm font-medium">
                 {t('stats.breakdown')}
               </p>

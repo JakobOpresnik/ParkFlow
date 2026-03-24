@@ -30,8 +30,8 @@ export function BookingRow({ booking }: BookingRowProps) {
     expired: t('bookings.statusExpired'),
   }
   return (
-    <div className="flex items-center justify-between gap-3 py-3">
-      <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-3">
+      <div className="flex min-w-0 items-center gap-3">
         <div className="bg-muted flex size-8 shrink-0 items-center justify-center rounded-md">
           <MapPin className="text-muted-foreground size-3.5" />
         </div>
