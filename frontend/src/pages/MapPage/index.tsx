@@ -1,3 +1,4 @@
+import { useComputedColorScheme } from '@mantine/core'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -30,18 +31,6 @@ interface GridContentProps {
 }
 
 // — constants —
-
-const BlueprintStyle: React.CSSProperties = {
-  backgroundColor: '#1e3a5f',
-  backgroundImage: [
-    'linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)',
-    'linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)',
-    'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)',
-    'linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
-  ].join(', '),
-  backgroundSize: '100px 100px, 100px 100px, 20px 20px, 20px 20px',
-  backgroundPosition: '-1px -1px, -1px -1px, -1px -1px, -1px -1px',
-}
 
 const SKELETON_SPOT_IDS = [
   's0',
@@ -84,6 +73,32 @@ function GridContent({ isLoading, lotSpots }: GridContentProps) {
 export function MapPage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<ParkingMapHandle>(null)
+  const colorScheme = useComputedColorScheme('light')
+  const isDark = colorScheme === 'dark'
+
+  const blueprintStyle: React.CSSProperties = isDark
+    ? {
+        backgroundColor: '#1e3a5f',
+        backgroundImage: [
+          'linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)',
+          'linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)',
+          'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)',
+          'linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
+        ].join(', '),
+        backgroundSize: '100px 100px, 100px 100px, 20px 20px, 20px 20px',
+        backgroundPosition: '-1px -1px, -1px -1px, -1px -1px, -1px -1px',
+      }
+    : {
+        backgroundColor: '#eef2f7',
+        backgroundImage: [
+          'linear-gradient(rgba(59,130,246,0.10) 1px, transparent 1px)',
+          'linear-gradient(90deg, rgba(59,130,246,0.10) 1px, transparent 1px)',
+          'linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px)',
+          'linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px)',
+        ].join(', '),
+        backgroundSize: '100px 100px, 100px 100px, 20px 20px, 20px 20px',
+        backgroundPosition: '-1px -1px, -1px -1px, -1px -1px, -1px -1px',
+      }
 
   const today = new Date().toISOString().slice(0, 10)
   const selectedDate = useUIStore((s) => s.selectedDate)
@@ -174,7 +189,7 @@ export function MapPage() {
     <div
       ref={containerRef}
       className={`relative h-full w-full overflow-hidden ${isMapMode ? '' : 'bg-muted/40'}`}
-      style={isMapMode ? BlueprintStyle : undefined}
+      style={isMapMode ? blueprintStyle : undefined}
     >
       {isMapMode && (
         <MapView
@@ -187,6 +202,7 @@ export function MapPage() {
           shouldBlurMap={shouldBlurMap}
           onSpotClick={handleSpotClick}
           mapRef={mapRef}
+          invertFloorPlan={isDark}
         />
       )}
 

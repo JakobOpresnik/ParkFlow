@@ -1,5 +1,7 @@
+import { useComputedColorScheme } from '@mantine/core'
 import { AlertCircle, MapPin } from 'lucide-react'
 import type { CSSProperties, RefObject } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import type { ParkingMapHandle } from '@/components/ParkingMap/ParkingMap'
 import { ParkingMap } from '@/components/ParkingMap/ParkingMap'
@@ -17,13 +19,7 @@ interface MapViewProps {
   readonly shouldBlurMap: boolean
   readonly onSpotClick: (spot: Spot) => void
   readonly mapRef: RefObject<ParkingMapHandle | null>
-}
-
-// — constants —
-
-const MapFrameStyle: CSSProperties = {
-  border: '1px solid rgba(255,255,255,0.18)',
-  boxShadow: '0 0 0 1px rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.5)',
+  readonly invertFloorPlan: boolean
 }
 
 // — main component —
@@ -38,7 +34,23 @@ export function MapView({
   shouldBlurMap,
   onSpotClick,
   mapRef,
+  invertFloorPlan,
 }: MapViewProps) {
+  const { t } = useTranslation()
+  const colorScheme = useComputedColorScheme('light')
+  const isDark = colorScheme === 'dark'
+
+  const mapFrameStyle: CSSProperties = isDark
+    ? {
+        border: '1px solid rgba(255,255,255,0.18)',
+        boxShadow:
+          '0 0 0 1px rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.5)',
+      }
+    : {
+        border: '1px solid rgba(0,0,0,0.1)',
+        boxShadow: '0 0 0 1px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.12)',
+      }
+
   const isMapEmpty = !isLoading && !isError && activeLot === null
 
   const mapAspectStyle: CSSProperties = {
@@ -60,32 +72,36 @@ export function MapView({
       >
         {isLoading && (
           <div className="flex h-full items-center justify-center">
-            <div className="size-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+            <div
+              className={`size-8 animate-spin rounded-full border-2 ${isDark ? 'border-white/20 border-t-white' : 'border-black/20 border-t-black/60'}`}
+            />
           </div>
         )}
 
         {isError && (
-          <div className="flex h-full flex-col items-center justify-center gap-3 text-white/70">
+          <div
+            className={`flex h-full flex-col items-center justify-center gap-3 ${isDark ? 'text-white/70' : 'text-black/50'}`}
+          >
             <AlertCircle className="size-8" />
-            <p className="text-sm">Could not load parking data</p>
-            <p className="text-xs opacity-60">
-              Check that the backend is running
-            </p>
+            <p className="text-sm">{t('map.errorLoadingData')}</p>
+            <p className="text-xs opacity-60">{t('map.checkBackend')}</p>
           </div>
         )}
 
         {isMapEmpty && (
-          <div className="flex h-full flex-col items-center justify-center gap-3 text-white/70">
+          <div
+            className={`flex h-full flex-col items-center justify-center gap-3 ${isDark ? 'text-white/70' : 'text-black/50'}`}
+          >
             <MapPin className="size-8" />
-            <p className="text-sm">No parking lots found</p>
-            <p className="text-xs opacity-60">Add a lot via the Admin page</p>
+            <p className="text-sm">{t('map.noLotsFound')}</p>
+            <p className="text-xs opacity-60">{t('map.addLotViaAdmin')}</p>
           </div>
         )}
 
         {!isLoading && !isError && activeLot && (
           <div
             className="absolute inset-0 overflow-hidden rounded-xl"
-            style={MapFrameStyle}
+            style={mapFrameStyle}
           >
             <ParkingMap
               key={activeLot.id}
@@ -95,7 +111,7 @@ export function MapView({
               selectedSpotId={selectedSpotId}
               highlightedSpotId={highlightedSpotId}
               onSpotClick={onSpotClick}
-              invertFloorPlan
+              invertFloorPlan={invertFloorPlan}
             />
           </div>
         )}
