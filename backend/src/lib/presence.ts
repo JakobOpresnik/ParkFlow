@@ -68,8 +68,8 @@ export async function fetchWeekPresence(
   targetDate: string,
 ): Promise<WeekPresenceResponse> {
   const days: string[] = getWeekDays(targetDate);
-  const from = days.at(0);
-  const to = days.at(-1);
+  const from = days[0];
+  const to = days[days.length - 1];
 
   if (!from || !to) {
     throw new Error(`Could not compute week range for date: ${targetDate}`);
@@ -96,11 +96,15 @@ export async function fetchWeekPresence(
     );
   }
 
-  const entries = (await response.json()) as TimesheetEntry[];
+  const raw = await response.json();
+  const entries = Array.isArray(raw) ? (raw as TimesheetEntry[]) : [];
+  if (!Array.isArray(raw)) {
+    console.error('Timesheet API returned unexpected shape:', raw);
+  }
 
   // Extract work-free days from the first employee's data (holidays are the same for everyone)
   const workFreeDays: string[] = [];
-  const firstEntry = entries.at(0);
+  const firstEntry = entries[0];
   if (firstEntry) {
     for (const d of firstEntry.data) {
       if (d.is_work_free_day) {
@@ -109,15 +113,20 @@ export async function fetchWeekPresence(
     }
   }
 
-  const employees = entries.map((entry: TimesheetEntry) => ({
-    user_id: entry.user_id,
-    name: entry.name,
-    week: entry.data.map((d: TimesheetDayEntry) => ({
-      date: d.date,
-      status: d.status,
-      is_work_free_day: d.is_work_free_day,
-    })),
-  }));
+  const employees = entries.map((entry: TimesheetEntry) => {
+    if (!Array.isArray(entry.data)) {
+      console.error(`Timesheet entry missing data array for user: ${entry.name}`);
+    }
+    return {
+      user_id: entry.user_id,
+      name: entry.name,
+      week: (entry.data ?? []).map((d: TimesheetDayEntry) => ({
+        date: d.date,
+        status: d.status,
+        is_work_free_day: d.is_work_free_day,
+      })),
+    };
+  });
 
   const result: WeekPresenceResponse = {
     employees,

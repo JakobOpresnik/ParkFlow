@@ -17,12 +17,22 @@ export function useOwnerParkingData(selectedDate: string, today: string) {
   const {
     data: owner,
     isLoading: isOwnerLoading,
+    isSuccess: isOwnerSuccess,
     error: ownerError,
   } = useOwnerMe()
-  const { data: spots = [], isLoading: isSpotsLoading } = useOwnerSpots()
+  const { data: spots = [], isLoading: isSpotsLoading } =
+    useOwnerSpots(isOwnerSuccess)
   const { data: presenceData } = usePresence(selectedDate)
-  const { data: weekBookings = [] } = useOwnerWeek(today, weekEnd)
-  const { data: overrides = [] } = useOwnerOverrides(today, weekEnd)
+  const { data: weekBookings = [] } = useOwnerWeek(
+    today,
+    weekEnd,
+    isOwnerSuccess,
+  )
+  const { data: overrides = [] } = useOwnerOverrides(
+    today,
+    weekEnd,
+    isOwnerSuccess,
+  )
   const { data: myBookings = [] } = useMyBookings()
 
   const ownedSpotIds = useMemo(() => new Set(spots.map((s) => s.id)), [spots])

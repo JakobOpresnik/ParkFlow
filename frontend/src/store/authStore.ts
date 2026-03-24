@@ -70,6 +70,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             : 'user',
         }
 
+        console.warn(
+          `[login] ${user.username} (${user.displayName}) — role: ${user.role}, groups: ${JSON.stringify(userinfo.groups ?? [])}`,
+        )
         set({ user, isLoading: false })
       } catch {
         localStorage.removeItem(ACCESS_TOKEN_KEY)

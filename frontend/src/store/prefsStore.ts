@@ -25,7 +25,7 @@ const DEFAULTS: UserPrefs = {
   notifyOnAvailability: false,
   preferredLotId: null,
   arrivalTime: '09:00',
-  reservationDuration: 8,
+  reservationDuration: 9,
 }
 
 function loadPrefs(): UserPrefs {
@@ -39,8 +39,11 @@ function loadPrefs(): UserPrefs {
         stored.notifyOnAvailability ?? DEFAULTS.notifyOnAvailability,
       preferredLotId: stored.preferredLotId ?? DEFAULTS.preferredLotId,
       arrivalTime: stored.arrivalTime ?? DEFAULTS.arrivalTime,
+      // Migrate old default of 8h → 9h; keep any other explicit user setting.
       reservationDuration:
-        stored.reservationDuration ?? DEFAULTS.reservationDuration,
+        stored.reservationDuration == null || stored.reservationDuration === 8
+          ? DEFAULTS.reservationDuration
+          : stored.reservationDuration,
     }
   } catch {
     return { ...DEFAULTS }
