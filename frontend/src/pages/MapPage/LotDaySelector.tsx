@@ -207,7 +207,7 @@ export function LotDaySelector({
               {/* First lot: full-width row */}
               {lots[0] && (
                 <button
-                  onClick={() => onLotSelect(lots[0])}
+                  onClick={() => onLotSelect(lots[0]!)}
                   className={`flex min-h-6 w-full items-center justify-center rounded-lg px-1.5 py-0.5 text-[9px] font-medium transition-colors sm:min-h-7 sm:px-2 sm:text-[10px] md:min-h-9 md:px-3 md:py-1 md:text-xs ${
                     isMapMode
                       ? activeLot?.id === lots[0].id
