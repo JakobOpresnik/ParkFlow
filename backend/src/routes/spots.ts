@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { pool } from "../db/pool.js";
+import { requireAdmin, requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -133,7 +134,7 @@ router.get("/:id/bookings", async (req, res, next) => {
 });
 
 // Admin: POST /api/spots — create a new spot
-router.post("/", async (req, res, next) => {
+router.post("/", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { number, label, lot_id, status, type } = req.body as {
       number?: number;
@@ -169,7 +170,7 @@ router.post("/", async (req, res, next) => {
 });
 
 // Admin: PUT /api/spots/:id — full update of a spot
-router.put("/:id", async (req, res, next) => {
+router.put("/:id", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { number, label, lot_id, status, type } = req.body as {
@@ -224,7 +225,7 @@ router.put("/:id", async (req, res, next) => {
 });
 
 // Admin: DELETE /api/spots/:id — delete a spot
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
@@ -242,7 +243,7 @@ router.delete("/:id", async (req, res, next) => {
 });
 
 // MAP-EDITOR: PATCH /api/spots/:id/coordinates — save or clear coordinates
-router.patch("/:id/coordinates", async (req, res, next) => {
+router.patch("/:id/coordinates", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { coordinates } = req.body as {
@@ -289,7 +290,7 @@ router.patch("/:id/coordinates", async (req, res, next) => {
 });
 
 // BE-3: PATCH /api/spots/:id/owner — assign or unassign owner
-router.patch("/:id/owner", async (req, res, next) => {
+router.patch("/:id/owner", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { owner_id } = req.body as { owner_id: string | null };
@@ -352,7 +353,7 @@ router.patch("/:id/owner", async (req, res, next) => {
 });
 
 // BE-4: PATCH /api/spots/:id/status — update status with enum validation
-router.patch("/:id/status", async (req, res, next) => {
+router.patch("/:id/status", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status } = req.body as { status: string };
@@ -405,7 +406,7 @@ router.patch("/:id/status", async (req, res, next) => {
 });
 
 // PATCH /api/spots/:id/type — update spot type with enum validation
-router.patch("/:id/type", async (req, res, next) => {
+router.patch("/:id/type", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { type } = req.body as { type: string };

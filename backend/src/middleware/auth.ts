@@ -1,4 +1,4 @@
-import type { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from 'express';
 
 export interface AuthPayload {
   userId: string;
@@ -18,8 +18,11 @@ declare global {
 
 const USERINFO_URL =
   process.env.AUTHENTIK_USERINFO_URL ??
-  "https://sso.matheo.si/application/o/userinfo/";
-const ADMIN_GROUP = process.env.AUTHENTIK_ADMIN_GROUP ?? "parkflow-admins";
+  'https://sso.matheo.si/application/o/userinfo/';
+const ADMIN_GROUP = process.env.AUTHENTIK_ADMIN_GROUP ?? 'parkflow-admins';
+
+// Track users seen since last server start to log only on first request
+const seenUsers = new Set<string>();
 
 export async function requireAuth(
   req: Request,
@@ -27,8 +30,8 @@ export async function requireAuth(
   next: NextFunction,
 ): Promise<void> {
   const header = req.headers.authorization;
-  if (!header?.startsWith("Bearer ")) {
-    res.status(401).json({ error: "Authentication required" });
+  if (!header?.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Authentication required' });
     return;
   }
 
@@ -38,7 +41,7 @@ export async function requireAuth(
     });
 
     if (!userinfoRes.ok) {
-      res.status(401).json({ error: "Invalid or expired token" });
+      res.status(401).json({ error: 'Invalid or expired token' });
       return;
     }
 
@@ -49,15 +52,23 @@ export async function requireAuth(
       groups?: string[];
     };
 
+    const role = userinfo.groups?.includes(ADMIN_GROUP) ? 'admin' : 'user';
     req.user = {
       userId: userinfo.sub,
       username: userinfo.preferred_username ?? userinfo.sub,
       displayName: userinfo.name ?? userinfo.preferred_username ?? userinfo.sub,
-      role: userinfo.groups?.includes(ADMIN_GROUP) ? "admin" : "user",
+      role,
     };
+
+    if (!seenUsers.has(req.user.userId)) {
+      seenUsers.add(req.user.userId);
+      console.log(
+        `[login] ${req.user.username} (${req.user.displayName}) — role: ${role}, groups: ${JSON.stringify(userinfo.groups ?? [])}`,
+      );
+    }
 
     next();
   } catch {
-    res.status(401).json({ error: "Token validation failed" });
+    res.status(401).json({ error: 'Token validation failed' });
   }
 }

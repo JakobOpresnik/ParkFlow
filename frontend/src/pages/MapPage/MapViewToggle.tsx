@@ -18,7 +18,7 @@ export function MapViewToggle({
 }: MapViewToggleProps) {
   const { t } = useTranslation()
   return (
-    <div className="absolute top-3 right-8 z-20">
+    <div className="absolute top-3 right-3 z-20">
       <div
         className={`flex gap-0.5 rounded-xl p-1 ${
           isMapMode

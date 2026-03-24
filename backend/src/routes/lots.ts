@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { pool } from "../db/pool.js";
+import { requireAdmin, requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -17,7 +18,7 @@ router.get("/", async (_req, res, next) => {
 });
 
 // POST /api/lots — create a parking lot
-router.post("/", async (req, res, next) => {
+router.post("/", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const {
       name,
@@ -59,7 +60,7 @@ router.post("/", async (req, res, next) => {
 });
 
 // PUT /api/lots/:id — update a parking lot
-router.put("/:id", async (req, res, next) => {
+router.put("/:id", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const {
@@ -109,7 +110,7 @@ router.put("/:id", async (req, res, next) => {
 });
 
 // DELETE /api/lots/:id — delete a parking lot (only if empty)
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
 

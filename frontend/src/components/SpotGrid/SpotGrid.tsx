@@ -1,4 +1,5 @@
 import { Accessibility, Car, Clock, Crown, User, Zap } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { ReservationTimer } from '@/components/ReservationTimer'
 import { useAuthStore } from '@/store/authStore'
@@ -12,7 +13,6 @@ interface StatusConfigDetails {
   accent: string
   badgeText: string
   badgeBg: string
-  label: string
 }
 
 interface ClockRowProps {
@@ -42,19 +42,16 @@ const STATUS_CONFIG: Record<SpotStatus, StatusConfigDetails> = {
     accent: 'bg-spot-free',
     badgeText: 'text-spot-free',
     badgeBg: 'bg-spot-free/15',
-    label: 'Free',
   },
   occupied: {
     accent: 'bg-spot-occupied',
     badgeText: 'text-spot-occupied',
     badgeBg: 'bg-spot-occupied/15',
-    label: 'Occupied',
   },
   reserved: {
     accent: 'bg-spot-reserved',
     badgeText: 'text-spot-reserved',
     badgeBg: 'bg-spot-reserved/15',
-    label: 'Reserved',
   },
 }
 
@@ -70,8 +67,13 @@ function ClockRow({ children, className }: ClockRowProps) {
 }
 
 function OwnerNameRows({ spot }: { readonly spot: Spot }) {
+  const { t } = useTranslation()
   if (!spot.owner_name) {
-    return <p className="text-muted-foreground text-xs italic">Unassigned</p>
+    return (
+      <p className="text-muted-foreground text-xs italic">
+        {t('spotModal.unassigned')}
+      </p>
+    )
   }
 
   return (
@@ -86,7 +88,11 @@ function OwnerNameRows({ spot }: { readonly spot: Spot }) {
             className={`text-xs ${isInOffice ? 'text-spot-occupied font-medium' : 'text-muted-foreground'}`}
           >
             {name.trim()}
-            {isInOffice && <span className="ml-1 opacity-70">· in office</span>}
+            {isInOffice && (
+              <span className="ml-1 opacity-70">
+                · {t('spotModal.inOffice')}
+              </span>
+            )}
           </p>
         )
       })}
@@ -95,6 +101,7 @@ function OwnerNameRows({ spot }: { readonly spot: Spot }) {
 }
 
 function OwnerList({ spot, isMySpot, ownerVehiclePlate }: OwnerListProps) {
+  const { t } = useTranslation()
   const isReservedByOther =
     spot.status === 'reserved' &&
     spot.active_booking_reserved_by &&
@@ -107,7 +114,9 @@ function OwnerList({ spot, isMySpot, ownerVehiclePlate }: OwnerListProps) {
     <div className="min-w-0">
       {isMySpot ? (
         <>
-          <p className="text-spot-reserved text-xs font-medium">You</p>
+          <p className="text-spot-reserved text-xs font-medium">
+            {t('spotModal.you')}
+          </p>
           {ownerVehiclePlate && (
             <p className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
               <Car className="size-3 shrink-0" />
@@ -135,15 +144,34 @@ function OwnerList({ spot, isMySpot, ownerVehiclePlate }: OwnerListProps) {
 }
 
 function SpotCard({ spot, onClick }: SpotCardProps) {
-  const currentUsername = useAuthStore((s) => s.user?.username)
+  const { t } = useTranslation()
+  const currentUser = useAuthStore((s) => s.user)
 
-  const isMySpot = !!currentUsername && spot.owner_user_id === currentUsername
-  const displayStatus: SpotStatus =
-    isMySpot && spot.status === 'occupied' ? 'reserved' : spot.status
+  const STATUS_LABELS: Record<SpotStatus, string> = {
+    free: t('map.free'),
+    occupied: t('map.occupied'),
+    reserved: t('map.reserved'),
+  }
+
+  const isMySpot = !!currentUser && spot.owner_user_id === currentUser.username
+  const isMyBooking =
+    !!currentUser && spot.active_booking_user_id === currentUser.id
+  // Own spot occupied via presence or override (no booking) → show as reserved (yellow)
+  const isMyOwnOccupation =
+    isMySpot &&
+    (spot.status === 'occupied' ||
+      (spot.status === 'reserved' && spot.active_booking_id == null))
+  const displayStatus: SpotStatus = isMyOwnOccupation
+    ? 'reserved'
+    : spot.status === 'reserved' && !isMyBooking
+      ? 'occupied'
+      : spot.status
   const config = STATUS_CONFIG[displayStatus]
 
   const badgeLabel =
-    isMySpot && spot.status === 'occupied' ? 'Your Spot' : config.label
+    isMySpot && displayStatus === 'reserved'
+      ? t('spotModal.yourSpot')
+      : STATUS_LABELS[displayStatus]
 
   return (
     <button
@@ -159,7 +187,7 @@ function SpotCard({ spot, onClick }: SpotCardProps) {
         <div>
           <div className="mb-0.5 flex items-center gap-1.5">
             <p className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">
-              Spot
+              {t('map.spotLabel')}
             </p>
             {spot.type === 'ev' && <Zap className="size-3 text-yellow-500" />}
             {spot.type === 'handicap' && (
@@ -209,8 +237,12 @@ export function SpotGrid({ spots }: SpotGridProps) {
     setSpotModalOpen(true)
   }
 
+  const { t } = useTranslation()
+
   if (spots.length === 0) {
-    return <p className="text-muted-foreground text-sm">No spots found.</p>
+    return (
+      <p className="text-muted-foreground text-sm">{t('map.noSpotsFound')}</p>
+    )
   }
 
   return (

@@ -12,14 +12,16 @@ interface ActivityFeedProps {
 
 // — helpers —
 
-function formatRelativeTime(iso: string): string {
+type TFunc = (key: string, opts?: Record<string, unknown>) => string
+
+function formatRelativeTime(iso: string, t: TFunc): string {
   const ms = Date.now() - new Date(iso).getTime()
   const mins = Math.floor(ms / 60_000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
+  if (mins < 1) return t('dashboard.justNow')
+  if (mins < 60) return t('dashboard.minutesAgo', { m: mins })
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h ago`
-  return `${Math.floor(hours / 24)}d ago`
+  if (hours < 24) return t('dashboard.hoursAgo', { h: hours })
+  return t('dashboard.daysAgo', { d: Math.floor(hours / 24) })
 }
 
 function formatAbsoluteTime(iso: string): string {
@@ -47,11 +49,13 @@ function getChangeDotClass(
 function getChangeDescription(
   changeType: SpotChangeType,
   newValue: string | null,
-  ownerRemovedLabel: string,
+  t: TFunc,
 ): string {
-  if (changeType === 'status_changed' && newValue) return `→ ${newValue}`
-  if (changeType === 'owner_assigned' && newValue) return `owner → ${newValue}`
-  if (changeType === 'owner_unassigned') return ownerRemovedLabel
+  if (changeType === 'status_changed' && newValue)
+    return t('dashboard.statusChangedTo', { status: newValue })
+  if (changeType === 'owner_assigned' && newValue)
+    return t('dashboard.ownerAssigned', { name: newValue })
+  if (changeType === 'owner_unassigned') return t('dashboard.ownerRemoved')
   return changeType.replace(/_/g, ' ')
 }
 
@@ -109,7 +113,7 @@ export function ActivityFeed({ changes, isLoading }: ActivityFeedProps) {
                     {getChangeDescription(
                       change.change_type,
                       change.new_value,
-                      t('dashboard.ownerRemoved'),
+                      t as TFunc,
                     )}
                   </span>
                 </div>
@@ -118,7 +122,7 @@ export function ActivityFeed({ changes, isLoading }: ActivityFeedProps) {
                 className="text-muted-foreground mt-0.5 shrink-0 text-xs whitespace-nowrap"
                 title={formatAbsoluteTime(change.changed_at)}
               >
-                {formatRelativeTime(change.changed_at)}
+                {formatRelativeTime(change.changed_at, t as TFunc)}
               </time>
             </div>
           ))}

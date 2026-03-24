@@ -1,4 +1,4 @@
-import { Hash, ShieldCheck, User } from 'lucide-react'
+import { ShieldCheck, User } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Badge } from '@/components/ui/badge'
@@ -47,10 +47,6 @@ export function UserProfileCard({
             <span className="flex items-center gap-1.5">
               <User className="size-3.5" />
               {user.username}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Hash className="size-3.5" />
-              <span className="font-mono text-xs">{user.id}</span>
             </span>
           </div>
         </div>

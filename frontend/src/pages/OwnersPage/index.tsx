@@ -96,21 +96,21 @@ export function OwnersPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold">{t('owners.title')}</h1>
           <p className="text-muted-foreground mt-0.5 text-sm">
             {t('owners.subtitle')}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        <div className="flex items-center gap-2 sm:shrink-0">
+          <div className="relative flex-1 sm:flex-none">
             <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
             <Input
               value={ownerSearch}
               onChange={(e) => setOwnerSearch(e.target.value)}
               placeholder={t('owners.searchOwners')}
-              className="h-8 w-52 pr-7 pl-8 text-sm"
+              className="h-8 w-full pr-7 pl-8 text-sm sm:w-52"
             />
             {ownerSearch && (
               <button
@@ -122,7 +122,7 @@ export function OwnersPage() {
               </button>
             )}
           </div>
-          <Button size="sm" onClick={openAdd} className="gap-2">
+          <Button size="sm" onClick={openAdd} className="shrink-0 gap-2">
             <Plus className="size-4" />
             {t('owners.addOwner')}
           </Button>

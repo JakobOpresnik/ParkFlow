@@ -114,7 +114,7 @@ export function SpotCard({
       )}
 
       {/* Actions */}
-      <div className="flex gap-2 border-t p-3">
+      <div className="flex flex-wrap gap-2 border-t p-3">
         {status === 'occupied' && (
           <Button
             onClick={() => onSetDayStatus('free')}

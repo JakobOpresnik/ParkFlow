@@ -109,40 +109,44 @@ export function Layout({ children, noPadding }: LayoutProps) {
             </Link>
           ))}
 
-          {/* Admin dropdown */}
-          <button
-            onClick={() => setAdminOpen((o) => !o)}
-            title={t('nav.admin')}
-            className={`${linkClass} w-full cursor-pointer ${isAdminSection ? activeLinkClass : ''}`}
-          >
-            <Settings className="size-4 shrink-0" />
-            <span className="hidden flex-1 text-left sm:block">
-              {t('nav.admin')}
-            </span>
-            {/* Mobile: dot indicator when section active */}
-            {isAdminSection && (
-              <span className="bg-primary ml-auto size-1.5 shrink-0 rounded-full sm:hidden" />
-            )}
-            <ChevronDown
-              className={`hidden size-3.5 shrink-0 transition-transform sm:block ${adminOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
+          {/* Admin dropdown — only visible to admins */}
+          {user?.role === 'admin' && (
+            <>
+              <button
+                onClick={() => setAdminOpen((o) => !o)}
+                title={t('nav.admin')}
+                className={`${linkClass} w-full cursor-pointer ${isAdminSection ? activeLinkClass : ''}`}
+              >
+                <Settings className="size-4 shrink-0" />
+                <span className="hidden flex-1 text-left sm:block">
+                  {t('nav.admin')}
+                </span>
+                {/* Mobile: dot indicator when section active */}
+                {isAdminSection && (
+                  <span className="bg-primary ml-auto size-1.5 shrink-0 rounded-full sm:hidden" />
+                )}
+                <ChevronDown
+                  className={`hidden size-3.5 shrink-0 transition-transform sm:block ${adminOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
 
-          {adminOpen && (
-            <div className="ml-2 flex flex-col gap-0.5 sm:ml-3">
-              {adminSubItems.map(({ to, label, Icon }) => (
-                <Link
-                  key={to}
-                  to={to}
-                  title={label}
-                  className={`${linkClass} sm:pl-4`}
-                  activeProps={{ className: activeLinkClass }}
-                >
-                  <Icon className="size-3.5 shrink-0" />
-                  <span className="hidden sm:block">{label}</span>
-                </Link>
-              ))}
-            </div>
+              {adminOpen && (
+                <div className="ml-2 flex flex-col gap-0.5 sm:ml-3">
+                  {adminSubItems.map(({ to, label, Icon }) => (
+                    <Link
+                      key={to}
+                      to={to}
+                      title={label}
+                      className={`${linkClass} sm:pl-4`}
+                      activeProps={{ className: activeLinkClass }}
+                    >
+                      <Icon className="size-3.5 shrink-0" />
+                      <span className="hidden sm:block">{label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </nav>
 
@@ -159,7 +163,7 @@ export function Layout({ children, noPadding }: LayoutProps) {
                 <p className="text-muted-foreground text-xs">{user.username}</p>
               </Link>
               <div
-                className="flex items-center justify-between"
+                className="flex flex-col items-center gap-0.5 sm:flex-row sm:justify-between"
                 title={`${user.displayName} (${user.username})`}
               >
                 <Link
@@ -170,7 +174,12 @@ export function Layout({ children, noPadding }: LayoutProps) {
                   <User className="size-4" />
                 </Link>
                 <ThemeToggle />
-                <LanguageSwitcher />
+                <span className="sm:hidden">
+                  <LanguageSwitcher compact />
+                </span>
+                <span className="hidden sm:block">
+                  <LanguageSwitcher />
+                </span>
                 <Button
                   variant="ghost"
                   size="icon"

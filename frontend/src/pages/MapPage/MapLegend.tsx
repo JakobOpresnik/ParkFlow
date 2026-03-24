@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 export function MapLegend() {
   const { t } = useTranslation()
   return (
-    <div className="flex flex-wrap items-center gap-3 text-xs text-white/70">
+    <div className="text-muted-foreground flex flex-wrap items-center gap-3 text-xs">
       <span className="flex items-center gap-1.5">
         <span className="bg-spot-free size-2.5 rounded-sm" />
         {t('map.free')}

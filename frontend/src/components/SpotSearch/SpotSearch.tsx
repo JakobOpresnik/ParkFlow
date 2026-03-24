@@ -1,4 +1,5 @@
 import { MapPin, Search } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -8,9 +9,8 @@ import { useSpotSearch } from './useSpotSearch'
 
 // — types —
 
-interface StatusConfigDetails {
+interface StatusBadgeClass {
   badge: string
-  label: string
 }
 
 interface SpotResultProps {
@@ -20,22 +20,22 @@ interface SpotResultProps {
 
 // — constants —
 
-const STATUS_CONFIG: Record<SpotStatus, StatusConfigDetails> = {
-  free: { badge: 'bg-spot-free text-white border-transparent', label: 'Free' },
-  occupied: {
-    badge: 'bg-spot-occupied text-white border-transparent',
-    label: 'Occupied',
-  },
-  reserved: {
-    badge: 'bg-spot-reserved text-white border-transparent',
-    label: 'Reserved',
-  },
+const STATUS_BADGE: Record<SpotStatus, StatusBadgeClass> = {
+  free: { badge: 'bg-spot-free text-white border-transparent' },
+  occupied: { badge: 'bg-spot-occupied text-white border-transparent' },
+  reserved: { badge: 'bg-spot-reserved text-white border-transparent' },
 }
 
 // — sub-components —
 
 function SpotResult({ spot, onClick }: SpotResultProps) {
-  const config = STATUS_CONFIG[spot.status]
+  const { t } = useTranslation()
+  const STATUS_LABELS: Record<SpotStatus, string> = {
+    free: t('map.free'),
+    occupied: t('map.occupied'),
+    reserved: t('map.reserved'),
+  }
+  const config = STATUS_BADGE[spot.status]
 
   return (
     <button
@@ -51,7 +51,7 @@ function SpotResult({ spot, onClick }: SpotResultProps) {
         </span>
       )}
       <Badge className={`ml-auto shrink-0 ${config.badge}`}>
-        {config.label}
+        {STATUS_LABELS[spot.status]}
       </Badge>
     </button>
   )
@@ -60,6 +60,7 @@ function SpotResult({ spot, onClick }: SpotResultProps) {
 // — main component —
 
 export function SpotSearch() {
+  const { t } = useTranslation()
   const { query, found, handleChange, handleResultClick } = useSpotSearch()
 
   return (
@@ -69,7 +70,7 @@ export function SpotSearch() {
         <Input
           className="pl-9"
           type="number"
-          placeholder="Search by spot number…"
+          placeholder={t('map.searchByNumber')}
           value={query}
           onChange={(e) => handleChange(e.target.value)}
           min={1}
@@ -81,7 +82,7 @@ export function SpotSearch() {
           <SpotResult spot={found} onClick={() => handleResultClick(found)} />
         ) : (
           <p className="text-muted-foreground px-1 text-sm">
-            No spot found for number {query}.
+            {t('map.noSpotFound', { query })}
           </p>
         ))}
     </div>

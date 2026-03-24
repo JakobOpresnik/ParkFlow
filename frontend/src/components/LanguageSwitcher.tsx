@@ -5,8 +5,31 @@ const LANGUAGES = [
   { code: 'sl', flag: '/slovenia.svg', label: 'Slovenščina' },
 ] as const
 
-export function LanguageSwitcher() {
+interface LanguageSwitcherProps {
+  readonly compact?: boolean
+}
+
+export function LanguageSwitcher({ compact = false }: LanguageSwitcherProps) {
   const { i18n } = useTranslation()
+
+  if (compact) {
+    const inactive = LANGUAGES.find((l) => l.code !== i18n.language)
+    if (!inactive) return null
+    return (
+      <button
+        onClick={() => void i18n.changeLanguage(inactive.code)}
+        title={inactive.label}
+        aria-label={inactive.label}
+        className="flex size-7 cursor-pointer items-center justify-center rounded opacity-60 transition-all hover:opacity-100"
+      >
+        <img
+          src={inactive.flag}
+          alt={inactive.label}
+          className="size-4 rounded-[2px]"
+        />
+      </button>
+    )
+  }
 
   return (
     <div className="flex items-center gap-1">

@@ -16,10 +16,10 @@ export function PreferenceRow({
   children,
 }: PreferenceRowProps) {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+      <div className="flex min-w-0 items-center gap-3">
         <Icon className="text-muted-foreground size-4 shrink-0" />
-        <div>
+        <div className="min-w-0">
           <p className="text-sm font-medium">{title}</p>
           <p className="text-muted-foreground text-xs">{description}</p>
         </div>

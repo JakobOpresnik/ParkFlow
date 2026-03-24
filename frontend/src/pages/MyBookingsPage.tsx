@@ -74,7 +74,7 @@ function BookingCard({ booking }: BookingCardProps) {
         booking.status === 'active' ? 'border-l-spot-free border-l-4' : ''
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-xl font-bold">#{booking.spot_number}</span>
@@ -125,7 +125,7 @@ function BookingCard({ booking }: BookingCardProps) {
           <Button
             size="sm"
             variant="ghost"
-            className="text-destructive hover:text-destructive shrink-0 gap-2"
+            className="text-destructive hover:text-destructive w-full gap-2 sm:w-auto sm:shrink-0"
             disabled={cancelBooking.isPending}
             onClick={handleCancel}
           >

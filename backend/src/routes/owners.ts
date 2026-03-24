@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import { pool } from "../db/pool.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAdmin, requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -198,7 +198,7 @@ router.put("/me/spots/:spotId/day-status", requireAuth, async (req, res, next) =
 });
 
 // PATCH /api/owners/:id/link — admin links an owner to an SSO username
-router.patch("/:id/link", async (req, res, next) => {
+router.patch("/:id/link", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { username } = req.body as { username: string | null };
@@ -218,7 +218,7 @@ router.patch("/:id/link", async (req, res, next) => {
 });
 
 // BE-5: GET /api/owners — list all owners ordered by name
-router.get("/", async (_req, res, next) => {
+router.get("/", requireAuth, requireAdmin, async (_req, res, next) => {
   try {
     const result = await pool.query("SELECT * FROM owners ORDER BY name");
     res.json(result.rows);
@@ -228,7 +228,7 @@ router.get("/", async (_req, res, next) => {
 });
 
 // BE-6: POST /api/owners — create new owner, validate required name
-router.post("/", async (req, res, next) => {
+router.post("/", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { name, email, phone, vehicle_plate, notes, user_id } = req.body as {
       name: string;
@@ -267,7 +267,7 @@ router.post("/", async (req, res, next) => {
 });
 
 // BE-7: PUT /api/owners/:id — update owner data
-router.put("/:id", async (req, res, next) => {
+router.put("/:id", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, email, phone, vehicle_plate, notes, user_id } = req.body as {
@@ -296,8 +296,8 @@ router.put("/:id", async (req, res, next) => {
         phone         = COALESCE($3, phone),
         vehicle_plate = COALESCE($4, vehicle_plate),
         notes         = COALESCE($5, notes),
-        user_id       = $6
-      WHERE id = $7
+        user_id       = CASE WHEN $6 THEN $7 ELSE user_id END
+      WHERE id = $8
       RETURNING *
     `,
       [
@@ -306,7 +306,8 @@ router.put("/:id", async (req, res, next) => {
         phone ?? null,
         vehicle_plate ?? null,
         notes ?? null,
-        user_id !== undefined ? (user_id?.trim() || null) : null,
+        user_id !== undefined,                          // $6: whether to update user_id
+        user_id !== undefined ? (user_id?.trim() || null) : null, // $7: new value
         id,
       ],
     );
@@ -323,7 +324,7 @@ router.put("/:id", async (req, res, next) => {
 });
 
 // BE-8: DELETE /api/owners/:id — delete owner (spot owner_id becomes null via FK)
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
 

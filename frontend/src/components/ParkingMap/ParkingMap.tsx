@@ -1,4 +1,5 @@
 import { forwardRef, useImperativeHandle } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { useAuthStore } from '@/store/authStore'
 import type { ParkingLot, Spot, SpotCoordinates, SpotStatus } from '@/types'
@@ -123,15 +124,25 @@ function SpotOverlay({
   isHighlighted,
   onClick,
 }: SpotOverlayProps) {
-  const currentUsername = useAuthStore((s) => s.user?.username)
+  const currentUser = useAuthStore((s) => s.user)
   const coords = resolveCoords(spot.coordinates, imageWidth, imageHeight)
   const { x, y, width, height, rotation } = coords
   const cx = x + width / 2
   const cy = y + height / 2
 
-  const isMySpot = !!currentUsername && spot.owner_user_id === currentUsername
-  const displayStatus: SpotStatus =
-    isMySpot && spot.status === 'occupied' ? 'reserved' : spot.status
+  const isMySpot = !!currentUser && spot.owner_user_id === currentUser.username
+  const isMyBooking =
+    !!currentUser && spot.active_booking_user_id === currentUser.id
+  // Own spot occupied via presence or override (no booking) → show as reserved (yellow)
+  const isMyOwnOccupation =
+    isMySpot &&
+    (spot.status === 'occupied' ||
+      (spot.status === 'reserved' && spot.active_booking_id == null))
+  const displayStatus: SpotStatus = isMyOwnOccupation
+    ? 'reserved'
+    : spot.status === 'reserved' && !isMyBooking
+      ? 'occupied'
+      : spot.status
 
   const config = StatusConfig[displayStatus]
   const fill = config.fill
@@ -230,6 +241,7 @@ export const ParkingMap = forwardRef<ParkingMapHandle, ParkingMapProps>(
     },
     ref,
   ) {
+    const { t } = useTranslation()
     const {
       containerRef,
       view,
@@ -313,7 +325,9 @@ export const ParkingMap = forwardRef<ParkingMapHandle, ParkingMapProps>(
         {/* Unmapped spots notice */}
         {spotsWithCoords.length < spots.length && (
           <div className="absolute bottom-3 left-3 rounded px-2 py-1 text-xs text-amber-300 backdrop-blur-sm">
-            {spots.length - spotsWithCoords.length} spot(s) unmapped
+            {t('map.spotsUnmapped', {
+              count: spots.length - spotsWithCoords.length,
+            })}
           </div>
         )}
       </div>

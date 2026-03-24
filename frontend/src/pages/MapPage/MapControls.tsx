@@ -7,6 +7,7 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import type { RefObject } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import type { ParkingMapHandle } from '@/components/ParkingMap/ParkingMap'
 
@@ -31,32 +32,36 @@ export function MapControls({
   isFullscreen,
   onToggleFullscreen,
 }: MapControlsProps) {
+  const { t } = useTranslation()
   return (
     <div className="absolute right-3 bottom-3 z-20 flex flex-col gap-2">
       <div className="rounded-xl bg-black/40 p-1 backdrop-blur-sm">
         <OverlayButton
           onClick={onSidebarToggle}
-          title="Toggle sidebar"
+          title={t('map.toggleSidebar')}
           active={sidebarOpen}
         >
           <PanelRight className="size-5" />
         </OverlayButton>
       </div>
       <div className="flex flex-col rounded-xl bg-black/40 p-1 backdrop-blur-sm">
-        <OverlayButton onClick={() => mapRef.current?.zoomIn()} title="Zoom in">
+        <OverlayButton
+          onClick={() => mapRef.current?.zoomIn()}
+          title={t('map.zoomIn')}
+        >
           <Plus className="size-5" />
         </OverlayButton>
         <div className="mx-1 h-px bg-white/20" />
         <OverlayButton
           onClick={() => mapRef.current?.zoomOut()}
-          title="Zoom out"
+          title={t('map.zoomOut')}
         >
           <Minus className="size-5" />
         </OverlayButton>
         <div className="mx-1 h-px bg-white/20" />
         <OverlayButton
           onClick={() => mapRef.current?.resetZoom()}
-          title="Reset zoom"
+          title={t('map.resetZoom')}
         >
           <RotateCcw className="size-4" />
         </OverlayButton>
@@ -64,7 +69,7 @@ export function MapControls({
       <div className="rounded-xl bg-black/40 p-1 backdrop-blur-sm">
         <OverlayButton
           onClick={onToggleFullscreen}
-          title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+          title={isFullscreen ? t('map.exitFullscreen') : t('map.fullscreen')}
         >
           {isFullscreen ? (
             <Minimize2 className="size-5" />

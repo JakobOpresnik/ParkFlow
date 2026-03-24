@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 
 import { usePresence } from '@/hooks/usePresence'
 import { useSpotDayOverrides, useSpots } from '@/hooks/useSpots'
-import type { Spot } from '@/types'
+import type { Spot, SpotStatus } from '@/types'
 
 /**
  * Returns all spots with effective status for a given date.
@@ -68,10 +68,14 @@ export function useEffectiveSpots(date: string) {
       // Manually reserved today with no booking → preserve reserved.
       if (spot.status === 'reserved' && isToday && hasNoBooking) return spot
 
-      // 2. Manual override → authoritative
+      // 2. Manual override → authoritative.
+      // Treat 'occupied' overrides as 'reserved' so owner self-occupation
+      // registers as a reservation in Stats/Dashboard counts.
       const override = overrideBySpot.get(spot.id)
       if (override) {
-        return { ...spot, status: override }
+        const status: SpotStatus =
+          override === 'occupied' ? 'reserved' : override
+        return { ...spot, status }
       }
 
       // Support shared spots: owner_name may be "Name1 / Name2"
