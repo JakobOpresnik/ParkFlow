@@ -386,7 +386,7 @@ const en = {
     rectRotation: 'Rect rotation',
     reset: 'Reset',
     delete: 'Delete',
-    savingStatus: 'Saving…',
+    savingStatus: 'Saving',
     savedStatus: '✓ Saved',
     coordinatesSaved: 'Coordinates saved',
     coordinatesRemoved: 'Coordinates removed',

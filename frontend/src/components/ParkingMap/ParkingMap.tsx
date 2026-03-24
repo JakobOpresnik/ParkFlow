@@ -197,7 +197,7 @@ function SpotOverlay({
           labelRot ? `rotate(${labelRot}, ${tp.x}, ${tp.y})` : undefined
         }
       >
-        {spot.number}
+        {spot.label ?? spot.number}
       </text>
       {(spot.type === 'ev' || spot.type === 'handicap') && (
         <SpotTypeIndicator

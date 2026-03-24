@@ -392,7 +392,7 @@ const sl = {
     rectRotation: 'Zasuk pravokotnika',
     reset: 'Ponastavi',
     delete: 'Izbriši',
-    savingStatus: 'Shranjevanje…',
+    savingStatus: 'Shranjevanje',
     savedStatus: '✓ Shranjeno',
     coordinatesSaved: 'Koordinate shranjene',
     coordinatesRemoved: 'Koordinate odstranjene',

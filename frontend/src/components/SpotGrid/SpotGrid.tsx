@@ -195,10 +195,12 @@ function SpotCard({ spot, onClick }: SpotCardProps) {
             )}
           </div>
           <p className="text-2xl leading-none font-bold tracking-tight">
-            #{spot.number}
+            {spot.label ?? `#${spot.number}`}
           </p>
           {spot.label && (
-            <p className="text-muted-foreground mt-0.5 text-xs">{spot.label}</p>
+            <p className="text-muted-foreground mt-0.5 text-xs">
+              #{spot.number}
+            </p>
           )}
         </div>
         <div className="mt-1 flex items-center gap-1">
