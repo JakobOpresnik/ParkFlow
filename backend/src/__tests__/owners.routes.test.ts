@@ -10,6 +10,16 @@ vi.mock("../db/pool.js", () => ({
   },
 }));
 
+vi.mock("../middleware/auth.js", () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  requireAuth: (req: any, _res: any, next: any) => {
+    req.user = { userId: "test-user", username: "admin", role: "admin" };
+    next();
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  requireAdmin: (_req: any, _res: any, next: any) => next(),
+}));
+
 const { pool } = await import("../db/pool.js");
 const mockQuery = pool.query as ReturnType<typeof vi.fn>;
 
