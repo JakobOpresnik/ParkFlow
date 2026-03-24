@@ -118,7 +118,7 @@ export function Layout({ children, noPadding }: LayoutProps) {
                 className={`${linkClass} w-full cursor-pointer ${isAdminSection ? activeLinkClass : ''}`}
               >
                 <Settings className="size-4 shrink-0" />
-                <span className="hidden flex-1 text-left sm:block">
+                <span className="hidden flex-1 text-left text-sm sm:block">
                   {t('nav.admin')}
                 </span>
                 {/* Mobile: dot indicator when section active */}
@@ -140,7 +140,7 @@ export function Layout({ children, noPadding }: LayoutProps) {
                       className={`${linkClass} sm:pl-4`}
                       activeProps={{ className: activeLinkClass }}
                     >
-                      <Icon className="size-3.5 shrink-0" />
+                      <Icon className="size-4 shrink-0" />
                       <span className="hidden sm:block">{label}</span>
                     </Link>
                   ))}

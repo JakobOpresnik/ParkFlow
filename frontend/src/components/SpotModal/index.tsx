@@ -120,11 +120,11 @@ export function SpotModal() {
           </p>
           <div className="min-w-0">
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              #{spot.number}
+              {spot.label ?? `#${spot.number}`}
             </h2>
             {spot.label && (
-              <p className="text-muted-foreground mt-0.5 truncate text-sm">
-                {spot.label}
+              <p className="text-muted-foreground mt-0.5 truncate text-lg">
+                #{spot.number}
               </p>
             )}
           </div>
