@@ -8,6 +8,8 @@ import { oauthConfig } from '@/lib/oauth'
 import { useAuthStore } from '@/store/authStore'
 import type { AppUser } from '@/types'
 
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
+
 export function CallbackPage() {
   const navigate = useNavigate()
   const { t } = useTranslation()
@@ -39,58 +41,41 @@ export function CallbackPage() {
           throw new Error('Missing PKCE code verifier')
         }
 
-        // Exchange code for tokens — proxied through Vite dev server (no CORS)
-        const tokenRes = await fetch(oauthConfig.tokenUrl, {
+        // Exchange code via backend — backend holds the client secret
+        const exchangeRes = await fetch(`${API_BASE}/api/auth/exchange`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            grant_type: 'authorization_code',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             code,
-            redirect_uri: oauthConfig.redirectUri,
-            client_id: oauthConfig.clientId,
             code_verifier: verifier,
+            redirect_uri: oauthConfig.redirectUri,
           }),
         })
 
-        if (!tokenRes.ok) {
-          const err = await tokenRes.text()
-          throw new Error(`Token exchange failed: ${err}`)
+        if (!exchangeRes.ok) {
+          const err = (await exchangeRes.json().catch(() => ({}))) as {
+            error?: string
+          }
+          throw new Error(err.error ?? 'Token exchange failed')
         }
 
-        const tokens = (await tokenRes.json()) as {
-          access_token: string
-          id_token?: string
+        const { token, id_token } = (await exchangeRes.json()) as {
+          token: string
+          id_token: string | null
         }
 
-        // Fetch userinfo
-        const userinfoRes = await fetch(oauthConfig.userinfoUrl, {
-          headers: { Authorization: `Bearer ${tokens.access_token}` },
+        // Fetch user info from backend using the issued JWT
+        const meRes = await fetch(`${API_BASE}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
         })
 
-        if (!userinfoRes.ok) {
+        if (!meRes.ok) {
           throw new Error('Failed to fetch user info')
         }
 
-        const userinfo = (await userinfoRes.json()) as {
-          sub: string
-          preferred_username?: string
-          name?: string
-          groups?: string[]
-        }
+        const user = (await meRes.json()) as AppUser
 
-        const user: AppUser = {
-          id: userinfo.sub,
-          username: userinfo.preferred_username ?? userinfo.sub,
-          displayName:
-            userinfo.name ?? userinfo.preferred_username ?? userinfo.sub,
-          role: userinfo.groups?.includes(oauthConfig.adminGroup)
-            ? 'admin'
-            : 'user',
-        }
-
-        useAuthStore
-          .getState()
-          .setAuth(user, tokens.access_token, tokens.id_token)
+        useAuthStore.getState().setAuth(user, token, id_token ?? undefined)
 
         // Clean up session storage
         sessionStorage.removeItem('oauth_state')

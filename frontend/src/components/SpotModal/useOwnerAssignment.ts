@@ -28,7 +28,7 @@ export function useOwnerAssignment(spot: Spot) {
         onSuccess: () =>
           notifications.show({
             message: t('spotModal.toastSpotUnassigned', {
-              number: spot.number,
+              label: spot.label ?? `#${spot.number}`,
             }),
             color: 'green',
           }),
@@ -53,8 +53,12 @@ export function useOwnerAssignment(spot: Spot) {
         onSuccess: () => {
           notifications.show({
             message: ownerId
-              ? t('spotModal.toastOwnerAssigned', { number: spot.number })
-              : t('spotModal.toastSpotUnassigned', { number: spot.number }),
+              ? t('spotModal.toastOwnerAssigned', {
+                  label: spot.label ?? `#${spot.number}`,
+                })
+              : t('spotModal.toastSpotUnassigned', {
+                  label: spot.label ?? `#${spot.number}`,
+                }),
             color: 'green',
           })
           setAssignOpen(false)

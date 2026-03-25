@@ -1,5 +1,6 @@
 import request from "supertest";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import jwt from "jsonwebtoken";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createApp } from "../app.js";
 
@@ -14,37 +15,18 @@ const { pool } = await import("../db/pool.js");
 const mockQuery = pool.query as ReturnType<typeof vi.fn>;
 const mockConnect = pool.connect as ReturnType<typeof vi.fn>;
 
-const TEST_USER = { userId: "user-1", username: "admin", role: "admin" };
-const AUTH_HEADER = "Bearer dummy-authentik-token";
-
-function stubAuthFetch() {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        sub: TEST_USER.userId,
-        preferred_username: TEST_USER.username,
-        groups: ["parkflow-admins"],
-      }),
-    }),
-  );
-}
+const TEST_SECRET = "dev-secret-change-in-production";
+const TEST_USER = { userId: "user-1", username: "admin", displayName: "Admin", role: "admin" };
+const AUTH_HEADER = `Bearer ${jwt.sign(TEST_USER, TEST_SECRET, { expiresIn: "1h" })}`;
 
 beforeEach(() => {
   vi.resetAllMocks();
-  stubAuthFetch();
-});
-
-afterEach(() => {
-  vi.unstubAllGlobals();
 });
 
 const app = createApp();
 
 describe("POST /api/bookings", () => {
   it("returns 401 without token", async () => {
-    vi.unstubAllGlobals(); // no fetch stub — no auth header sent
     const res = await request(app)
       .post("/api/bookings")
       .send({ spot_id: "spot-1" });
@@ -207,7 +189,6 @@ describe("POST /api/bookings", () => {
 
 describe("PATCH /api/bookings/:id/cancel", () => {
   it("returns 401 without token", async () => {
-    vi.unstubAllGlobals();
     const res = await request(app).patch("/api/bookings/booking-1/cancel");
     expect(res.status).toBe(401);
   });
@@ -293,7 +274,6 @@ describe("PATCH /api/bookings/:id/cancel", () => {
 
 describe("GET /api/bookings/my", () => {
   it("returns 401 without token", async () => {
-    vi.unstubAllGlobals();
     const res = await request(app).get("/api/bookings/my");
     expect(res.status).toBe(401);
   });

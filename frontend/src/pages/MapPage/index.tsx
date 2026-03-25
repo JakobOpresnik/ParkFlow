@@ -208,7 +208,7 @@ export function MapPage() {
 
       {!isMapMode && (
         <div
-          className={`absolute inset-0 overflow-y-auto p-4 pt-44 transition-[filter] duration-300 sm:pt-40 ${shouldBlurMap ? 'blur-[3px]' : ''}`}
+          className={`absolute inset-0 overflow-y-auto p-4 pt-56 transition-[filter] duration-300 sm:pt-52 ${shouldBlurMap ? 'blur-[3px]' : ''}`}
         >
           <GridContent isLoading={isLoading} lotSpots={lotSpots} />
         </div>

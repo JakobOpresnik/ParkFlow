@@ -102,13 +102,8 @@ export function ActivityFeed({ changes, isLoading }: ActivityFeedProps) {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
                   <span className="text-sm font-medium">
-                    #{change.spot_number}
+                    {change.spot_label ?? `#${change.spot_number}`}
                   </span>
-                  {change.spot_label && (
-                    <span className="text-muted-foreground text-xs">
-                      {change.spot_label}
-                    </span>
-                  )}
                   <span className="text-muted-foreground text-xs">
                     {getChangeDescription(
                       change.change_type,

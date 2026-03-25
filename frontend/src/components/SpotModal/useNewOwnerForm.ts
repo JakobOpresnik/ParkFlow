@@ -37,7 +37,7 @@ export function useNewOwnerForm(spot: Spot, onCreatedAndAssigned: () => void) {
                 notifications.show({
                   message: t('spotModal.toastOwnerCreatedAndAssigned', {
                     name: owner.name,
-                    number: spot.number,
+                    label: spot.label ?? `#${spot.number}`,
                   }),
                   color: 'green',
                 })

@@ -25,7 +25,7 @@ export function useManagementAccordion(spot: Spot) {
         onSuccess: () =>
           notifications.show({
             message: t('spotModal.toastStatusUpdated', {
-              number: spot.number,
+              label: spot.label ?? `#${spot.number}`,
               status: STATUS_LABELS[status],
             }),
             color: 'green',

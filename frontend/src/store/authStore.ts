@@ -5,6 +5,7 @@ import type { AppUser } from '@/types'
 
 const ACCESS_TOKEN_KEY = 'pf_access_token'
 const ID_TOKEN_KEY = 'pf_id_token'
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 
 export let authInitPromise: Promise<void> = Promise.resolve()
 
@@ -42,7 +43,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       }
 
       try {
-        const res = await fetch(oauthConfig.userinfoUrl, {
+        const res = await fetch(`${API_BASE}/api/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         })
 
@@ -53,26 +54,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           return
         }
 
-        const userinfo = (await res.json()) as {
-          sub: string
-          preferred_username?: string
-          name?: string
-          groups?: string[]
-        }
-
-        const user: AppUser = {
-          id: userinfo.sub,
-          username: userinfo.preferred_username ?? userinfo.sub,
-          displayName:
-            userinfo.name ?? userinfo.preferred_username ?? userinfo.sub,
-          role: userinfo.groups?.includes(oauthConfig.adminGroup)
-            ? 'admin'
-            : 'user',
-        }
-
-        console.warn(
-          `[login] ${user.username} (${user.displayName}) — role: ${user.role}, groups: ${JSON.stringify(userinfo.groups ?? [])}`,
-        )
+        const user = (await res.json()) as AppUser
         set({ user, isLoading: false })
       } catch {
         localStorage.removeItem(ACCESS_TOKEN_KEY)

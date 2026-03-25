@@ -1,7 +1,10 @@
 import type { NextFunction, Request, Response } from "express";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import jwt from "jsonwebtoken";
+import { describe, expect, it, vi } from "vitest";
 
 import { requireAuth } from "../middleware/auth.js";
+
+const TEST_SECRET = "dev-secret-change-in-production";
 
 function makeReqResMock(authHeader?: string) {
   const req = { headers: { authorization: authHeader } } as unknown as Request;
@@ -13,30 +16,21 @@ function makeReqResMock(authHeader?: string) {
   return { req, res, next };
 }
 
-function stubFetch(ok: boolean, userinfo?: object) {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn().mockResolvedValue({
-      ok,
-      json: async () => userinfo ?? {},
-    }),
-  );
+function makeToken(payload: object, expiresIn = "1h") {
+  return jwt.sign(payload, TEST_SECRET, { expiresIn });
 }
 
 describe("requireAuth middleware", () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it("calls next() with a valid Bearer token", async () => {
-    stubFetch(true, {
-      sub: "u1",
-      preferred_username: "admin",
-      groups: ["parkflow-admins"],
+  it("calls next() with a valid backend JWT", async () => {
+    const token = makeToken({
+      userId: "u1",
+      username: "admin",
+      displayName: "Admin User",
+      role: "admin",
     });
 
-    const { req, res, next } = makeReqResMock("Bearer valid-token");
-    await requireAuth(req, res, next);
+    const { req, res, next } = makeReqResMock(`Bearer ${token}`);
+    requireAuth(req, res, next);
 
     expect(next).toHaveBeenCalledOnce();
     expect(req.user).toMatchObject({
@@ -46,37 +40,55 @@ describe("requireAuth middleware", () => {
     });
   });
 
-  it("returns 401 when Authorization header is missing", async () => {
+  it("returns 401 when Authorization header is missing", () => {
     const { req, res, next } = makeReqResMock(undefined);
-    await requireAuth(req, res, next);
+    requireAuth(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("returns 401 when token is not a Bearer token", async () => {
+  it("returns 401 when token is not a Bearer token", () => {
     const { req, res, next } = makeReqResMock("Basic dXNlcjpwYXNz");
-    await requireAuth(req, res, next);
+    requireAuth(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("returns 401 when token is expired", async () => {
-    stubFetch(false);
-    const { req, res, next } = makeReqResMock("Bearer expired-token");
-    await requireAuth(req, res, next);
+  it("returns 401 for an invalid (random) token", () => {
+    const { req, res, next } = makeReqResMock("Bearer not-a-valid-jwt");
+    requireAuth(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("returns 401 when token is invalid", async () => {
-    stubFetch(false);
-    const { req, res, next } = makeReqResMock("Bearer invalid-token");
-    await requireAuth(req, res, next);
+  it("returns 401 for an expired token", () => {
+    const token = makeToken(
+      { userId: "u1", username: "user", displayName: "User", role: "user" },
+      "-1s",
+    );
+
+    const { req, res, next } = makeReqResMock(`Bearer ${token}`);
+    requireAuth(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(next).not.toHaveBeenCalled();
+  });
+
+  it("assigns role=user for non-admin tokens", () => {
+    const token = makeToken({
+      userId: "u2",
+      username: "regularuser",
+      displayName: "Regular User",
+      role: "user",
+    });
+
+    const { req, res, next } = makeReqResMock(`Bearer ${token}`);
+    requireAuth(req, res, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(req.user?.role).toBe("user");
   });
 });

@@ -27,7 +27,7 @@ function buildBannerSubtext(
   if (spot.status === 'free') {
     return myReservedElsewhere
       ? t('spotModal.bannerFreeElsewhere', {
-          number: myReservedElsewhere.number,
+          label: myReservedElsewhere.label ?? `#${myReservedElsewhere.number}`,
         })
       : t('spotModal.bannerFree')
   }
@@ -122,11 +122,6 @@ export function SpotModal() {
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
               {spot.label ?? `#${spot.number}`}
             </h2>
-            {spot.label && (
-              <p className="text-muted-foreground mt-0.5 truncate text-lg">
-                #{spot.number}
-              </p>
-            )}
           </div>
         </div>
 
