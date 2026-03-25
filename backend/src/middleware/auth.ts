@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 
 export interface AuthPayload {
   userId: string;
@@ -16,60 +17,33 @@ declare global {
   }
 }
 
-const USERINFO_URL =
-  process.env.AUTHENTIK_USERINFO_URL ??
-  'https://sso.matheo.si/application/o/userinfo/';
-const ADMIN_GROUP = process.env.AUTHENTIK_ADMIN_GROUP ?? 'parkflow-admins';
+const JWT_SECRET =
+  process.env.JWT_SECRET ?? 'dev-secret-change-in-production';
 
-// Track users seen since last server start to log only on first request
-const seenUsers = new Set<string>();
-
-export async function requireAuth(
+export function requireAuth(
   req: Request,
   res: Response,
   next: NextFunction,
-): Promise<void> {
+): void {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) {
     res.status(401).json({ error: 'Authentication required' });
     return;
   }
 
+  const token = header.slice(7);
   try {
-    const userinfoRes = await fetch(USERINFO_URL, {
-      headers: { Authorization: header },
-    });
-
-    if (!userinfoRes.ok) {
-      res.status(401).json({ error: 'Invalid or expired token' });
-      return;
-    }
-
-    const userinfo = (await userinfoRes.json()) as {
-      sub: string;
-      preferred_username?: string;
-      name?: string;
-      groups?: string[];
-    };
-
-    const role = userinfo.groups?.includes(ADMIN_GROUP) ? 'admin' : 'user';
+    const payload = jwt.verify(token, JWT_SECRET) as AuthPayload &
+      jwt.JwtPayload;
     req.user = {
-      userId: userinfo.sub,
-      username: userinfo.preferred_username ?? userinfo.sub,
-      displayName: userinfo.name ?? userinfo.preferred_username ?? userinfo.sub,
-      role,
+      userId: payload.userId,
+      username: payload.username,
+      displayName: payload.displayName,
+      role: payload.role,
     };
-
-    if (!seenUsers.has(req.user.userId)) {
-      seenUsers.add(req.user.userId);
-      console.log(
-        `[login] ${req.user.username} (${req.user.displayName}) — role: ${role}, groups: ${JSON.stringify(userinfo.groups ?? [])}`,
-      );
-    }
-
     next();
   } catch {
-    res.status(401).json({ error: 'Token validation failed' });
+    res.status(401).json({ error: 'Invalid or expired token' });
   }
 }
 
