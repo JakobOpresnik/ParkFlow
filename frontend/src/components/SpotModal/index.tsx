@@ -20,7 +20,7 @@ type TFunc = (key: string, opts?: Record<string, unknown>) => string
 function buildBannerSubtext(
   spot: Spot,
   myReservedElsewhere: Spot | undefined,
-  canCancelThisBooking: boolean,
+  isMyBooking: boolean,
   isCurrentUserOwner: boolean,
   t: TFunc,
 ): string {
@@ -32,7 +32,7 @@ function buildBannerSubtext(
       : t('spotModal.bannerFree')
   }
   if (spot.status === 'reserved') {
-    return canCancelThisBooking
+    return isMyBooking
       ? t('spotModal.bannerReservedMine')
       : t('spotModal.bannerReservedOther')
   }
@@ -97,10 +97,22 @@ export function SpotModal() {
     (spot.active_booking_user_id === user.id || user.role === 'admin') &&
     spot.active_booking_expires_at?.slice(0, 10) === selectedDate
 
+  // Whether the current user actually made this booking (not just can cancel as admin).
+  const isMyBooking =
+    !!spot.active_booking_id &&
+    !!user &&
+    spot.active_booking_user_id === user.id &&
+    spot.active_booking_expires_at?.slice(0, 10) === selectedDate
+
+  // Show reserved (yellow) only for the user's own booking.
+  // Someone else's reservation should display as occupied (red).
+  const bannerStatus =
+    spot.status === 'reserved' && !isMyBooking ? 'occupied' : spot.status
+
   const bannerSubtext = buildBannerSubtext(
-    spot,
+    { ...spot, status: bannerStatus },
     myReservedElsewhere,
-    canCancelThisBooking,
+    isMyBooking,
     isCurrentUserOwner,
     t as TFunc,
   )
@@ -130,10 +142,10 @@ export function SpotModal() {
         {/* ── Body ────────────────────────────────────────────── */}
         <div className="max-h-[75vh] space-y-4 overflow-y-auto px-4 py-4 sm:max-h-[80vh] sm:px-6 sm:py-5">
           <StatusBanner
-            status={spot.status}
+            status={bannerStatus}
             subtext={bannerSubtext}
             titleOverride={
-              isCurrentUserOwner && spot.status === 'occupied'
+              isCurrentUserOwner && bannerStatus === 'occupied'
                 ? t('spotModal.yourSpot')
                 : undefined
             }
