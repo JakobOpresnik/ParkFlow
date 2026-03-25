@@ -16,8 +16,8 @@ function makeReqResMock(authHeader?: string) {
   return { req, res, next };
 }
 
-function makeToken(payload: object, expiresIn = "1h") {
-  return jwt.sign(payload, TEST_SECRET, { expiresIn });
+function makeToken(payload: object, expiresIn: string = "1h") {
+  return jwt.sign(payload, TEST_SECRET, { expiresIn: expiresIn as jwt.SignOptions["expiresIn"] });
 }
 
 describe("requireAuth middleware", () => {

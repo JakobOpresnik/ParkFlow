@@ -14,8 +14,8 @@ vi.mock("../db/pool.js", () => ({
 const TEST_SECRET = "dev-secret-change-in-production";
 const app = createApp();
 
-function makeToken(payload: object, expiresIn = "1h") {
-  return jwt.sign(payload, TEST_SECRET, { expiresIn });
+function makeToken(payload: object, expiresIn: string = "1h") {
+  return jwt.sign(payload, TEST_SECRET, { expiresIn: expiresIn as jwt.SignOptions["expiresIn"] });
 }
 
 function stubFetch(responses: Array<{ ok: boolean; body: object | string }>) {
@@ -23,11 +23,11 @@ function stubFetch(responses: Array<{ ok: boolean; body: object | string }>) {
   vi.stubGlobal(
     "fetch",
     vi.fn().mockImplementation(() => {
-      const r = responses[call++] ?? responses[responses.length - 1];
+      const r = responses[call++] ?? responses[responses.length - 1]!;
       return Promise.resolve({
-        ok: r.ok,
-        text: async () => (typeof r.body === "string" ? r.body : JSON.stringify(r.body)),
-        json: async () => r.body,
+        ok: r!.ok,
+        text: async () => (typeof r!.body === "string" ? r!.body : JSON.stringify(r!.body)),
+        json: async () => r!.body,
       });
     }),
   );
