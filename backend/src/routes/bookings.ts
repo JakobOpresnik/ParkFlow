@@ -10,6 +10,18 @@ const router = Router();
 // Must match the constant in spots.ts to keep booking logic consistent with map display.
 const ACEX_OWNER_NAME = "ACEX - kdor prej pride, prej melje";
 
+export async function freeOrphanedReservedSpots(): Promise<void> {
+  const result = await pool.query(`
+    UPDATE spots
+    SET status = 'free'
+    WHERE status = 'reserved'
+      AND id NOT IN (SELECT spot_id FROM bookings WHERE status = 'active')
+  `);
+  if (result.rowCount && result.rowCount > 0) {
+    console.log(`[startup] Freed ${result.rowCount} orphaned reserved spot(s)`);
+  }
+}
+
 async function expireStaleBookings(): Promise<void> {
   await pool.query(`
     WITH expired AS (
