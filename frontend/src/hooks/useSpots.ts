@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { api } from '@/api'
+import { invalidateAllSpotQueries } from '@/lib/queryClient'
 import type { SpotCoordinates, SpotStatus } from '@/types'
 
 export function useSpots() {
@@ -21,15 +22,13 @@ export function useSpotDayOverrides(date: string) {
 }
 
 export function useCreateSpot() {
-  const qc = useQueryClient()
   return useMutation({
     mutationFn: api.createSpot,
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['spots'] }),
+    onSuccess: invalidateAllSpotQueries,
   })
 }
 
 export function useUpdateSpot() {
-  const qc = useQueryClient()
   return useMutation({
     mutationFn: ({
       id,
@@ -38,15 +37,14 @@ export function useUpdateSpot() {
       id: string
       data: Parameters<typeof api.updateSpot>[1]
     }) => api.updateSpot(id, data),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['spots'] }),
+    onSuccess: invalidateAllSpotQueries,
   })
 }
 
 export function useDeleteSpot() {
-  const qc = useQueryClient()
   return useMutation({
     mutationFn: api.deleteSpot,
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['spots'] }),
+    onSuccess: invalidateAllSpotQueries,
   })
 }
 
@@ -59,24 +57,18 @@ export function useSpotByNumber(number: number | null) {
 }
 
 export function useAssignOwner() {
-  const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, owner_id }: { id: string; owner_id: string | null }) =>
       api.assignOwner(id, owner_id),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['spots'] })
-    },
+    onSuccess: invalidateAllSpotQueries,
   })
 }
 
 export function useUpdateStatus() {
-  const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: SpotStatus }) =>
       api.updateStatus(id, status),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['spots'] })
-    },
+    onSuccess: invalidateAllSpotQueries,
   })
 }
 

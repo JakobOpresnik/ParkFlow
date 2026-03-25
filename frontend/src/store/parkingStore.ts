@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 
+import { invalidateAllSpotQueries } from '@/lib/queryClient'
 import type { Spot } from '@/types'
 
 interface ParkingStore {
@@ -16,7 +17,9 @@ export const useParkingStore = create<ParkingStore>((set) => ({
   selectedLotId: null,
   highlightedSpotId: null,
   setSelectedSpot: (spot) => set({ selectedSpot: spot }),
-  setSelectedLotId: (lotId) =>
-    set({ selectedLotId: lotId, selectedSpot: null }),
+  setSelectedLotId: (lotId) => {
+    set({ selectedLotId: lotId, selectedSpot: null })
+    invalidateAllSpotQueries()
+  },
   setHighlightedSpotId: (id) => set({ highlightedSpotId: id }),
 }))

@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { pool } from "../db/pool.js";
+import { broadcast } from "../lib/broadcast.js";
 import { requireAdmin, requireAuth } from "../middleware/auth.js";
 
 const router = Router();
@@ -175,6 +176,7 @@ router.put("/me/spots/:spotId/day-status", requireAuth, async (req, res, next) =
         `DELETE FROM spot_day_status WHERE spot_id = $1 AND date = $2`,
         [spotId, date],
       );
+      broadcast();
       res.json({ ok: true, cleared: true });
       return;
     }
@@ -191,6 +193,7 @@ router.put("/me/spots/:spotId/day-status", requireAuth, async (req, res, next) =
        RETURNING *`,
       [spotId, date, status, req.user!.displayName],
     );
+    broadcast();
     res.json(result.rows[0]);
   } catch (err) {
     next(err);

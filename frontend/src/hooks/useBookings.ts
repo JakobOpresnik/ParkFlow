@@ -1,6 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 
 import { api } from '@/api'
+import { invalidateAllSpotQueries } from '@/lib/queryClient'
 import { useAuthStore } from '@/store/authStore'
 
 export function useMyBookings() {
@@ -13,20 +15,13 @@ export function useMyBookings() {
 }
 
 export function useCreateBooking() {
-  const qc = useQueryClient()
   return useMutation({
     mutationFn: api.createBooking,
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['spots'] })
-      void qc.invalidateQueries({ queryKey: ['bookings'] })
-      void qc.invalidateQueries({ queryKey: ['owners', 'me'] })
-      void qc.invalidateQueries({ queryKey: ['changes'] })
-    },
+    onSuccess: invalidateAllSpotQueries,
   })
 }
 
 export function useUpdateBookingTimes() {
-  const qc = useQueryClient()
   return useMutation({
     mutationFn: ({
       id,
@@ -37,23 +32,13 @@ export function useUpdateBookingTimes() {
       starts_at: string
       expires_at: string
     }) => api.updateBookingTimes(id, { starts_at, expires_at }),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['spots'] })
-      void qc.invalidateQueries({ queryKey: ['bookings'] })
-      void qc.invalidateQueries({ queryKey: ['owners', 'me'] })
-    },
+    onSuccess: invalidateAllSpotQueries,
   })
 }
 
 export function useCancelBooking() {
-  const qc = useQueryClient()
   return useMutation({
     mutationFn: api.cancelBooking,
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['spots'] })
-      void qc.invalidateQueries({ queryKey: ['bookings'] })
-      void qc.invalidateQueries({ queryKey: ['owners', 'me'] })
-      void qc.invalidateQueries({ queryKey: ['changes'] })
-    },
+    onSuccess: invalidateAllSpotQueries,
   })
 }

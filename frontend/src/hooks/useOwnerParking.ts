@@ -1,6 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 
 import { api } from '@/api'
+import { invalidateAllSpotQueries, queryClient } from '@/lib/queryClient'
 import { useAuthStore } from '@/store/authStore'
 
 export function useOwnerMe() {
@@ -43,7 +44,6 @@ export function useOwnerOverrides(from: string, to: string, isOwner = true) {
 }
 
 export function useSetSpotDayStatus() {
-  const qc = useQueryClient()
   return useMutation({
     mutationFn: ({
       spotId,
@@ -55,13 +55,11 @@ export function useSetSpotDayStatus() {
       status: 'free' | 'occupied' | null
     }) => api.setSpotDayStatus(spotId, date, status),
     onSuccess: (_, variables) => {
-      void qc.invalidateQueries({ queryKey: ['owners', 'me', 'overrides'] })
-      void qc.invalidateQueries({ queryKey: ['owners', 'me', 'spots'] })
-      void qc.invalidateQueries({ queryKey: ['spots'] })
+      invalidateAllSpotQueries()
       // Proactively refetch day-overrides for the changed date so Stats/Dashboard
       // pages are immediately in sync even when they are not currently mounted
       // (invalidateQueries alone only marks inactive queries stale — no refetch).
-      void qc.refetchQueries({
+      void queryClient.refetchQueries({
         queryKey: ['spots', 'day-overrides', variables.date],
         type: 'all',
       })
