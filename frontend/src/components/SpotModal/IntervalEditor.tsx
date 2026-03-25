@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 import { Button } from '@/components/ui/button'
 
 // — types —
@@ -35,16 +37,17 @@ export function IntervalEditor({
   onCancel,
   isPending,
 }: IntervalEditorProps) {
+  const { t } = useTranslation()
   const durationLabel = formatIntervalDuration(editStart, editEnd)
   return (
     <div className="bg-muted/50 space-y-3 rounded-lg px-4 py-3">
       <p className="text-muted-foreground text-xs font-medium tracking-widest uppercase">
-        Adjust interval
+        {t('spotModal.adjustInterval')}
       </p>
       <div className="flex items-center gap-3">
         <div className="flex-1">
           <label className="text-muted-foreground mb-1 block text-xs">
-            From
+            {t('spotModal.intervalFrom')}
           </label>
           <input
             type="time"
@@ -55,7 +58,9 @@ export function IntervalEditor({
         </div>
         <span className="text-muted-foreground mt-5">–</span>
         <div className="flex-1">
-          <label className="text-muted-foreground mb-1 block text-xs">To</label>
+          <label className="text-muted-foreground mb-1 block text-xs">
+            {t('spotModal.intervalTo')}
+          </label>
           <input
             type="time"
             value={editEnd}
@@ -66,7 +71,7 @@ export function IntervalEditor({
       </div>
       {durationLabel && (
         <p className="text-muted-foreground text-right text-xs">
-          Duration: {durationLabel}
+          {t('spotModal.intervalDuration', { duration: durationLabel })}
         </p>
       )}
       <div className="flex gap-2">
@@ -76,10 +81,10 @@ export function IntervalEditor({
           disabled={isPending}
           onClick={onSave}
         >
-          Save
+          {t('spotModal.intervalSave')}
         </Button>
         <Button size="sm" variant="ghost" onClick={onCancel}>
-          Cancel
+          {t('spotModal.intervalCancel')}
         </Button>
       </div>
     </div>

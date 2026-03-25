@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 
+import { invalidateAllSpotQueries } from '@/lib/queryClient'
+
 const SELECTED_DATE_KEY = 'pf_selected_date'
 
 /** Mon–Fri ISO dates for the week containing `ref`. */
@@ -49,5 +51,6 @@ export const useUIStore = create<UIStore>((set) => ({
   setSelectedDate: (date) => {
     localStorage.setItem(SELECTED_DATE_KEY, date)
     set({ selectedDate: date })
+    invalidateAllSpotQueries()
   },
 }))

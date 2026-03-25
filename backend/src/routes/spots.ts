@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { pool } from "../db/pool.js";
+import { broadcast } from "../lib/broadcast.js";
 import { requireAdmin, requireAuth } from "../middleware/auth.js";
 
 const router = Router();
@@ -163,6 +164,7 @@ router.post("/", requireAuth, requireAdmin, async (req, res, next) => {
        VALUES ($1, $2, $3, $4, $5) RETURNING id, number, label, floor, lot_id, status, type, coordinates, created_at`,
       [number, label?.trim() ?? null, lot_id, spotStatus, spotType],
     );
+    broadcast();
     res.status(201).json(result.rows[0]);
   } catch (err) {
     next(err);
@@ -218,6 +220,7 @@ router.put("/:id", requireAuth, requireAdmin, async (req, res, next) => {
       res.status(404).json({ error: "Spot not found" });
       return;
     }
+    broadcast();
     res.json(result.rows[0]);
   } catch (err) {
     next(err);
@@ -236,6 +239,7 @@ router.delete("/:id", requireAuth, requireAdmin, async (req, res, next) => {
       res.status(404).json({ error: "Spot not found" });
       return;
     }
+    broadcast();
     res.json({ ok: true });
   } catch (err) {
     next(err);
@@ -283,6 +287,7 @@ router.patch("/:id/coordinates", requireAuth, requireAdmin, async (req, res, nex
       res.status(404).json({ error: "Spot not found" });
       return;
     }
+    broadcast();
     res.json(result.rows[0]);
   } catch (err) {
     next(err);
@@ -346,6 +351,7 @@ router.patch("/:id/owner", requireAuth, requireAdmin, async (req, res, next) => 
         /* audit log failure is non-fatal */
       });
 
+    broadcast();
     res.json(result.rows[0]);
   } catch (err) {
     next(err);
@@ -399,6 +405,7 @@ router.patch("/:id/status", requireAuth, requireAdmin, async (req, res, next) =>
         /* audit log failure is non-fatal */
       });
 
+    broadcast();
     res.json(result.rows[0]);
   } catch (err) {
     next(err);
@@ -451,6 +458,7 @@ router.patch("/:id/type", requireAuth, requireAdmin, async (req, res, next) => {
         /* audit log failure is non-fatal */
       });
 
+    broadcast();
     res.json(result.rows[0]);
   } catch (err) {
     next(err);

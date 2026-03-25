@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface ReservationTimerProps {
   readonly expiresAt: string
@@ -25,6 +26,7 @@ export function ReservationTimer({
   expiresAt,
   arrivalTime,
 }: ReservationTimerProps) {
+  const { t } = useTranslation()
   const [now, setNow] = useState(Date.now)
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 30_000)
@@ -36,13 +38,17 @@ export function ReservationTimer({
   const endStr = fmtTime(expiry)
   const startStr = arrivalTime ?? '09:00'
 
-  if (ms <= 0) return <span>Available now</span>
+  if (ms <= 0) return <span>{t('bookings.availableNow')}</span>
 
   // More than 24 h away — show the date with interval
   if (ms > 24 * 3_600_000) {
     return (
       <span>
-        Taken on {fmtFutureDate(expiry)}, {startStr} – {endStr}
+        {t('bookings.takenOnDate', {
+          date: fmtFutureDate(expiry),
+          start: startStr,
+          end: endStr,
+        })}
       </span>
     )
   }
@@ -52,7 +58,11 @@ export function ReservationTimer({
   const countdown = h > 0 ? `${h}h ${m}m` : `${m}m`
   return (
     <span>
-      Taken {startStr} – {endStr} · {countdown} left
+      {t('bookings.takenWithCountdown', {
+        start: startStr,
+        end: endStr,
+        countdown,
+      })}
     </span>
   )
 }

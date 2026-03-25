@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui/button'
+import { useRealtimeSync } from '@/hooks/useRealtimeSync'
 import { useAuthStore } from '@/store/authStore'
 
 interface LayoutProps {
@@ -30,6 +31,7 @@ interface LayoutProps {
 
 export function Layout({ children, noPadding }: LayoutProps) {
   const { t } = useTranslation()
+  useRealtimeSync()
   const user = useAuthStore((s) => s.user)
   const isLoading = useAuthStore((s) => s.isLoading)
   const logout = useAuthStore((s) => s.logout)

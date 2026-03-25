@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { pool } from "../db/pool.js";
+import { broadcast } from "../lib/broadcast.js";
 import { fetchWeekPresence, isOwnerAbsent } from "../lib/presence.js";
 import { requireAuth } from "../middleware/auth.js";
 
@@ -233,6 +234,7 @@ router.post("/", requireAuth, async (req, res, next) => {
       await client.query("COMMIT");
 
       const b = booking.rows[0];
+      broadcast();
       res.status(201).json({
         ...b,
         spot_id,
@@ -319,6 +321,7 @@ router.patch("/:id/times", requireAuth, async (req, res, next) => {
       );
       await client.query("COMMIT");
 
+      broadcast();
       res.json(result.rows[0]);
     } catch (err) {
       await client.query("ROLLBACK");
@@ -404,6 +407,7 @@ router.patch("/:id/cancel", requireAuth, async (req, res, next) => {
       client.release();
     }
 
+    broadcast();
     res.json({ ok: true });
   } catch (err) {
     next(err);
