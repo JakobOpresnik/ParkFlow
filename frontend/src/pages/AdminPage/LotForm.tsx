@@ -42,7 +42,7 @@ export function LotForm({ value, onChange }: LotFormProps) {
           onChange={(e) =>
             onChange({ ...value, image_filename: e.target.value })
           }
-          placeholder="parking-map-outside.png"
+          placeholder="zunaj.svg"
         />
         <p className="text-muted-foreground mt-1 text-xs">
           {t('admin.lotImageFilenameNote')}
