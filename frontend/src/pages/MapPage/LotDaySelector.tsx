@@ -39,6 +39,7 @@ interface LotDaySelectorProps {
 // ─── sub-components ───────────────────────────────────────────────────────────
 
 function LotStatusDot({ lot, allSpots, activeLot }: LotStatusDotProps) {
+  const { t } = useTranslation()
   const lotSpots = allSpots.filter((s) => s.lot_id === lot.id)
   const free = lotSpots.filter((s) => s.status === 'free').length
   if (lotSpots.length === 0) return null
@@ -47,7 +48,9 @@ function LotStatusDot({ lot, allSpots, activeLot }: LotStatusDotProps) {
       className={`ml-3 size-1.5 cursor-pointer rounded-full ${
         free === 0 ? StatusDotClass['occupied'] : StatusDotClass['free']
       } ${activeLot?.id === lot.id ? 'opacity-100' : 'opacity-70'}`}
-      title={free === 0 ? 'No free spots' : `${free} free`}
+      title={
+        free === 0 ? t('map.noFreeSpots') : t('map.freeCount', { count: free })
+      }
     />
   )
 }

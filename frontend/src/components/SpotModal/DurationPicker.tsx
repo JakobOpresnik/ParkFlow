@@ -40,7 +40,7 @@ export function DurationPicker({
           <button
             onClick={() => onChange(Math.max(0.5, duration - 0.5))}
             className="hover:bg-background flex size-6 items-center justify-center rounded border transition-colors"
-            aria-label="Decrease duration"
+            aria-label={t('spotModal.decreaseDuration')}
           >
             <Minus className="size-3" />
           </button>
@@ -50,7 +50,7 @@ export function DurationPicker({
           <button
             onClick={() => onChange(Math.min(24, duration + 0.5))}
             className="hover:bg-background flex size-6 items-center justify-center rounded border transition-colors"
-            aria-label="Increase duration"
+            aria-label={t('spotModal.increaseDuration')}
           >
             <Plus className="size-3" />
           </button>
