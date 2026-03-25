@@ -176,7 +176,7 @@ function SpotCard({ spot, onClick }: SpotCardProps) {
   return (
     <button
       onClick={onClick}
-      aria-label={`Spot ${spot.number}`}
+      aria-label={`Spot ${spot.label ?? spot.number}`}
       className="bg-card group relative cursor-pointer overflow-hidden rounded-xl border text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
     >
       {/* Colored top accent strip */}
@@ -197,11 +197,6 @@ function SpotCard({ spot, onClick }: SpotCardProps) {
           <p className="text-2xl leading-none font-bold tracking-tight">
             {spot.label ?? `#${spot.number}`}
           </p>
-          {spot.label && (
-            <p className="text-muted-foreground mt-0.5 text-xs">
-              #{spot.number}
-            </p>
-          )}
         </div>
         <div className="mt-1 flex items-center gap-1">
           {isMySpot && <Crown className="text-primary size-3 shrink-0" />}

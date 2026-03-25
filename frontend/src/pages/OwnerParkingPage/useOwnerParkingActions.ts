@@ -31,7 +31,7 @@ export function useOwnerParkingActions(
               onSuccess: () =>
                 notifications.show({
                   message: t('ownerParking.toastSpotOccupied', {
-                    number: spot.number,
+                    label: spot.label ?? `#${spot.number}`,
                     date: formatDate(selectedDate, i18n.language),
                   }),
                   color: 'green',
@@ -50,11 +50,11 @@ export function useOwnerParkingActions(
               message:
                 status === 'free'
                   ? t('ownerParking.toastSpotFreed', {
-                      number: spot.number,
+                      label: spot.label ?? `#${spot.number}`,
                       date: formatDate(selectedDate, i18n.language),
                     })
                   : t('ownerParking.toastSpotOccupied', {
-                      number: spot.number,
+                      label: spot.label ?? `#${spot.number}`,
                       date: formatDate(selectedDate, i18n.language),
                     }),
               color: 'green',
@@ -77,7 +77,9 @@ export function useOwnerParkingActions(
       {
         onSuccess: () =>
           notifications.show({
-            message: t('ownerParking.toastSpotReset', { number: spot.number }),
+            message: t('ownerParking.toastSpotReset', {
+              label: spot.label ?? `#${spot.number}`,
+            }),
             color: 'green',
           }),
         onError: (err) =>
@@ -96,7 +98,7 @@ export function useOwnerParkingActions(
       onSuccess: () =>
         notifications.show({
           message: t('ownerParking.toastBookingCancelled', {
-            number: spot.number,
+            label: spot.label ?? `#${spot.number}`,
           }),
           color: 'green',
         }),

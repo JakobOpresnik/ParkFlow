@@ -140,7 +140,9 @@ export function OwnerParkingPage() {
           <div className="text-sm">
             <p className="font-medium text-indigo-700 dark:text-indigo-300">
               {t('ownerParking.movedToSpotBanner', {
-                number: myBookingElsewhere.spot_number,
+                label:
+                  myBookingElsewhere.spot_label ??
+                  `#${myBookingElsewhere.spot_number}`,
               })}
             </p>
             <p className="text-indigo-600/80 dark:text-indigo-400/80">
@@ -179,8 +181,11 @@ export function OwnerParkingPage() {
                 isOverridden={isOverridden}
                 isNonWorkDay={isNonWorkDay(selectedDate, today, workFreeDays)}
                 isPastCutoff={isPastBookingCutoff(selectedDate, today)}
-                switchedToSpotNumber={
-                  isSwitchedFree ? myBookingElsewhere.spot_number : undefined
+                switchedToSpotLabel={
+                  isSwitchedFree
+                    ? (myBookingElsewhere.spot_label ??
+                      `#${myBookingElsewhere.spot_number}`)
+                    : undefined
                 }
                 onSetDayStatus={(s) => handleSetDayStatus(spot, s)}
                 onClearOverride={() => handleClearOverride(spot)}
@@ -199,7 +204,7 @@ export function OwnerParkingPage() {
       {historySpotId && historySpot && (
         <BookingHistory
           spotId={historySpotId}
-          spotNumber={historySpot.number}
+          spotLabel={historySpot.label ?? `#${historySpot.number}`}
           onClose={() => setHistorySpotId(null)}
         />
       )}

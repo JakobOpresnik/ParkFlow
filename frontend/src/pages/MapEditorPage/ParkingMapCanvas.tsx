@@ -133,7 +133,7 @@ export function ParkingMapCanvas({
                 transform={lr ? `rotate(${lr}, ${tp.x}, ${tp.y})` : undefined}
                 className="pointer-events-none"
               >
-                {spot.number}
+                {spot.label ?? spot.number}
               </text>
               {isSelected &&
                 (

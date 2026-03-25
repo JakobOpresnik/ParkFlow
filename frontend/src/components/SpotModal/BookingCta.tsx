@@ -108,13 +108,13 @@ export function BookingCta({
             <div className="space-y-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
               <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
                 {t('spotModal.ownerWarningTitle', {
-                  number: myOwnedSpot?.number,
+                  label: myOwnedSpot?.label ?? `#${myOwnedSpot?.number}`,
                 })}
               </p>
               <p className="text-muted-foreground text-xs">
                 {t('spotModal.ownerWarningDesc', {
-                  number: myOwnedSpot?.number,
-                  spotNumber: spot.number,
+                  label: myOwnedSpot?.label ?? `#${myOwnedSpot?.number}`,
+                  spotLabel: spot.label ?? `#${spot.number}`,
                 })}
               </p>
               <div className="flex gap-2">
@@ -124,7 +124,9 @@ export function BookingCta({
                   onClick={handleBook}
                 >
                   <CalendarCheck className="size-4" />
-                  {t('spotModal.reserveSpotNumber', { number: spot.number })}
+                  {t('spotModal.reserveSpotNumber', {
+                    label: spot.label ?? `#${spot.number}`,
+                  })}
                 </Button>
                 <Button
                   variant="ghost"
@@ -158,7 +160,8 @@ export function BookingCta({
           {!ownerWarningOpen && myReservedElsewhere && (
             <p className="text-muted-foreground text-center text-xs">
               {t('spotModal.spotReservationWillBeCancelled', {
-                number: myReservedElsewhere.number,
+                label:
+                  myReservedElsewhere.label ?? `#${myReservedElsewhere.number}`,
               })}
             </p>
           )}

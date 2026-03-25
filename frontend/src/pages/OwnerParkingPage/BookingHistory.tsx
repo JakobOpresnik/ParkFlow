@@ -22,7 +22,7 @@ const BookingStatusStyles: Record<string, string> = {
 
 export function BookingHistory({
   spotId,
-  spotNumber,
+  spotLabel,
   onClose,
 }: BookingHistoryProps) {
   const { t, i18n } = useTranslation()
@@ -37,7 +37,7 @@ export function BookingHistory({
     <div className="bg-card overflow-hidden rounded-2xl border">
       <div className="flex items-center justify-between px-4 py-3">
         <h3 className="text-sm font-semibold">
-          {t('ownerParking.historyTitle', { number: spotNumber })}
+          {t('ownerParking.historyTitle', { label: spotLabel })}
         </h3>
         <Button size="sm" variant="ghost" onClick={onClose} className="h-7">
           {t('ownerParking.close')}

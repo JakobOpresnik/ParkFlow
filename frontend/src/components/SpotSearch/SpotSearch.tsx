@@ -40,16 +40,13 @@ function SpotResult({ spot, onClick }: SpotResultProps) {
   return (
     <button
       onClick={onClick}
-      aria-label={`Spot ${spot.number}`}
+      aria-label={`Spot ${spot.label ?? spot.number}`}
       className="bg-card hover:bg-accent/50 flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors"
     >
       <MapPin className="text-muted-foreground size-4 shrink-0" />
-      <span className="shrink-0 font-medium">#{spot.number}</span>
-      {spot.label && (
-        <span className="text-muted-foreground min-w-0 truncate">
-          {spot.label}
-        </span>
-      )}
+      <span className="shrink-0 font-medium">
+        {spot.label ?? `#${spot.number}`}
+      </span>
       <Badge className={`ml-auto shrink-0 ${config.badge}`}>
         {STATUS_LABELS[spot.status]}
       </Badge>

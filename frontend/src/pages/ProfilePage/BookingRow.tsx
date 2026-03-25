@@ -37,12 +37,7 @@ export function BookingRow({ booking }: BookingRowProps) {
         </div>
         <div>
           <p className="text-sm font-medium">
-            Spot #{booking.spot_number}
-            {booking.spot_label ? (
-              <span className="text-muted-foreground ml-1 font-normal">
-                · {booking.spot_label}
-              </span>
-            ) : null}
+            Spot {booking.spot_label ?? `#${booking.spot_number}`}
           </p>
           <p className="text-muted-foreground text-xs">
             {booking.spot_floor} · {formatDate(booking.booked_at)}

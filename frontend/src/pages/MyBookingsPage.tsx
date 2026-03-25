@@ -77,12 +77,9 @@ function BookingCard({ booking }: BookingCardProps) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-bold">#{booking.spot_number}</span>
-            {booking.spot_label && (
-              <span className="text-muted-foreground text-sm">
-                {booking.spot_label}
-              </span>
-            )}
+            <span className="text-xl font-bold">
+              {booking.spot_label ?? `#${booking.spot_number}`}
+            </span>
             <Badge className={STATUS_BADGE[booking.status]}>
               {STATUS_LABEL[booking.status]}
             </Badge>

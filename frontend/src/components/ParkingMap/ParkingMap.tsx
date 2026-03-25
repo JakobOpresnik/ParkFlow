@@ -157,7 +157,7 @@ function SpotOverlay({
       transform={`rotate(${rotation}, ${cx}, ${cy})`}
       style={{ pointerEvents: 'all', cursor: 'pointer' }}
       onClick={onClick}
-      aria-label={`Spot ${spot.number} — ${spot.status}`}
+      aria-label={`Spot ${spot.label ?? spot.number} — ${spot.status}`}
     >
       {isHighlighted && (
         <rect

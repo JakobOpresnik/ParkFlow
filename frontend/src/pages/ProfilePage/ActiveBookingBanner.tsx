@@ -24,13 +24,9 @@ export function ActiveBookingBanner({ booking }: ActiveBookingBannerProps) {
           </p>
           <p className="mt-0.5 text-sm">
             {t('profile.spotLabel')}{' '}
-            <span className="font-bold">#{booking.spot_number}</span>
-            {booking.spot_label && (
-              <span className="text-muted-foreground">
-                {' '}
-                · {booking.spot_label}
-              </span>
-            )}{' '}
+            <span className="font-bold">
+              {booking.spot_label ?? `#${booking.spot_number}`}
+            </span>{' '}
             — {booking.spot_floor}
           </p>
         </div>

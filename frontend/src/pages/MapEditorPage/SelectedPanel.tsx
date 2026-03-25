@@ -98,12 +98,7 @@ export function SelectedPanel({
     <div className="bg-card space-y-4 rounded-lg border p-3">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium">
-          {t('mapEditor.spotN', { number: spot.number })}
-          {spot.label && (
-            <span className="text-muted-foreground ml-1 text-xs">
-              {spot.label}
-            </span>
-          )}
+          {t('mapEditor.spotN', { label: spot.label ?? `#${spot.number}` })}
         </p>
         <SaveIndicator status={saveStatus} />
       </div>

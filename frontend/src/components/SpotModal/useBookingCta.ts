@@ -115,11 +115,12 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
       notifications.show({
         message: myReservedElsewhere
           ? t('spotModal.toastMovedToSpot', {
-              number: spot.number,
-              prevNumber: myReservedElsewhere.number,
+              label: spot.label ?? `#${spot.number}`,
+              prevLabel:
+                myReservedElsewhere.label ?? `#${myReservedElsewhere.number}`,
             })
           : t('spotModal.toastSpotReservedUntil', {
-              number: spot.number,
+              label: spot.label ?? `#${spot.number}`,
               time: expiryStr,
             }),
         color: 'green',
@@ -143,7 +144,7 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
       onSuccess: () =>
         notifications.show({
           message: t('spotModal.toastReservationCancelled', {
-            number: spot.number,
+            label: spot.label ?? `#${spot.number}`,
           }),
           color: 'green',
         }),

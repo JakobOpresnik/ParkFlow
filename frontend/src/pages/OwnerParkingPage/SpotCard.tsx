@@ -23,7 +23,7 @@ export function SpotCard({
   isOverridden,
   isNonWorkDay,
   isPastCutoff,
-  switchedToSpotNumber,
+  switchedToSpotLabel,
   onSetDayStatus,
   onClearOverride,
   onCancelBooking,
@@ -48,12 +48,9 @@ export function SpotCard({
       <div className="flex items-center justify-between p-4">
         <div>
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold">#{spot.number}</span>
-            {spot.label && (
-              <span className="text-muted-foreground text-sm">
-                {spot.label}
-              </span>
-            )}
+            <span className="text-lg font-bold">
+              {spot.label ?? `#${spot.number}`}
+            </span>
           </div>
           <div className="mt-1 flex items-center gap-2">
             <Badge color={color} variant="secondary">
@@ -65,11 +62,11 @@ export function SpotCard({
               </span>
             )}
           </div>
-          {switchedToSpotNumber && (
+          {switchedToSpotLabel && (
             <div className="mt-2 flex items-center gap-1.5 text-xs text-indigo-500 dark:text-indigo-400">
               <ArrowRightLeft className="size-3 shrink-0" />
               {t('ownerParking.switchedToSpot', {
-                number: switchedToSpotNumber,
+                label: switchedToSpotLabel,
               })}
             </div>
           )}
