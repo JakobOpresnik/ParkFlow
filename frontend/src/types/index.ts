@@ -171,6 +171,20 @@ export interface SpotBooking {
   user_id: string
 }
 
+export type FeedbackCategory = 'general' | 'bug' | 'feature' | 'improvement'
+export type FeedbackStatus = 'open' | 'in_progress' | 'done' | 'dismissed'
+
+export interface FeatureRequest {
+  id: string
+  user_id: string
+  display_name: string
+  title: string
+  description: string
+  category: FeedbackCategory
+  status: FeedbackStatus
+  created_at: string
+}
+
 export type LabelPosition = 'top' | 'bottom' | 'left' | 'right'
 
 export interface SpotCoordinates {

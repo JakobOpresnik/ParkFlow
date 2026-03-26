@@ -3,11 +3,13 @@ import {
   BarChart2,
   Calendar,
   ChevronDown,
+  HelpCircle,
   LayoutDashboard,
   Loader2,
   LogIn,
   LogOut,
   Map,
+  MessageSquare,
   ParkingCircle,
   PenLine,
   Settings,
@@ -18,6 +20,7 @@ import {
 import { type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { HelpFeedbackDialog } from '@/components/HelpFeedbackDialog'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui/button'
@@ -50,13 +53,20 @@ export function Layout({ children, noPadding }: LayoutProps) {
     { to: '/admin', label: t('nav.adminParking'), Icon: ParkingCircle },
     { to: '/owners', label: t('nav.adminOwners'), Icon: Users },
     { to: '/map-editor', label: t('nav.adminMapEditor'), Icon: PenLine },
+    {
+      to: '/admin/feedback',
+      label: t('nav.adminFeedback'),
+      Icon: MessageSquare,
+    },
   ]
 
   const isAdminSection =
     pathname === '/admin' ||
     pathname === '/owners' ||
-    pathname === '/map-editor'
+    pathname === '/map-editor' ||
+    pathname === '/admin/feedback'
   const [adminOpen, setAdminOpen] = useState(isAdminSection)
+  const [helpOpen, setHelpOpen] = useState(false)
 
   if (isLoading) {
     return (
@@ -141,6 +151,7 @@ export function Layout({ children, noPadding }: LayoutProps) {
                       title={label}
                       className={`${linkClass} sm:pl-4`}
                       activeProps={{ className: activeLinkClass }}
+                      activeOptions={{ exact: true }}
                     >
                       <Icon className="size-4 shrink-0" />
                       <span className="hidden sm:block">{label}</span>
@@ -185,6 +196,15 @@ export function Layout({ children, noPadding }: LayoutProps) {
                 <Button
                   variant="ghost"
                   size="icon"
+                  onClick={() => setHelpOpen(true)}
+                  aria-label={t('feedback.helpAndFeedback')}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <HelpCircle className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={handleLogout}
                   aria-label={t('auth.logOut')}
                   className="text-muted-foreground hover:text-foreground"
@@ -217,6 +237,8 @@ export function Layout({ children, noPadding }: LayoutProps) {
           <div className="mx-auto max-w-6xl">{children}</div>
         </main>
       )}
+
+      <HelpFeedbackDialog open={helpOpen} onOpenChange={setHelpOpen} />
     </div>
   )
 }
