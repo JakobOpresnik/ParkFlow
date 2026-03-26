@@ -73,15 +73,15 @@ export function OwnerRow({
         {owner.user_id ? (
           <button
             onClick={() => onLink(owner)}
-            className="text-primary flex items-center gap-1 text-sm hover:underline"
+            className="text-primary flex items-center gap-1 text-sm whitespace-nowrap hover:underline"
           >
-            <Link2 className="size-3" />
-            {owner.user_id}
+            <Link2 className="size-3 shrink-0" />
+            {owner.user_id.split(',').map((u) => u.trim()).join(', ')}
           </button>
         ) : (
           <button
             onClick={() => onLink(owner)}
-            className="text-muted-foreground flex items-center gap-1 text-xs hover:underline"
+            className="text-muted-foreground flex cursor-pointer items-center gap-1 text-xs hover:underline"
           >
             <Unlink className="size-3" />
             {t('owners.notLinked')}

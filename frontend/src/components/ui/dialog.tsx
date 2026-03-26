@@ -24,7 +24,7 @@ function Dialog({
         centered
         withCloseButton={false}
         padding={0}
-        radius="lg"
+        radius="md"
         overlayProps={{ backgroundOpacity: 0.5 }}
         transitionProps={{ transition: 'fade', duration: 150 }}
         classNames={{ content: 'overflow-visible' }}
@@ -56,7 +56,7 @@ function DialogContent({
       {showCloseButton && (
         <button
           onClick={onClose}
-          className="text-muted-foreground hover:bg-muted hover:text-foreground absolute top-3.5 right-3.5 flex size-8 items-center justify-center rounded-lg transition-colors focus:outline-none"
+          className="text-muted-foreground hover:bg-muted hover:text-foreground absolute top-3.5 right-3.5 flex size-8 cursor-pointer items-center justify-center rounded-lg transition-colors focus:outline-none"
         >
           <XIcon className="size-4" />
           <span className="sr-only">Close</span>

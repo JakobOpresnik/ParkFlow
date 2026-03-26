@@ -2,6 +2,9 @@ import { useAuthStore } from '@/store/authStore'
 import type {
   AppUser,
   Booking,
+  FeatureRequest,
+  FeedbackCategory,
+  FeedbackStatus,
   Owner,
   OwnerSpot,
   OwnerWeekBooking,
@@ -211,4 +214,25 @@ export const api = {
   // Presence (proxied from Abelium timesheet)
   getPresence: (date: string) =>
     request<PresenceResponse>(`/api/presence?date=${encodeURIComponent(date)}`),
+
+  // Feedback / Feature requests
+  createFeedback: (data: {
+    title: string
+    description: string
+    category: FeedbackCategory
+  }) =>
+    request<FeatureRequest>('/api/feedback', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  getFeedbackList: () => request<FeatureRequest[]>('/api/feedback'),
+  updateFeedbackStatus: (id: string, status: FeedbackStatus) =>
+    request<FeatureRequest>(`/api/feedback/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
+  deleteFeedback: (id: string) =>
+    request<{ ok: boolean }>(`/api/feedback/${id}`, {
+      method: 'DELETE',
+    }),
 }

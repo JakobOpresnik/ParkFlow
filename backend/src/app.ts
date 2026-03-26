@@ -11,6 +11,7 @@ import lotsRouter from './routes/lots.js';
 import ownersRouter from './routes/owners.js';
 import presenceRouter from './routes/presence.js';
 import spotsRouter from './routes/spots.js';
+import feedbackRouter from './routes/feedback.js';
 import subscribeRouter from './routes/subscribe.js';
 
 export function createApp() {
@@ -38,6 +39,7 @@ export function createApp() {
   app.use('/api/changes', changesRouter);
   app.use('/api/presence', presenceRouter);
   app.use('/api/subscribe', subscribeRouter);
+  app.use('/api/feedback', feedbackRouter);
 
   app.use(errorHandler);
 

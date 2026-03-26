@@ -364,8 +364,10 @@ router.patch("/:id/cancel", requireAuth, async (req, res, next) => {
 
       const isBookingOwner = booking.user_id === req.user!.userId;
       const isAdmin = req.user!.role === "admin";
-      const isSpotOwner =
-        booking.spot_owner_username === req.user!.username;
+      const spotOwnerUsernames = (booking.spot_owner_username as string | null)
+        ?.split(",")
+        .map((u: string) => u.trim()) ?? [];
+      const isSpotOwner = spotOwnerUsernames.includes(req.user!.username);
 
       if (!isBookingOwner && !isAdmin && !isSpotOwner) {
         await client.query("ROLLBACK");

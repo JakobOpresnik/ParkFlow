@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-router'
 
 import { Layout } from '@/components/Layout'
+import { AdminFeedbackPage } from '@/pages/AdminFeedbackPage'
 import { AdminPage } from '@/pages/AdminPage'
 import { CallbackPage } from '@/pages/CallbackPage'
 import { DashboardPage } from '@/pages/DashboardPage'
@@ -104,6 +105,12 @@ const adminRoute = createRoute({
   component: AdminPage,
 })
 
+const adminFeedbackRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/admin/feedback',
+  component: AdminFeedbackPage,
+})
+
 const mapEditorRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/map-editor',
@@ -133,6 +140,7 @@ const routeTree = rootRoute.addChildren([
     myBookingsRoute,
     ownerParkingRoute,
     adminRoute,
+    adminFeedbackRoute,
     mapEditorRoute,
     profileRoute,
   ]),
