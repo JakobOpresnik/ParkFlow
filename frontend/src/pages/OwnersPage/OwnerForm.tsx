@@ -51,15 +51,6 @@ export function OwnerForm({ value, onChange }: OwnerFormProps) {
         </label>
         <Input placeholder="Optional note" {...field('notes')} />
       </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium">
-          {t('owners.ownerSsoLabel')}
-        </label>
-        <Input placeholder="e.g. jnovak" {...field('user_id')} />
-        <p className="text-muted-foreground mt-1 text-xs">
-          {t('owners.ownerSsoNote')}
-        </p>
-      </div>
     </div>
   )
 }

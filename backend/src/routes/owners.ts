@@ -10,7 +10,7 @@ const router = Router();
 router.get("/me", requireAuth, async (req, res, next) => {
   try {
     const result = await pool.query(
-      "SELECT * FROM owners WHERE user_id = $1",
+      "SELECT * FROM owners WHERE $1 = ANY(string_to_array(user_id, ','))",
       [req.user!.username],
     );
     if (result.rows.length === 0) {
@@ -27,7 +27,7 @@ router.get("/me", requireAuth, async (req, res, next) => {
 router.get("/me/spots", requireAuth, async (req, res, next) => {
   try {
     const ownerResult = await pool.query(
-      "SELECT id FROM owners WHERE user_id = $1",
+      "SELECT id FROM owners WHERE $1 = ANY(string_to_array(user_id, ','))",
       [req.user!.username],
     );
     if (ownerResult.rows.length === 0) {
@@ -73,7 +73,7 @@ router.get("/me/spots", requireAuth, async (req, res, next) => {
 router.get("/me/week", requireAuth, async (req, res, next) => {
   try {
     const ownerResult = await pool.query(
-      "SELECT id FROM owners WHERE user_id = $1",
+      "SELECT id FROM owners WHERE $1 = ANY(string_to_array(user_id, ','))",
       [req.user!.username],
     );
     if (ownerResult.rows.length === 0) {
@@ -118,7 +118,7 @@ router.get("/me/week", requireAuth, async (req, res, next) => {
 router.get("/me/overrides", requireAuth, async (req, res, next) => {
   try {
     const ownerResult = await pool.query(
-      "SELECT id FROM owners WHERE user_id = $1",
+      "SELECT id FROM owners WHERE $1 = ANY(string_to_array(user_id, ','))",
       [req.user!.username],
     );
     if (ownerResult.rows.length === 0) {
@@ -162,7 +162,7 @@ router.put("/me/spots/:spotId/day-status", requireAuth, async (req, res, next) =
     const check = await pool.query(
       `SELECT s.id FROM spots s
        JOIN owners o ON s.owner_id = o.id
-       WHERE s.id = $1 AND o.user_id = $2`,
+       WHERE s.id = $1 AND $2 = ANY(string_to_array(o.user_id, ','))`,
       [spotId, req.user!.username],
     );
     if (check.rows.length === 0) {

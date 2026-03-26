@@ -22,7 +22,13 @@ export function useOwnerLinkDialog(owners: Owner[]) {
   function handleLink() {
     if (!linkTargetId) return
     const targetName = linkTarget?.name
-    const username = linkUsername.trim() || null
+    // Clean up: keep non-empty usernames, join with comma, or null if all empty
+    const cleaned = linkUsername
+      .split(',')
+      .map((u) => u.trim())
+      .filter(Boolean)
+      .join(',')
+    const username = cleaned || null
     linkOwner.mutate(
       { id: linkTargetId, username },
       {
