@@ -20,6 +20,7 @@ export function useRealtimeSync() {
 
     let es: EventSource | null = null
     let closed = false
+    let debounceTimer: ReturnType<typeof setTimeout> | undefined
 
     function connect() {
       if (closed) return
@@ -31,7 +32,10 @@ export function useRealtimeSync() {
       )
 
       es.addEventListener('spot_change', () => {
-        invalidateAllSpotQueries()
+        // Debounce: if multiple changes arrive in quick succession
+        // (e.g. admin bulk-edits), collapse into a single re-fetch.
+        clearTimeout(debounceTimer)
+        debounceTimer = setTimeout(invalidateAllSpotQueries, 300)
       })
 
       es.onerror = () => {
@@ -49,6 +53,7 @@ export function useRealtimeSync() {
       closed = true
       es?.close()
       clearTimeout(reconnectTimer.current)
+      clearTimeout(debounceTimer)
     }
   }, [token])
 }
