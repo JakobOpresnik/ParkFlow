@@ -50,5 +50,7 @@ Steps:
    Any caveats, follow-ups, or things a reviewer should pay attention to. Omit this section if there's nothing relevant.
    ---
 
-Do NOT stage or commit anything. This is analysis only.
+Do NOT stage or commit anything during the analysis phase.
 If there are no unstaged changes, say so clearly.
+
+9. After presenting the full analysis, ask the user to confirm and execute commits one by one in order. For each commit, ask **"Shall I stage and commit #N?"** and wait for the user's confirmation before proceeding. Only after the user confirms, run the `git add` and `git commit` commands for that commit. Then move on to the next one.
