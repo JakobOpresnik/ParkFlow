@@ -494,6 +494,7 @@ const en = {
   common: {
     loading: 'Loading…',
     error: 'Something went wrong',
+    close: 'Close',
   },
 } as const
 

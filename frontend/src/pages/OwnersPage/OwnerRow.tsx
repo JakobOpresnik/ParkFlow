@@ -76,7 +76,10 @@ export function OwnerRow({
             className="text-primary flex items-center gap-1 text-sm whitespace-nowrap hover:underline"
           >
             <Link2 className="size-3 shrink-0" />
-            {owner.user_id.split(',').map((u) => u.trim()).join(', ')}
+            {owner.user_id
+              .split(',')
+              .map((u) => u.trim())
+              .join(', ')}
           </button>
         ) : (
           <button

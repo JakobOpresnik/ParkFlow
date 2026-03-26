@@ -197,7 +197,7 @@ const sl = {
     subtitle: 'Parkirne rezervacije za {{name}}',
     yourReservations: 'Vaše parkirne rezervacije',
     noBookings:
-      'Še ni rezervacij. Rezervirajte prosto mesto na parkirnem zemljevidu.',
+      'Ni še rezervacij. Rezervirajte prosto mesto na parkirnem zemljevidu.',
     active: 'Aktivno',
     history: 'Zgodovina',
     booked: 'Rezervirano {{date}}',
@@ -243,7 +243,7 @@ const sl = {
     reservationDurationDesc: 'Koliko ur je vaše mesto privzeto zadržano',
     recentBookings: 'Nedavne rezervacije',
     viewAll: 'Prikaži vse',
-    noBookings: 'Še ni rezervacij.',
+    noBookings: 'Ni še rezervacij.',
     noBookingsDesc: 'Rezervirajte mesto na',
     parkingMap: 'parkirnem zemljevidu',
     adminBadge: 'Admin',
@@ -485,7 +485,7 @@ const sl = {
     titleRequired: 'Vnesite naslov',
     descriptionRequired: 'Vnesite opis',
     feedbackList: 'Povratne informacije',
-    noFeedback: 'Še ni oddanih predlogov',
+    noFeedback: 'Ni še oddanih predlogov',
     noFeedbackDesc:
       'Oddani predlogi za izboljšave in prijave napak se bodo prikazali tukaj.',
     deleteTitle: 'Izbriši povratno informacijo',
@@ -499,6 +499,7 @@ const sl = {
   common: {
     loading: 'Nalaganje…',
     error: 'Prišlo je do napake',
+    close: 'Zapri',
   },
 } as const
 

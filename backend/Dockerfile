@@ -14,6 +14,6 @@ COPY --from=builder /app/dist ./dist
 # COPY --from=builder /app/bun.lock ./bun.lock
 # RUN bun install --production
 # Optionally copy migrations or other runtime assets
-# COPY --from=builder /app/migrations ./migrations
+COPY --from=builder /app/migrations ./migrations
 EXPOSE 3001
 CMD ["bun", "dist/index.js"]
