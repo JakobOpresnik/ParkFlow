@@ -1,4 +1,4 @@
-import type { Response } from "express";
+import type { Response } from 'express';
 
 interface SseClient {
   id: number;
@@ -20,7 +20,7 @@ export function addClient(res: Response): () => void {
 }
 
 /** Broadcast a spot_change event to all connected SSE clients. */
-export function broadcast(type: string = "spot_change"): void {
+export function broadcast(type: string = 'spot_change'): void {
   const payload = `event: ${type}\ndata: ${JSON.stringify({ ts: Date.now() })}\n\n`;
   for (const client of clients) {
     try {
