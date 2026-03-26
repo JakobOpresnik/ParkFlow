@@ -19,7 +19,10 @@ import type { OwnerLinkDialogProps } from './types'
  */
 function getOwnerNames(ownerName: string | undefined): string[] {
   if (!ownerName) return ['']
-  const names = ownerName.split('/').map((n) => n.trim()).filter(Boolean)
+  const names = ownerName
+    .split('/')
+    .map((n) => n.trim())
+    .filter(Boolean)
   return names.length > 0 ? names : ['']
 }
 
@@ -75,7 +78,11 @@ export function OwnerLinkDialog({
             <div key={i}>
               <label className="mb-1 block text-sm font-medium">{name}</label>
               <Input
-                placeholder={`e.g. ${name.toLowerCase().replace(/\s+/g, '.').normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`}
+                placeholder={`e.g. ${name
+                  .toLowerCase()
+                  .replace(/\s+/g, '.')
+                  .normalize('NFD')
+                  .replace(/[\u0300-\u036f]/g, '')}`}
                 value={usernames[i]}
                 onChange={(e) => handleChange(i, e.target.value)}
               />

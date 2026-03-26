@@ -114,9 +114,7 @@ export function AdminFeedbackPage() {
       {!feedback?.length ? (
         <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
           <Inbox className="text-muted-foreground/40 size-12" />
-          <p className="mt-3 text-sm font-medium">
-            {t('feedback.noFeedback')}
-          </p>
+          <p className="mt-3 text-sm font-medium">{t('feedback.noFeedback')}</p>
           <p className="text-muted-foreground mt-1 text-xs">
             {t('feedback.noFeedbackDesc')}
           </p>
