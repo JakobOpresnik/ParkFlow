@@ -119,9 +119,18 @@ export function HelpFeedbackDialog({
           </p>
 
           {submitted ? (
-            <div className="mt-4 flex items-center gap-2 rounded-lg bg-green-50 p-3 text-sm text-green-700 dark:bg-green-950/30 dark:text-green-400">
-              <CheckCircle className="size-4 shrink-0" />
-              {t('feedback.submitted')}
+            <div className="mt-4 flex flex-col items-center gap-3 rounded-lg bg-green-50 py-5 dark:bg-green-950/30">
+              <CheckCircle className="size-8 text-green-600 dark:text-green-400" />
+              <p className="text-sm text-green-700 dark:text-green-400">
+                {t('feedback.submitted')}
+              </p>
+              <Button
+                variant="outline"
+                color="teal"
+                onClick={() => handleOpenChange(false)}
+              >
+                {t('common.close')}
+              </Button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
@@ -155,7 +164,9 @@ export function HelpFeedbackDialog({
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  onBlur={() => setTouched((p) => ({ ...p, description: true }))}
+                  onBlur={() =>
+                    setTouched((p) => ({ ...p, description: true }))
+                  }
                   placeholder={t('feedback.descriptionPlaceholder')}
                   rows={3}
                   className={`mt-1 w-full resize-none rounded-md border px-2.5 py-1.5 text-xs focus-visible:ring-1 focus-visible:outline-none ${
