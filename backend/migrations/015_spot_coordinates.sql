@@ -7,6 +7,7 @@ DO $$
 DECLARE
   lot_0 UUID := (SELECT id FROM parking_lots WHERE name = 'Klet -1');
   lot_1 UUID := (SELECT id FROM parking_lots WHERE name = 'Klet -2');
+  lot_z UUID := (SELECT id FROM parking_lots WHERE name = 'Zunanje parkirišče');
 BEGIN
   -- Klet -1 -> Spot 2 (Urška Krivc): label=1VP54, type=ev
   UPDATE spots SET label = '1VP54', type = 'ev',
@@ -145,4 +146,28 @@ BEGIN
   -- Klet -2 -> Spot 95 (Boštjan Kovač / Aljaž Konečnik)
   UPDATE spots SET coordinates = '{"x": 0.7791666666666667, "y": 0.74, "width": 0.04833333333333333, "height": 0.04, "rotation": 0, "labelPosition": "top", "labelRotation": 0}'::jsonb
     WHERE lot_id = lot_1 AND number = 95;
+
+  -- Zunanje parkirišče -> Spot 0 (kontejner - prenova): label=Z-0
+  UPDATE spots SET coordinates = '{"x": 0.425, "y": 0.7671428571428571, "width": 0.035, "height": 0.04857142857142857, "rotation": 0, "labelPosition": "top", "labelRotation": 0}'::jsonb
+    WHERE lot_id = lot_z AND number = 0;
+
+  -- Zunanje parkirišče -> Spot 3 (ACEX - kdor prej pride, prej melje): label=Z-3
+  UPDATE spots SET coordinates = '{"x": 0.42916666666666664, "y": 0.6571428571428571, "width": 0.03, "height": 0.03428571428571429, "rotation": 0, "labelPosition": "top", "labelRotation": 0}'::jsonb
+    WHERE lot_id = lot_z AND number = 3;
+
+  -- Zunanje parkirišče -> Spot 4 (ACEX - kdor prej pride, prej melje): label=Z-4
+  UPDATE spots SET coordinates = '{"x": 0.42916666666666664, "y": 0.62, "width": 0.03, "height": 0.03428571428571429, "rotation": 0, "labelPosition": "top", "labelRotation": 0}'::jsonb
+    WHERE lot_id = lot_z AND number = 4;
+
+  -- Zunanje parkirišče -> Spot 5 (ACEX - kdor prej pride, prej melje): label=Z-5
+  UPDATE spots SET coordinates = '{"x": 0.42916666666666664, "y": 0.5828571428571429, "width": 0.03, "height": 0.03428571428571429, "rotation": 0, "labelPosition": "top", "labelRotation": 0}'::jsonb
+    WHERE lot_id = lot_z AND number = 5;
+
+  -- Zunanje parkirišče -> Spot 9 (ACEX - kdor prej pride, prej melje): label=Z-9
+  UPDATE spots SET coordinates = '{"x": 0.42916666666666664, "y": 0.43714285714285717, "width": 0.03, "height": 0.03428571428571429, "rotation": 0, "labelPosition": "top", "labelRotation": 0}'::jsonb
+    WHERE lot_id = lot_z AND number = 9;
+
+  -- Zunanje parkirišče -> Spot 11 (ACEX - kdor prej pride, prej melje): label=Z-11
+  UPDATE spots SET coordinates = '{"x": 0.42916666666666664, "y": 0.36428571428571427, "width": 0.03, "height": 0.03428571428571429, "rotation": 0, "labelPosition": "top", "labelRotation": 0}'::jsonb
+    WHERE lot_id = lot_z AND number = 11;
 END $$;
