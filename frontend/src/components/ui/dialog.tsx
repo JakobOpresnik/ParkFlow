@@ -114,7 +114,7 @@ function DialogFooter({
 function DialogTitle({ className, ...props }: React.ComponentProps<'h2'>) {
   return (
     <h2
-      className={cn('text-lg leading-none font-semibold', className)}
+      className={cn('pr-8 text-lg leading-none font-semibold', className)}
       {...props}
     />
   )

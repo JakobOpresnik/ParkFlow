@@ -1,4 +1,5 @@
-import { Inbox, Loader2, Trash2 } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
+import { ArrowLeft, Inbox, Loader2, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -16,6 +17,7 @@ import {
   useFeedbackList,
   useUpdateFeedbackStatus,
 } from '@/hooks/useFeedback'
+import { useUIStore } from '@/store/uiStore'
 import type { FeatureRequest, FeedbackStatus } from '@/types'
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -59,6 +61,8 @@ const STATUS_ORDER: FeedbackStatus[] = [
 
 export function AdminFeedbackPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const setMoreOpen = useUIStore((s) => s.setMoreDrawerOpen)
   const { data: feedback, isLoading } = useFeedbackList()
   const updateStatus = useUpdateFeedbackStatus()
   const deleteFeedback = useDeleteFeedback()
@@ -105,6 +109,17 @@ export function AdminFeedbackPage() {
   return (
     <div className="space-y-6">
       <div>
+        <button
+          onClick={() => {
+            setMoreOpen(true)
+            void navigate({ to: '/' })
+          }}
+          className="text-muted-foreground hover:text-foreground mb-2 inline-flex cursor-pointer items-center gap-1 sm:hidden"
+          style={{ fontSize: 12 }}
+        >
+          <ArrowLeft className="size-3.5" />
+          {t('common.back')}
+        </button>
         <h1 className="text-2xl font-semibold">{t('feedback.feedbackList')}</h1>
         <p className="text-muted-foreground mt-0.5 text-sm">
           {t('feedback.featureRequestTitle')}
@@ -216,7 +231,7 @@ function StatusGroup({
             className={`rounded-lg border p-4 ${STATUS_COLORS[item.status] ?? ''}`}
           >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0 flex-1 space-y-1">
+              <div className="min-w-0 flex-1 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="text-sm font-semibold">{item.title}</h3>
                   <span
@@ -228,7 +243,8 @@ function StatusGroup({
                 <p className="text-muted-foreground text-sm whitespace-pre-wrap">
                   {item.description}
                 </p>
-                <p className="text-muted-foreground text-xs">
+                <div className="bg-border mt-3 h-px" />
+                <p className="text-muted-foreground mt-2 text-xs">
                   {item.display_name} &middot;{' '}
                   {new Date(item.created_at).toLocaleDateString(undefined, {
                     year: 'numeric',

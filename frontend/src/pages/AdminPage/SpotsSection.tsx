@@ -117,7 +117,7 @@ function SpotFilterBar({
   const { t } = useTranslation()
   return (
     <div className="flex flex-row flex-wrap items-center gap-2">
-      <div className="mr-auto flex flex-col flex-wrap items-start gap-3">
+      <div className="mr-auto flex flex-col flex-wrap items-start gap-2">
         {/* Lot pills */}
         <div className="flex flex-wrap gap-1">
           <button
@@ -173,7 +173,9 @@ function SpotFilterBar({
         </div>
       </div>
 
-      {lots.length > 0 && <div className="bg-border h-18 w-px shrink-0" />}
+      {lots.length > 0 && (
+        <div className="bg-border hidden h-18 w-px shrink-0 sm:block" />
+      )}
 
       {/* Search + Add — pinned to the right */}
       <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
@@ -386,41 +388,94 @@ export function SpotsSection() {
         onAddSpot={handleOpenAdd}
       />
 
-      {/* Table */}
+      {/* Table (desktop) / Cards (mobile) */}
       {isLoading ? (
         <div className="bg-muted h-32 animate-pulse rounded-lg" />
+      ) : displayedSpots.length === 0 ? (
+        <div className="text-muted-foreground flex h-20 items-center justify-center rounded-lg border text-sm">
+          {hasFilters ? t('admin.noSpotsMatch') : t('admin.noSpotsYetAdd')}
+        </div>
       ) : (
-        <div className="bg-card rounded-lg border shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-14">{t('admin.spotHeader')}</TableHead>
-                <TableHead>{t('admin.labelHeader')}</TableHead>
-                <TableHead>{t('admin.lotHeader')}</TableHead>
-                <TableHead>{t('admin.statusHeader')}</TableHead>
-                <TableHead>{t('admin.typeHeader')}</TableHead>
-                <TableHead>{t('admin.ownerHeader')}</TableHead>
-                <TableHead
-                  className={`${STICKY_ACTIONS_CLASS} w-22 text-center`}
+        <>
+          {/* Mobile cards */}
+          <div className="space-y-2 sm:hidden">
+            {displayedSpots.map((spot) => {
+              const typeConf = SpotTypeConfig[spot.type]
+              return (
+                <div
+                  key={spot.id}
+                  className="bg-card rounded-lg border p-3 shadow-sm"
                 >
-                  {t('admin.actionsHeader')}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {displayedSpots.length === 0 ? (
-                <TableRow className="h-20">
-                  <TableCell
-                    colSpan={7}
-                    className="text-muted-foreground text-center text-sm"
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold tabular-nums">
+                      #{spot.number}
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${StatusClass[spot.status]}`}
+                    >
+                      {spot.status}
+                    </span>
+                    {typeConf.badgeClass && (
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${typeConf.badgeClass}`}
+                      >
+                        {spot.type}
+                      </span>
+                    )}
+                    <div className="ml-auto flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleOpenEdit(spot)}
+                        aria-label="Edit spot"
+                      >
+                        <Pencil className="size-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setDeleteTarget(spot)}
+                        aria-label="Delete spot"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
+                    {spot.label && <span>{spot.label}</span>}
+                    <span>{getLotName(spot.lot_id)}</span>
+                    {spot.owner_name && (
+                      <span className="truncate">{spot.owner_name}</span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Desktop table */}
+          <div className="bg-card hidden rounded-lg border shadow-sm sm:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-14">
+                    {t('admin.spotHeader')}
+                  </TableHead>
+                  <TableHead>{t('admin.labelHeader')}</TableHead>
+                  <TableHead>{t('admin.lotHeader')}</TableHead>
+                  <TableHead>{t('admin.statusHeader')}</TableHead>
+                  <TableHead>{t('admin.typeHeader')}</TableHead>
+                  <TableHead>{t('admin.ownerHeader')}</TableHead>
+                  <TableHead
+                    className={`${STICKY_ACTIONS_CLASS} w-22 text-center`}
                   >
-                    {hasFilters
-                      ? t('admin.noSpotsMatch')
-                      : t('admin.noSpotsYetAdd')}
-                  </TableCell>
+                    {t('admin.actionsHeader')}
+                  </TableHead>
                 </TableRow>
-              ) : (
-                displayedSpots.map((spot) => (
+              </TableHeader>
+              <TableBody>
+                {displayedSpots.map((spot) => (
                   <SpotRow
                     key={spot.id}
                     spot={spot}
@@ -429,11 +484,11 @@ export function SpotsSection() {
                     onEdit={handleOpenEdit}
                     onDelete={setDeleteTarget}
                   />
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
 
       <Dialog

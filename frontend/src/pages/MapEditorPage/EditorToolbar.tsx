@@ -35,9 +35,9 @@ export function EditorToolbar({
 }: EditorToolbarProps) {
   const { t } = useTranslation()
   return (
-    <div className="bg-card flex items-center gap-3 rounded-lg border p-3">
-      {/* Mode toggle */}
-      <div className="flex items-center">
+    <div className="bg-card space-y-2 rounded-lg border p-2 sm:flex sm:items-center sm:gap-3 sm:space-y-0 sm:p-3">
+      {/* Top row: mode toggle + mapped count */}
+      <div className="flex items-center justify-between gap-2">
         <div className="flex rounded-md border">
           <button
             className={`flex cursor-pointer items-center gap-1.5 rounded-l-md px-3 py-1.5 text-sm font-medium transition-colors ${
@@ -62,10 +62,13 @@ export function EditorToolbar({
             {t('mapEditor.select')}
           </button>
         </div>
+        <div className="text-muted-foreground text-xs sm:hidden">
+          {t('mapEditor.mapped', { count: mappedCount, total: totalCount })}
+        </div>
       </div>
 
       {/* Lot tabs */}
-      <div className="flex flex-1 items-center justify-center">
+      <div className="flex flex-1 items-center sm:justify-center">
         {!isLoading && (
           <LotTabs
             lots={lots}
@@ -75,8 +78,8 @@ export function EditorToolbar({
         )}
       </div>
 
-      {/* Mapped count */}
-      <div className="text-muted-foreground text-xs">
+      {/* Mapped count — desktop only */}
+      <div className="text-muted-foreground hidden text-xs sm:block">
         {t('mapEditor.mapped', { count: mappedCount, total: totalCount })}
       </div>
     </div>

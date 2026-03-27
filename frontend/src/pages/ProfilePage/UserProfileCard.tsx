@@ -1,8 +1,6 @@
 import { ShieldCheck, User } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
-import { Badge } from '@/components/ui/badge'
-
 import { getInitials } from './utils'
 
 // — types —
@@ -37,10 +35,10 @@ export function UserProfileCard({
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-xl font-semibold">{user.displayName}</h2>
             {user.role === 'admin' && (
-              <Badge className="border-transparent bg-violet-500/15 text-violet-600 dark:text-violet-400">
-                <ShieldCheck className="mr-1 size-3" />
+              <span className="inline-flex items-center gap-1 rounded-md bg-violet-500/10 px-2 py-0.5 text-xs font-medium text-violet-600 dark:text-violet-400">
+                <ShieldCheck className="size-3" />
                 {t('profile.adminBadge')}
-              </Badge>
+              </span>
             )}
           </div>
           <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">

@@ -34,7 +34,7 @@ export function MapControls({
 }: MapControlsProps) {
   const { t } = useTranslation()
   return (
-    <div className="absolute right-3 bottom-3 z-20 flex flex-col gap-2">
+    <div className="absolute right-3 bottom-20 z-20 flex flex-col gap-2 sm:bottom-3">
       <div className="rounded-xl bg-black/40 p-1 backdrop-blur-sm">
         <OverlayButton
           onClick={onSidebarToggle}

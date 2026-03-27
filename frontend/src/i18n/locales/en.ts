@@ -2,9 +2,12 @@ const en = {
   nav: {
     map: 'Map',
     dashboard: 'Dashboard',
+    dashboardShort: 'Home',
     statistics: 'Statistics',
     myBookings: 'My Bookings',
+    myBookingsShort: 'Bookings',
     myParking: 'My Parking',
+    myParkingShort: 'Parking',
     admin: 'Admin',
     adminParking: 'Parking Spots',
     adminOwners: 'Owners',
@@ -12,6 +15,7 @@ const en = {
     adminFeedback: 'Feedback',
     signIn: 'Sign in',
     profile: 'View profile',
+    more: 'More',
   },
   auth: {
     sessionExpired: 'Session expired — redirecting back to sign in…',
@@ -455,6 +459,7 @@ const en = {
   },
   feedback: {
     helpAndFeedback: 'Help & Feedback',
+    help: 'Help',
     supportTitle: 'Need help?',
     supportDesc:
       'Contact the administrators for technical issues or questions.',
@@ -495,6 +500,7 @@ const en = {
     loading: 'Loading…',
     error: 'Something went wrong',
     close: 'Close',
+    back: 'Back',
   },
 } as const
 

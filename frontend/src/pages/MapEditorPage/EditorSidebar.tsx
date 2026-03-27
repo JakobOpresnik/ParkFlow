@@ -60,7 +60,7 @@ export function EditorSidebar({
 }: EditorSidebarProps) {
   const { t } = useTranslation()
   return (
-    <div className="w-64 shrink-0 space-y-3">
+    <div className="w-full shrink-0 space-y-3 sm:w-64">
       {/* Stats */}
       <div className="bg-card rounded-lg border p-3">
         <p className="text-muted-foreground mb-1 text-xs font-medium tracking-wide uppercase">

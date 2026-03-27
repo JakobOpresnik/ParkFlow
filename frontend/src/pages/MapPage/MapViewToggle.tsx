@@ -20,7 +20,7 @@ export function MapViewToggle({
   return (
     <div className="absolute top-3 right-3 z-20">
       <div
-        className={`flex gap-0.5 rounded-xl p-1 ${
+        className={`flex flex-col gap-0.5 rounded-xl p-1 min-[330px]:flex-row ${
           isMapMode
             ? 'bg-black/40 backdrop-blur-sm'
             : 'bg-card border shadow-sm'
@@ -36,7 +36,7 @@ export function MapViewToggle({
           }`}
         >
           <Map className="size-4 shrink-0" />
-          <span>{t('map.mapView')}</span>
+          <span className="hidden sm:inline">{t('map.mapView')}</span>
         </button>
         <button
           onClick={onSelectGrid}
@@ -48,7 +48,7 @@ export function MapViewToggle({
           }`}
         >
           <LayoutGrid className="size-4 shrink-0" />
-          <span>{t('map.gridView')}</span>
+          <span className="hidden sm:inline">{t('map.gridView')}</span>
         </button>
       </div>
     </div>
