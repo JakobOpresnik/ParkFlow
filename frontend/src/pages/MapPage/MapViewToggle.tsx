@@ -20,7 +20,7 @@ export function MapViewToggle({
   return (
     <div className="absolute top-3 right-3 z-20">
       <div
-        className={`flex flex-col gap-0.5 rounded-xl p-1 min-[330px]:flex-row ${
+        className={`flex flex-col gap-0.5 rounded-xl p-1 min-[400px]:flex-row ${
           isMapMode
             ? 'bg-black/40 backdrop-blur-sm'
             : 'bg-card border shadow-sm'

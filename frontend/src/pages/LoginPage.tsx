@@ -9,33 +9,37 @@ import { Button } from '@/components/ui/button'
 import { oauthConfig } from '@/lib/oauth'
 import { generateCodeChallenge, generateCodeVerifier } from '@/lib/pkce'
 
+// — constants —
+
+const FEATURE_CONFIG = [
+  {
+    Icon: Map,
+    labelKey: 'login.featureLiveMap',
+    descKey: 'login.featureLiveMapDesc',
+    color: 'text-blue-500',
+    bg: 'bg-blue-500/10',
+  },
+  {
+    Icon: Calendar,
+    labelKey: 'login.featureReservations',
+    descKey: 'login.featureReservationsDesc',
+    color: 'text-green-500',
+    bg: 'bg-green-500/10',
+  },
+  {
+    Icon: BarChart2,
+    labelKey: 'login.featureAnalytics',
+    descKey: 'login.featureAnalyticsDesc',
+    color: 'text-violet-500',
+    bg: 'bg-violet-500/10',
+  },
+] as const
+
+// — main component —
+
 export function LoginPage() {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
-
-  const FEATURES = [
-    {
-      Icon: Map,
-      label: t('login.featureLiveMap'),
-      desc: t('login.featureLiveMapDesc'),
-      color: 'text-blue-500',
-      bg: 'bg-blue-500/10',
-    },
-    {
-      Icon: Calendar,
-      label: t('login.featureReservations'),
-      desc: t('login.featureReservationsDesc'),
-      color: 'text-green-500',
-      bg: 'bg-green-500/10',
-    },
-    {
-      Icon: BarChart2,
-      label: t('login.featureAnalytics'),
-      desc: t('login.featureAnalyticsDesc'),
-      color: 'text-violet-500',
-      bg: 'bg-violet-500/10',
-    },
-  ]
 
   async function handleLogin() {
     setLoading(true)
@@ -115,9 +119,9 @@ export function LoginPage() {
 
         {/* Feature tiles */}
         <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-3">
-          {FEATURES.map(({ Icon, label, desc, color, bg }) => (
+          {FEATURE_CONFIG.map(({ Icon, labelKey, descKey, color, bg }) => (
             <div
-              key={label}
+              key={labelKey}
               className="bg-card/70 flex flex-row items-start gap-3 rounded-xl border p-3.5 backdrop-blur-sm min-[400px]:flex-col min-[400px]:gap-2.5"
             >
               <div
@@ -126,9 +130,9 @@ export function LoginPage() {
                 <Icon className={`size-3.5 ${color}`} />
               </div>
               <div>
-                <p className="text-xs font-medium">{label}</p>
+                <p className="text-xs font-medium">{t(labelKey)}</p>
                 <p className="text-muted-foreground mt-0.5 text-[11px] leading-snug">
-                  {desc}
+                  {t(descKey)}
                 </p>
               </div>
             </div>

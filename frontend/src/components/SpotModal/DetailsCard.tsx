@@ -10,20 +10,29 @@ interface DetailsCardProps {
   readonly isCurrentUserOwner?: boolean
 }
 
+// — constants —
+
+const SPOT_TYPE_ICONS: Partial<Record<SpotType, string>> = {
+  ev: '⚡',
+  handicap: '♿',
+  compact: '🅿',
+}
+
+const SPOT_TYPE_LABEL_KEYS: Partial<Record<SpotType, string>> = {
+  ev: 'spotModal.evCharging',
+  handicap: 'spotModal.handicapAccessible',
+  compact: 'spotModal.compact',
+}
+
 // — main component —
 
 export function DetailsCard({ spot, isCurrentUserOwner }: DetailsCardProps) {
   const { t } = useTranslation()
 
-  const SPOT_TYPE_INFO: Partial<
-    Record<SpotType, { icon: string; label: string }>
-  > = {
-    ev: { icon: '⚡', label: t('spotModal.evCharging') },
-    handicap: { icon: '♿', label: t('spotModal.handicapAccessible') },
-    compact: { icon: '🅿', label: t('spotModal.compact') },
-  }
-
-  const typeInfo = spot.type ? SPOT_TYPE_INFO[spot.type] : undefined
+  const icon = spot.type ? SPOT_TYPE_ICONS[spot.type] : undefined
+  const labelKey = spot.type ? SPOT_TYPE_LABEL_KEYS[spot.type] : undefined
+  const typeInfo =
+    icon && labelKey ? { icon, label: t(labelKey) } : undefined
   const isReservedByOther =
     spot.status === 'reserved' &&
     spot.active_booking_reserved_by &&

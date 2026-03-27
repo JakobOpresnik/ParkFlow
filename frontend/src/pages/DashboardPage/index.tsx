@@ -25,9 +25,38 @@ interface StatCard extends StatCardConfig {
   readonly sub: string
 }
 
-// — main component —
+// — constants —
 
 const TODAY = new Date().toISOString().slice(0, 10)
+
+const STAT_CARD_STYLES = [
+  {
+    labelKey: 'dashboard.occupied',
+    Icon: ParkingCircle,
+    iconColor: 'text-red-600 dark:text-red-400',
+    iconBg: 'bg-red-100 dark:bg-red-900/30',
+    cardClass:
+      'border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20',
+  },
+  {
+    labelKey: 'dashboard.reserved',
+    Icon: Clock,
+    iconColor: 'text-amber-600 dark:text-amber-400',
+    iconBg: 'bg-amber-100 dark:bg-amber-900/30',
+    cardClass:
+      'border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20',
+  },
+  {
+    labelKey: 'dashboard.totalSpots',
+    Icon: Activity,
+    iconColor: 'text-indigo-600 dark:text-indigo-400',
+    iconBg: 'bg-indigo-100 dark:bg-indigo-900/30',
+    cardClass:
+      'border-indigo-200 bg-indigo-50 dark:border-indigo-900/40 dark:bg-indigo-950/20',
+  },
+] as const
+
+// — main component —
 
 export function DashboardPage() {
   const { t } = useTranslation()
@@ -54,49 +83,25 @@ export function DashboardPage() {
     ? Math.round(((totalOccupied + totalReservedByStatus) / total) * 100)
     : 0
 
-  const STAT_CARD_CONFIG = [
-    {
-      label: t('dashboard.occupied'),
-      Icon: ParkingCircle,
-      iconColor: 'text-red-600 dark:text-red-400',
-      iconBg: 'bg-red-100 dark:bg-red-900/30',
-      cardClass:
-        'border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20',
-    },
-    {
-      label: t('dashboard.reserved'),
-      Icon: Clock,
-      iconColor: 'text-amber-600 dark:text-amber-400',
-      iconBg: 'bg-amber-100 dark:bg-amber-900/30',
-      cardClass:
-        'border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20',
-    },
-    {
-      label: t('dashboard.totalSpots'),
-      Icon: Activity,
-      iconColor: 'text-indigo-600 dark:text-indigo-400',
-      iconBg: 'bg-indigo-100 dark:bg-indigo-900/30',
-      cardClass:
-        'border-indigo-200 bg-indigo-50 dark:border-indigo-900/40 dark:bg-indigo-950/20',
-    },
-  ] satisfies ReadonlyArray<StatCardConfig>
-
   const supportingCards: readonly StatCard[] = [
     {
-      ...STAT_CARD_CONFIG[0],
+      ...STAT_CARD_STYLES[0],
+      label: t(STAT_CARD_STYLES[0].labelKey),
       value: totalOccupied,
       sub: t('dashboard.occupancyPct', { pct: occupancyPct }),
-    } as StatCard,
+    },
     {
-      ...STAT_CARD_CONFIG[1],
+      ...STAT_CARD_STYLES[1],
+      label: t(STAT_CARD_STYLES[1].labelKey),
       value: totalReserved,
       sub: t('dashboard.bookedSpots'),
-    } as StatCard,
+    },
     {
-      ...STAT_CARD_CONFIG[2],
+      ...STAT_CARD_STYLES[2],
+      label: t(STAT_CARD_STYLES[2].labelKey),
       value: total,
       sub: t('dashboard.acrossAllLots'),
-    } as StatCard,
+    },
   ]
 
   return (

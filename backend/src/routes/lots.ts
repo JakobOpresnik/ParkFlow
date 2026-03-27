@@ -1,15 +1,15 @@
-import { Router } from "express";
+import { Router } from 'express';
 
-import { pool } from "../db/pool.js";
-import { requireAdmin, requireAuth } from "../middleware/auth.js";
+import { pool } from '../db/pool.js';
+import { requireAdmin, requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
 // GET /api/lots — all parking lots ordered by sort_order
-router.get("/", async (_req, res, next) => {
+router.get('/', async (_req, res, next) => {
   try {
     const result = await pool.query(
-      "SELECT * FROM parking_lots ORDER BY sort_order, name",
+      'SELECT * FROM parking_lots ORDER BY sort_order, name',
     );
     res.json(result.rows);
   } catch (err) {
@@ -18,7 +18,7 @@ router.get("/", async (_req, res, next) => {
 });
 
 // POST /api/lots — create a parking lot
-router.post("/", requireAuth, requireAdmin, async (req, res, next) => {
+router.post('/', requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const {
       name,
@@ -36,8 +36,8 @@ router.post("/", requireAuth, requireAdmin, async (req, res, next) => {
       sort_order?: number;
     };
 
-    if (!name || typeof name !== "string" || name.trim() === "") {
-      res.status(400).json({ error: "name is required" });
+    if (!name || typeof name !== 'string' || name.trim() === '') {
+      res.status(400).json({ error: 'name is required' });
       return;
     }
 
@@ -47,7 +47,7 @@ router.post("/", requireAuth, requireAdmin, async (req, res, next) => {
       [
         name.trim(),
         description ?? null,
-        image_filename ?? "parking-map.png",
+        image_filename ?? 'parking-map.png',
         image_width ?? 1200,
         image_height ?? 700,
         sort_order ?? 0,
@@ -60,7 +60,7 @@ router.post("/", requireAuth, requireAdmin, async (req, res, next) => {
 });
 
 // PUT /api/lots/:id — update a parking lot
-router.put("/:id", requireAuth, requireAdmin, async (req, res, next) => {
+router.put('/:id', requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const {
@@ -100,7 +100,7 @@ router.put("/:id", requireAuth, requireAdmin, async (req, res, next) => {
     );
 
     if (result.rows.length === 0) {
-      res.status(404).json({ error: "Parking lot not found" });
+      res.status(404).json({ error: 'Parking lot not found' });
       return;
     }
     res.json(result.rows[0]);
@@ -110,28 +110,28 @@ router.put("/:id", requireAuth, requireAdmin, async (req, res, next) => {
 });
 
 // DELETE /api/lots/:id — delete a parking lot (only if empty)
-router.delete("/:id", requireAuth, requireAdmin, async (req, res, next) => {
+router.delete('/:id', requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
 
     const spotsCheck = await pool.query(
-      "SELECT COUNT(*) FROM spots WHERE lot_id = $1",
+      'SELECT COUNT(*) FROM spots WHERE lot_id = $1',
       [id],
     );
-    if (parseInt(spotsCheck.rows[0].count) > 0) {
+    if (Number.parseInt(spotsCheck.rows[0].count) > 0) {
       res.status(409).json({
         error:
-          "Cannot delete a lot that still has parking spots. Remove or reassign spots first.",
+          'Cannot delete a lot that still has parking spots. Remove or reassign spots first.',
       });
       return;
     }
 
     const result = await pool.query(
-      "DELETE FROM parking_lots WHERE id = $1 RETURNING id",
+      'DELETE FROM parking_lots WHERE id = $1 RETURNING id',
       [id],
     );
     if (result.rows.length === 0) {
-      res.status(404).json({ error: "Parking lot not found" });
+      res.status(404).json({ error: 'Parking lot not found' });
       return;
     }
     res.json({ ok: true });

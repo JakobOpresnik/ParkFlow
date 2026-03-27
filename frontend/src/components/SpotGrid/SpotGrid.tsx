@@ -10,9 +10,9 @@ import type { Spot, SpotStatus } from '@/types'
 // — types —
 
 interface StatusConfigDetails {
-  accent: string
-  badgeText: string
-  badgeBg: string
+  readonly accent: string
+  readonly badgeText: string
+  readonly badgeBg: string
 }
 
 interface ClockRowProps {
@@ -36,6 +36,12 @@ interface SpotGridProps {
 }
 
 // — constants —
+
+const STATUS_LABEL_KEYS: Record<SpotStatus, string> = {
+  free: 'map.free',
+  occupied: 'map.occupied',
+  reserved: 'map.reserved',
+}
 
 const STATUS_CONFIG: Record<SpotStatus, StatusConfigDetails> = {
   free: {
@@ -147,12 +153,6 @@ function SpotCard({ spot, onClick }: SpotCardProps) {
   const { t } = useTranslation()
   const currentUser = useAuthStore((s) => s.user)
 
-  const STATUS_LABELS: Record<SpotStatus, string> = {
-    free: t('map.free'),
-    occupied: t('map.occupied'),
-    reserved: t('map.reserved'),
-  }
-
   const isMySpot = !!currentUser && spot.owner_user_id === currentUser.username
   const isMyBooking =
     !!currentUser && spot.active_booking_user_id === currentUser.id
@@ -171,7 +171,7 @@ function SpotCard({ spot, onClick }: SpotCardProps) {
   const badgeLabel =
     isMySpot && displayStatus === 'reserved'
       ? t('spotModal.yourSpot')
-      : STATUS_LABELS[displayStatus]
+      : t(STATUS_LABEL_KEYS[displayStatus])
 
   return (
     <button

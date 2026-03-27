@@ -59,6 +59,20 @@ const STATUS_ORDER: FeedbackStatus[] = [
   'dismissed',
 ]
 
+const STATUS_LABEL_KEYS: Record<FeedbackStatus, string> = {
+  open: 'feedback.statusOpen',
+  in_progress: 'feedback.statusInProgress',
+  done: 'feedback.statusDone',
+  dismissed: 'feedback.statusDismissed',
+}
+
+const CATEGORY_LABEL_KEYS: Record<string, string> = {
+  general: 'feedback.categoryGeneral',
+  bug: 'feedback.categoryBug',
+  feature: 'feedback.categoryFeature',
+  improvement: 'feedback.categoryImprovement',
+}
+
 export function AdminFeedbackPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -68,28 +82,17 @@ export function AdminFeedbackPage() {
   const deleteFeedback = useDeleteFeedback()
   const [deleteTarget, setDeleteTarget] = useState<FeatureRequest | null>(null)
 
-  const statusOptions = [
-    { value: 'open', label: t('feedback.statusOpen') },
-    { value: 'in_progress', label: t('feedback.statusInProgress') },
-    { value: 'done', label: t('feedback.statusDone') },
-    { value: 'dismissed', label: t('feedback.statusDismissed') },
-  ]
+  const statusOptions = STATUS_ORDER.map((s) => ({
+    value: s,
+    label: t(STATUS_LABEL_KEYS[s]),
+  }))
 
-  const statusLabel: Record<string, string> = {
-    open: t('feedback.statusOpen'),
-    in_progress: t('feedback.statusInProgress'),
-    done: t('feedback.statusDone'),
-    dismissed: t('feedback.statusDismissed'),
+  function statusLabel(status: string) {
+    return t(STATUS_LABEL_KEYS[status as FeedbackStatus] ?? status)
   }
 
   function categoryLabel(category: string) {
-    const map: Record<string, string> = {
-      general: t('feedback.categoryGeneral'),
-      bug: t('feedback.categoryBug'),
-      feature: t('feedback.categoryFeature'),
-      improvement: t('feedback.categoryImprovement'),
-    }
-    return map[category] ?? category
+    return t(CATEGORY_LABEL_KEYS[category] ?? category)
   }
 
   if (isLoading) {
@@ -140,7 +143,7 @@ export function AdminFeedbackPage() {
             <StatusGroup
               key={status}
               status={status}
-              label={statusLabel[status] ?? status}
+              label={statusLabel(status)}
               items={items}
               statusOptions={statusOptions}
               categoryLabel={categoryLabel}

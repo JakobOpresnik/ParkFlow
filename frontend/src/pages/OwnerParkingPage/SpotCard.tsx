@@ -17,6 +17,16 @@ import { Button } from '@/components/ui/button'
 import type { DayStatus, SpotCardProps } from './types'
 import { formatDateTime, StatusConfig } from './utils'
 
+// — constants —
+
+const STATUS_LABEL_KEYS: Record<DayStatus, string> = {
+  free: 'ownerParking.statusFree',
+  occupied: 'ownerParking.statusOccupied',
+  reserved: 'ownerParking.statusReserved',
+}
+
+// — main component —
+
 export function SpotCard({
   spot,
   status,
@@ -33,13 +43,8 @@ export function SpotCard({
   isCancelling,
 }: SpotCardProps) {
   const { t, i18n } = useTranslation()
-  const STATUS_LABELS: Record<DayStatus, string> = {
-    free: t('ownerParking.statusFree'),
-    occupied: t('ownerParking.statusOccupied'),
-    reserved: t('ownerParking.statusReserved'),
-  }
   const { color, border } = StatusConfig[status]
-  const label = STATUS_LABELS[status]
+  const label = t(STATUS_LABEL_KEYS[status])
   const canModifyStatus = !isToggling && !isNonWorkDay && !isPastCutoff
 
   return (

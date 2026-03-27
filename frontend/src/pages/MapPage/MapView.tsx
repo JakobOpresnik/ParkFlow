@@ -22,6 +22,18 @@ interface MapViewProps {
   readonly invertFloorPlan: boolean
 }
 
+// — constants —
+
+const FRAME_STYLE_DARK: CSSProperties = {
+  border: '1px solid rgba(255,255,255,0.18)',
+  boxShadow: '0 0 0 1px rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.5)',
+}
+
+const FRAME_STYLE_LIGHT: CSSProperties = {
+  border: '1px solid rgba(0,0,0,0.1)',
+  boxShadow: '0 0 0 1px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.12)',
+}
+
 // — main component —
 
 export function MapView({
@@ -40,16 +52,7 @@ export function MapView({
   const colorScheme = useComputedColorScheme('light')
   const isDark = colorScheme === 'dark'
 
-  const mapFrameStyle: CSSProperties = isDark
-    ? {
-        border: '1px solid rgba(255,255,255,0.18)',
-        boxShadow:
-          '0 0 0 1px rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.5)',
-      }
-    : {
-        border: '1px solid rgba(0,0,0,0.1)',
-        boxShadow: '0 0 0 1px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.12)',
-      }
+  const mapFrameStyle = isDark ? FRAME_STYLE_DARK : FRAME_STYLE_LIGHT
 
   const isMapEmpty = !isLoading && !isError && activeLot === null
 

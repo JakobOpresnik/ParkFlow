@@ -33,18 +33,31 @@ interface GridContentProps {
 
 // — constants —
 
-const SKELETON_SPOT_IDS = [
-  's0',
-  's1',
-  's2',
-  's3',
-  's4',
-  's5',
-  's6',
-  's7',
-  's8',
-  's9',
-]
+const SKELETON_SPOT_IDS = ['s0', 's1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9']
+
+const BLUEPRINT_DARK: React.CSSProperties = {
+  backgroundColor: '#1e3a5f',
+  backgroundImage: [
+    'linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)',
+    'linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)',
+    'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)',
+    'linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
+  ].join(', '),
+  backgroundSize: '100px 100px, 100px 100px, 20px 20px, 20px 20px',
+  backgroundPosition: '-1px -1px, -1px -1px, -1px -1px, -1px -1px',
+}
+
+const BLUEPRINT_LIGHT: React.CSSProperties = {
+  backgroundColor: '#eef2f7',
+  backgroundImage: [
+    'linear-gradient(rgba(59,130,246,0.10) 1px, transparent 1px)',
+    'linear-gradient(90deg, rgba(59,130,246,0.10) 1px, transparent 1px)',
+    'linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px)',
+    'linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px)',
+  ].join(', '),
+  backgroundSize: '100px 100px, 100px 100px, 20px 20px, 20px 20px',
+  backgroundPosition: '-1px -1px, -1px -1px, -1px -1px, -1px -1px',
+}
 
 // — sub-components —
 
@@ -77,29 +90,7 @@ export function MapPage() {
   const colorScheme = useComputedColorScheme('light')
   const isDark = colorScheme === 'dark'
 
-  const blueprintStyle: React.CSSProperties = isDark
-    ? {
-        backgroundColor: '#1e3a5f',
-        backgroundImage: [
-          'linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)',
-          'linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)',
-          'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)',
-          'linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
-        ].join(', '),
-        backgroundSize: '100px 100px, 100px 100px, 20px 20px, 20px 20px',
-        backgroundPosition: '-1px -1px, -1px -1px, -1px -1px, -1px -1px',
-      }
-    : {
-        backgroundColor: '#eef2f7',
-        backgroundImage: [
-          'linear-gradient(rgba(59,130,246,0.10) 1px, transparent 1px)',
-          'linear-gradient(90deg, rgba(59,130,246,0.10) 1px, transparent 1px)',
-          'linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px)',
-          'linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px)',
-        ].join(', '),
-        backgroundSize: '100px 100px, 100px 100px, 20px 20px, 20px 20px',
-        backgroundPosition: '-1px -1px, -1px -1px, -1px -1px, -1px -1px',
-      }
+  const blueprintStyle = isDark ? BLUEPRINT_DARK : BLUEPRINT_LIGHT
 
   const today = new Date().toISOString().slice(0, 10)
   const selectedDate = useUIStore((s) => s.selectedDate)
