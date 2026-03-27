@@ -72,7 +72,12 @@ export function LoginPage() {
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-linear-to-br from-slate-50 to-slate-100 p-4 dark:bg-linear-to-br dark:from-slate-950 dark:to-slate-900">
       {/* Top-right controls */}
       <div className="absolute top-4 right-4 flex items-center gap-1">
-        <LanguageSwitcher />
+        <span className="sm:hidden">
+          <LanguageSwitcher compact />
+        </span>
+        <span className="hidden sm:block">
+          <LanguageSwitcher />
+        </span>
         <ThemeToggle />
       </div>
       {/* Background glow */}

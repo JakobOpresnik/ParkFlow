@@ -13,7 +13,7 @@ export function WeekStrip({
   const { i18n } = useTranslation()
   return (
     <div className="bg-card overflow-x-auto rounded-2xl border p-1.5">
-      <div className="grid min-w-[280px] grid-cols-7 gap-0.5 sm:gap-1">
+      <div className="grid min-w-0 grid-cols-7 gap-0.5 sm:gap-1">
         {days.map((date) => {
           const d = new Date(date + 'T00:00:00')
           const isSelected = date === selectedDate
@@ -29,14 +29,15 @@ export function WeekStrip({
           return (
             <button
               key={date}
-              onClick={() => onSelect(date)}
+              onClick={() => !isNonWork && onSelect(date)}
+              disabled={isNonWork}
               aria-label={`${weekday} ${dayNum}`}
               className={`relative flex flex-col items-center gap-0.5 rounded-xl py-2.5 transition-all ${
                 isSelected
-                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  ? 'bg-primary text-primary-foreground cursor-pointer shadow-sm'
                   : isNonWork
-                    ? 'text-muted-foreground/60 hover:bg-muted'
-                    : 'hover:bg-muted'
+                    ? 'text-muted-foreground/40 cursor-not-allowed'
+                    : 'cursor-pointer hover:bg-muted'
               }`}
             >
               <span
@@ -51,7 +52,7 @@ export function WeekStrip({
               <span className="text-lg leading-tight font-bold">{dayNum}</span>
               {isToday && !isNonWork && (
                 <div
-                  className={`size-1 rounded-full ${
+                  className={`mt-0.5 size-1 rounded-full ${
                     isSelected ? 'bg-primary-foreground' : 'bg-primary'
                   }`}
                 />
