@@ -1,20 +1,20 @@
-import { notifications } from '@mantine/notifications'
 import { useNavigate } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useLots } from '@/hooks/useLots'
-import { useCreateSpot, usePatchCoordinates, useSpots } from '@/hooks/useSpots'
+import { useSpots } from '@/hooks/useSpots'
 import { useUIStore } from '@/store/uiStore'
 import type { Spot, SpotCoordinates } from '@/types'
 
 import { EditorSidebar } from './EditorSidebar'
 import { EditorToolbar } from './EditorToolbar'
 import { ParkingMapCanvas } from './ParkingMapCanvas'
-import type { Mode, PendingRect } from './types'
+import type { Mode } from './types'
 import { useAutoSave } from './useAutoSave'
-import { getSvgPoint, MIN_RECT_SIZE, normalizeRect } from './utils'
+import { useDrawing } from './useDrawing'
+import { useEditorMutations } from './useEditorMutations'
 
 // — constants —
 
@@ -30,27 +30,34 @@ export function MapEditorPage() {
 
   const { data: lots = [], isLoading: lotsLoading } = useLots()
   const { data: allSpots = [], isLoading: spotsLoading } = useSpots()
-  const patchCoords = usePatchCoordinates()
-  const createSpot = useCreateSpot()
 
   const [selectedLotId, setSelectedLotId] = useState<string | null>(null)
   const [mode, setMode] = useState<Mode>('draw')
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(
-    null,
-  )
-  const [dragCurrent, setDragCurrent] = useState<{
-    x: number
-    y: number
-  } | null>(null)
-  const [pendingRect, setPendingRect] = useState<PendingRect | null>(null)
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null)
   const [selectedSpotLiveCoords, setSelectedSpotLiveCoords] =
     useState<SpotCoordinates | null>(null)
-  const { saveStatus, scheduleAutoSave } = useAutoSave(patchCoords)
+
+  const drawing = useDrawing({
+    svgRef,
+    mode,
+    setMode,
+    onClearSelection: () => setSelectedSpotId(null),
+  })
+
+  const mutations = useEditorMutations({
+    onSaved: (spotId) => {
+      drawing.setPendingRect(null)
+      setSelectedSpotId(spotId)
+      setMode('select')
+    },
+    onRemoved: () => setSelectedSpotId(null),
+  })
+
+  const { saveStatus, scheduleAutoSave } = useAutoSave(mutations.patchCoords)
+
+  // — derived data —
 
   const isLoading = lotsLoading || spotsLoading
-  const isMutating = patchCoords.isPending || createSpot.isPending
-
   const activeLotId = selectedLotId ?? lots[0]?.id ?? null
   const activeLot = lots.find((l) => l.id === activeLotId) ?? null
   const imgW = activeLot?.image_width ?? 792
@@ -66,182 +73,26 @@ export function MapEditorPage() {
   )
   const selectedSpot = mappedSpots.find((s) => s.id === selectedSpotId) ?? null
 
-  // Arrow key nudge for pending rect
-  useEffect(() => {
-    if (!pendingRect) return
-    function handleKeyDown(e: KeyboardEvent) {
-      // Don't hijack arrow keys while user is typing in an input
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement ||
-        e.target instanceof HTMLSelectElement
-      )
-        return
-      const step = e.shiftKey ? 5 : 1
-      const delta: Partial<PendingRect> = {}
-      if (e.key === 'ArrowLeft') delta.x = (pendingRect?.x ?? 0) - step
-      else if (e.key === 'ArrowRight') delta.x = (pendingRect?.x ?? 0) + step
-      else if (e.key === 'ArrowUp') delta.y = (pendingRect?.y ?? 0) - step
-      else if (e.key === 'ArrowDown') delta.y = (pendingRect?.y ?? 0) + step
-      else return
-      e.preventDefault()
-      setPendingRect((p) => (p ? { ...p, ...delta } : p))
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [pendingRect])
+  // — toolbar handlers —
 
-  // — mouse handlers —
-
-  function handleSvgMouseDown(e: React.MouseEvent<SVGSVGElement>) {
-    if (!svgRef.current || mode !== 'draw') return
-    e.preventDefault()
-    const pt = getSvgPoint(svgRef.current, e)
-    setDragStart(pt)
-    setDragCurrent(pt)
+  function handleSetDrawMode() {
+    setMode('draw')
     setSelectedSpotId(null)
-    setPendingRect(null)
+    drawing.setPendingRect(null)
   }
 
-  function handleSvgMouseMove(e: React.MouseEvent<SVGSVGElement>) {
-    if (!svgRef.current || !dragStart || mode !== 'draw') return
-    setDragCurrent(getSvgPoint(svgRef.current, e))
-  }
-
-  function handleSvgMouseUp() {
-    if (!dragStart || !dragCurrent || mode !== 'draw') return
-    const rect = normalizeRect(
-      dragStart.x,
-      dragStart.y,
-      dragCurrent.x,
-      dragCurrent.y,
-    )
-    if (rect.width > MIN_RECT_SIZE && rect.height > MIN_RECT_SIZE) {
-      setPendingRect({
-        x: Math.round(rect.x),
-        y: Math.round(rect.y),
-        width: Math.round(rect.width),
-        height: Math.round(rect.height),
-        rotation: 0,
-        labelPosition: 'top',
-        labelRotation: 0,
-      })
-      setMode('select')
-    }
-    setDragStart(null)
-    setDragCurrent(null)
+  function handleLotSelect(id: string) {
+    setSelectedLotId(id)
+    setSelectedSpotId(null)
+    drawing.setPendingRect(null)
   }
 
   function handleSpotClick(e: React.MouseEvent, spotId: string) {
     if (mode !== 'select') return
     e.stopPropagation()
     setSelectedSpotId(spotId)
-    setPendingRect(null)
+    drawing.setPendingRect(null)
   }
-
-  function handleMouseLeave() {
-    setDragStart(null)
-    setDragCurrent(null)
-  }
-
-  // — toolbar handlers —
-
-  function handleSetDrawMode() {
-    setMode('draw')
-    setSelectedSpotId(null)
-    setPendingRect(null)
-  }
-
-  function handleLotSelect(id: string) {
-    setSelectedLotId(id)
-    setSelectedSpotId(null)
-    setPendingRect(null)
-  }
-
-  // — sidebar handlers —
-
-  function handleDiscard() {
-    setPendingRect(null)
-  }
-
-  function handlePendingChange(patch: Partial<PendingRect>) {
-    setPendingRect((p) => (p ? { ...p, ...patch } : p))
-  }
-
-  // — mutations —
-
-  async function handleSaveToSpot(spotId: string, relCoords: SpotCoordinates) {
-    try {
-      await patchCoords.mutateAsync({ id: spotId, coordinates: relCoords })
-      notifications.show({
-        message: t('mapEditor.coordinatesSaved'),
-        color: 'green',
-      })
-      setPendingRect(null)
-      setSelectedSpotId(spotId)
-      setMode('select')
-    } catch (err) {
-      notifications.show({
-        message:
-          err instanceof Error ? err.message : t('mapEditor.failedToSave'),
-        color: 'red',
-      })
-    }
-  }
-
-  async function handleCreateSpot(
-    number: number,
-    label: string,
-    relCoords: SpotCoordinates,
-  ) {
-    if (!activeLotId) return
-    try {
-      const spot = await createSpot.mutateAsync({
-        number,
-        label: label || null,
-        lot_id: activeLotId,
-      })
-      await patchCoords.mutateAsync({ id: spot.id, coordinates: relCoords })
-      notifications.show({
-        message: t('mapEditor.spotCreated', { number }),
-        color: 'green',
-      })
-      setPendingRect(null)
-      setSelectedSpotId(spot.id)
-      setMode('select')
-    } catch (err) {
-      notifications.show({
-        message:
-          err instanceof Error
-            ? err.message
-            : t('mapEditor.failedToCreateSpot'),
-        color: 'red',
-      })
-    }
-  }
-
-  async function handleRemoveCoords() {
-    if (!selectedSpotId) return
-    try {
-      await patchCoords.mutateAsync({ id: selectedSpotId, coordinates: null })
-      notifications.show({
-        message: t('mapEditor.coordinatesRemoved'),
-        color: 'green',
-      })
-      setSelectedSpotId(null)
-    } catch (err) {
-      notifications.show({
-        message:
-          err instanceof Error ? err.message : t('mapEditor.failedToRemove'),
-        color: 'red',
-      })
-    }
-  }
-
-  const previewRect =
-    dragStart && dragCurrent && mode === 'draw'
-      ? normalizeRect(dragStart.x, dragStart.y, dragCurrent.x, dragCurrent.y)
-      : null
 
   return (
     <div className="flex flex-col gap-4">
@@ -302,12 +153,12 @@ export function MapEditorPage() {
             mappedSpots={mappedSpots}
             selectedSpotId={selectedSpotId}
             selectedSpotLiveCoords={selectedSpotLiveCoords}
-            pendingRect={pendingRect}
-            previewRect={previewRect}
-            onMouseDown={handleSvgMouseDown}
-            onMouseMove={handleSvgMouseMove}
-            onMouseUp={handleSvgMouseUp}
-            onMouseLeave={handleMouseLeave}
+            pendingRect={drawing.pendingRect}
+            previewRect={drawing.previewRect}
+            onMouseDown={drawing.handleSvgMouseDown}
+            onMouseMove={drawing.handleSvgMouseMove}
+            onMouseUp={drawing.handleSvgMouseUp}
+            onMouseLeave={drawing.handleMouseLeave}
             onSpotClick={handleSpotClick}
           />
 
@@ -315,23 +166,28 @@ export function MapEditorPage() {
             activeLot={activeLot}
             mappedCount={mappedSpots.length}
             totalCount={lotSpots.length}
-            pendingRect={pendingRect}
+            pendingRect={drawing.pendingRect}
             selectedSpot={selectedSpot}
             unmappedSpots={unmappedSpots}
             imgW={imgW}
             imgH={imgH}
-            isMutating={isMutating}
+            isMutating={mutations.isPending}
             mode={mode}
             saveStatus={saveStatus}
-            onSaveToSpot={handleSaveToSpot}
-            onCreateSpot={handleCreateSpot}
-            onDiscard={handleDiscard}
-            onPendingChange={handlePendingChange}
+            onSaveToSpot={mutations.handleSaveToSpot}
+            onCreateSpot={(number, label, relCoords) =>
+              mutations.handleCreateSpot(number, label, relCoords, activeLotId!)
+            }
+            onDiscard={drawing.handleDiscard}
+            onPendingChange={drawing.handlePendingChange}
             onAutoSave={(relCoords) => {
               if (selectedSpot) scheduleAutoSave(selectedSpot.id, relCoords)
             }}
             onCoordsChange={setSelectedSpotLiveCoords}
-            onRemove={handleRemoveCoords}
+            onRemove={() => {
+              if (selectedSpotId)
+                void mutations.handleRemoveCoords(selectedSpotId)
+            }}
           />
         </div>
       )}
