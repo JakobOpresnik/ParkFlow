@@ -2,6 +2,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { pool } from "./pool.js";
 
+// Migrations that are safe to re-run on every startup (idempotent UPDATEs, etc.).
+// These are removed from _migrations before the run so they always re-apply,
+// allowing you to edit the file and have changes take effect on next deploy.
+const REPLAYABLE_MIGRATIONS = new Set([
+  "015_spot_coordinates.sql",
+]);
+
 export async function runMigrations() {
   console.log("[migrations] Checking for database migrations...");
 
@@ -16,7 +23,7 @@ export async function runMigrations() {
 
   // 2. Read all files from migrations directory
   const migrationsDir = path.join(process.cwd(), "migrations");
-  
+
   if (!fs.existsSync(migrationsDir)) {
     console.warn(`[migrations] Migrations directory not found at ${migrationsDir}`);
     return;
@@ -27,11 +34,16 @@ export async function runMigrations() {
     .filter((f) => f.endsWith(".sql"))
     .sort();
 
-  // 3. Get applied migrations
+  // 3. Force re-apply replayable migrations by removing them from the applied set
+  for (const name of REPLAYABLE_MIGRATIONS) {
+    await pool.query("DELETE FROM _migrations WHERE name = $1", [name]);
+  }
+
+  // 4. Get applied migrations
   const { rows } = await pool.query("SELECT name FROM _migrations");
   const applied = new Set(rows.map((r: any) => r.name));
 
-  // 4. Run missing migrations
+  // 5. Run missing migrations
   for (const file of files) {
     if (!applied.has(file)) {
       console.log(`[migrations] Applying ${file}...`);
