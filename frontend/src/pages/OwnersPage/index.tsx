@@ -1,5 +1,6 @@
 import { notifications } from '@mantine/notifications'
-import { Plus, Search, X } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
+import { ArrowLeft, Plus, Search, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -13,6 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { useDeleteOwner, useOwners } from '@/hooks/useOwners'
+import { useUIStore } from '@/store/uiStore'
 import type { Owner } from '@/types'
 
 import { OwnerDeleteDialog } from './OwnerDeleteDialog'
@@ -26,6 +28,8 @@ import { useOwnerLinkDialog } from './useOwnerLinkDialog'
 
 export function OwnersPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const setMoreOpen = useUIStore((s) => s.setMoreDrawerOpen)
   const { data: owners = [], isLoading } = useOwners()
   const deleteOwner = useDeleteOwner()
 
@@ -98,6 +102,17 @@ export function OwnersPage() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
+          <button
+            onClick={() => {
+              setMoreOpen(true)
+              void navigate({ to: '/' })
+            }}
+            className="text-muted-foreground hover:text-foreground mb-2 inline-flex cursor-pointer items-center gap-1 sm:hidden"
+            style={{ fontSize: 12 }}
+          >
+            <ArrowLeft className="size-3.5" />
+            {t('common.back')}
+          </button>
           <h1 className="text-2xl font-semibold">{t('owners.title')}</h1>
           <p className="text-muted-foreground mt-0.5 text-sm">
             {t('owners.subtitle')}

@@ -1,9 +1,12 @@
 import { notifications } from '@mantine/notifications'
+import { useNavigate } from '@tanstack/react-router'
+import { ArrowLeft } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useLots } from '@/hooks/useLots'
 import { useCreateSpot, usePatchCoordinates, useSpots } from '@/hooks/useSpots'
+import { useUIStore } from '@/store/uiStore'
 import type { Spot, SpotCoordinates } from '@/types'
 
 import { EditorSidebar } from './EditorSidebar'
@@ -21,6 +24,8 @@ const CANVAS_SKELETON_STYLE = { aspectRatio: '13/10' }
 
 export function MapEditorPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const setMoreOpen = useUIStore((s) => s.setMoreDrawerOpen)
   const svgRef = useRef<SVGSVGElement>(null)
 
   const { data: lots = [], isLoading: lotsLoading } = useLots()
@@ -241,6 +246,17 @@ export function MapEditorPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
+        <button
+          onClick={() => {
+            setMoreOpen(true)
+            void navigate({ to: '/' })
+          }}
+          className="text-muted-foreground hover:text-foreground mb-2 inline-flex cursor-pointer items-center gap-1 sm:hidden"
+          style={{ fontSize: 12 }}
+        >
+          <ArrowLeft className="size-3.5" />
+          {t('common.back')}
+        </button>
         <h1 className="text-2xl font-semibold">{t('mapEditor.title')}</h1>
         <p className="text-muted-foreground mt-0.5 text-sm">
           {t('mapEditor.subtitle')}
@@ -275,7 +291,7 @@ export function MapEditorPage() {
       )}
 
       {!isLoading && activeLot && (
-        <div className="flex items-start gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           <ParkingMapCanvas
             key={activeLotId ?? 'none'}
             svgRef={svgRef}
