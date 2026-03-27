@@ -2,9 +2,12 @@ const sl = {
   nav: {
     map: 'Zemljevid',
     dashboard: 'Nadzorna plošča',
+    dashboardShort: 'Domov',
     statistics: 'Statistika',
     myBookings: 'Moje rezervacije',
+    myBookingsShort: 'Rezervacije',
     myParking: 'Moje parkirišče',
+    myParkingShort: 'Parkirišče',
     admin: 'Admin',
     adminParking: 'Parkirišča',
     adminOwners: 'Lastniki',
@@ -12,6 +15,7 @@ const sl = {
     adminFeedback: 'Povratne informacije',
     signIn: 'Prijava',
     profile: 'Ogled profila',
+    more: 'Več',
   },
   auth: {
     sessionExpired: 'Seja je potekla — preusmerjanje na ponovno prijavo…',
@@ -460,6 +464,7 @@ const sl = {
   },
   feedback: {
     helpAndFeedback: 'Pomoč in povratne informacije',
+    help: 'Pomoč',
     supportTitle: 'Potrebujete pomoč?',
     supportDesc:
       'Za tehnična vprašanja ali težave se obrnite na enega od administratorjev.',
@@ -500,6 +505,7 @@ const sl = {
     loading: 'Nalaganje…',
     error: 'Prišlo je do napake',
     close: 'Zapri',
+    back: 'Nazaj',
   },
 } as const
 

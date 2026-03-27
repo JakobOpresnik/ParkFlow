@@ -38,6 +38,9 @@ interface UIStore {
 
   selectedDate: string
   setSelectedDate: (date: string) => void
+
+  moreDrawerOpen: boolean
+  setMoreDrawerOpen: (open: boolean) => void
 }
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -53,4 +56,7 @@ export const useUIStore = create<UIStore>((set) => ({
     set({ selectedDate: date })
     invalidateAllSpotQueries()
   },
+
+  moreDrawerOpen: false,
+  setMoreDrawerOpen: (open) => set({ moreDrawerOpen: open }),
 }))
