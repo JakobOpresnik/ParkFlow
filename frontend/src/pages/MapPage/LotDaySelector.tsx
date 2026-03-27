@@ -173,7 +173,7 @@ export function LotDaySelector({
 }: LotDaySelectorProps) {
   const { t, i18n } = useTranslation()
   return (
-    <div className="absolute top-3 left-3 z-20 max-w-[calc(100%-216px)]">
+    <div className="absolute top-3 left-3 z-20 max-w-[calc(100%-88px)] sm:max-w-[calc(100%-216px)]">
       <div
         className={`flex flex-col gap-1 rounded-xl p-1.5 ${
           isMapMode
