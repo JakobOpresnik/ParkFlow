@@ -19,6 +19,14 @@ interface LotBreakdownProps {
   readonly allSpots: readonly Spot[]
 }
 
+// — constants —
+
+const LOT_LEGEND_CONFIG = [
+  { labelKey: 'dashboard.free', color: 'var(--color-spot-free)' },
+  { labelKey: 'dashboard.occupied', color: 'var(--color-spot-occupied)' },
+  { labelKey: 'dashboard.reserved', color: 'var(--color-spot-reserved)' },
+] as const
+
 // — sub-components —
 
 function LotBar({ name, free, occupied, reserved, total }: LotBarProps) {
@@ -65,11 +73,10 @@ function LotBar({ name, free, occupied, reserved, total }: LotBarProps) {
 export function LotBreakdown({ lots, allSpots }: LotBreakdownProps) {
   const { t } = useTranslation()
 
-  const LOT_LEGEND = [
-    { label: t('dashboard.free'), color: 'var(--color-spot-free)' },
-    { label: t('dashboard.occupied'), color: 'var(--color-spot-occupied)' },
-    { label: t('dashboard.reserved'), color: 'var(--color-spot-reserved)' },
-  ]
+  const LOT_LEGEND = LOT_LEGEND_CONFIG.map((item) => ({
+    ...item,
+    label: t(item.labelKey),
+  }))
 
   return (
     <div className="bg-card rounded-xl border shadow-sm">

@@ -40,6 +40,12 @@ const StatusColorVar: Record<SpotStatus, string> = {
   reserved: '--color-spot-reserved',
 }
 
+const STATUS_LABEL_KEYS: Record<SpotStatus, string> = {
+  free: 'stats.free',
+  occupied: 'stats.occupied',
+  reserved: 'stats.reserved',
+}
+
 // — helpers —
 
 function computePct(n: number, total: number): number {
@@ -178,16 +184,10 @@ export function StatsPage() {
     reserved: spots.filter((s) => s.status === 'reserved').length,
   }
 
-  const STATUS_LABELS: Record<SpotStatus, string> = {
-    free: t('stats.free'),
-    occupied: t('stats.occupied'),
-    reserved: t('stats.reserved'),
-  }
-
   const segments: Segment[] = (
     ['free', 'occupied', 'reserved'] as SpotStatus[]
   ).map((s) => ({
-    label: STATUS_LABELS[s],
+    label: t(STATUS_LABEL_KEYS[s]),
     count: counts[s],
     pct: computePct(counts[s], total),
     colorVar: StatusColorVar[s],

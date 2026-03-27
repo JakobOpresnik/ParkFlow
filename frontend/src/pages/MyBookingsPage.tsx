@@ -14,6 +14,12 @@ const STATUS_BADGE: Record<BookingStatus, string> = {
   expired: 'bg-muted text-muted-foreground border-transparent',
 }
 
+const STATUS_LABEL_KEYS: Record<BookingStatus, string> = {
+  active: 'bookings.statusActive',
+  cancelled: 'bookings.statusCancelled',
+  expired: 'bookings.statusExpired',
+}
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('sl-SI', {
     day: '2-digit',
@@ -25,7 +31,7 @@ function formatDate(iso: string) {
 }
 
 interface BookingCardProps {
-  booking: Booking
+  readonly booking: Booking
 }
 
 function useTimeRemaining() {
@@ -45,12 +51,6 @@ function BookingCard({ booking }: BookingCardProps) {
   const { t } = useTranslation()
   const cancelBooking = useCancelBooking()
   const timeRemaining = useTimeRemaining()
-
-  const STATUS_LABEL: Record<BookingStatus, string> = {
-    active: t('bookings.statusActive'),
-    cancelled: t('bookings.statusCancelled'),
-    expired: t('bookings.statusExpired'),
-  }
 
   function handleCancel() {
     cancelBooking.mutate(booking.id, {
@@ -81,7 +81,7 @@ function BookingCard({ booking }: BookingCardProps) {
               {booking.spot_label ?? `#${booking.spot_number}`}
             </span>
             <Badge className={STATUS_BADGE[booking.status]}>
-              {STATUS_LABEL[booking.status]}
+              {t(STATUS_LABEL_KEYS[booking.status])}
             </Badge>
           </div>
 
