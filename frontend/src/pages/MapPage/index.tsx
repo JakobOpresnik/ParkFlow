@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import type { ParkingMapHandle } from '@/components/ParkingMap/ParkingMap'
 import { SpotGrid } from '@/components/SpotGrid/SpotGrid'
 import { SpotModal } from '@/components/SpotModal'
+import { DialogPortalTargetCtx } from '@/components/ui/dialog'
 import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
 import { useLots } from '@/hooks/useLots'
 import { useParkingStore } from '@/store/parkingStore'
@@ -126,6 +127,7 @@ export function MapPage() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [containerEl, setContainerEl] = useState<HTMLElement | null>(null)
 
   const { keyNavRow } = useKeyboardNav({
     lots,
@@ -159,6 +161,11 @@ export function MapPage() {
     return () => document.removeEventListener('fullscreenchange', onFsChange)
   }, [])
 
+  // Track the container element for portal targeting
+  useEffect(() => {
+    setContainerEl(containerRef.current)
+  }, [])
+
   const isLoading = spotsLoading || lotsLoading
   const activeLot = lots.find((l) => l.id === selectedLotId) ?? lots[0] ?? null
   const lotSpots = activeLot
@@ -185,87 +192,91 @@ export function MapPage() {
     }
   }
 
+  const portalTarget = isFullscreen ? (containerEl ?? undefined) : undefined
+
   return (
     <div
       ref={containerRef}
       className={`relative h-full w-full overflow-hidden ${isMapMode ? '' : 'bg-muted/40'}`}
       style={isMapMode ? blueprintStyle : undefined}
     >
-      {isMapMode && (
-        <MapView
-          activeLot={activeLot}
+      <DialogPortalTargetCtx.Provider value={portalTarget}>
+        {isMapMode && (
+          <MapView
+            activeLot={activeLot}
+            isLoading={isLoading}
+            isError={isError}
+            lotSpots={lotSpots}
+            selectedSpotId={selectedSpot?.id ?? null}
+            highlightedSpotId={highlightedSpotId}
+            shouldBlurMap={shouldBlurMap}
+            onSpotClick={handleSpotClick}
+            mapRef={mapRef}
+            invertFloorPlan={isDark}
+          />
+        )}
+
+        {!isMapMode && (
+          <div
+            className={`absolute inset-0 overflow-y-auto p-4 pt-56 transition-[filter] duration-300 sm:pt-52 ${shouldBlurMap ? 'blur-[3px]' : ''}`}
+          >
+            <GridContent isLoading={isLoading} lotSpots={lotSpots} />
+          </div>
+        )}
+
+        <LotDaySelector
+          lots={lots}
+          allSpots={allSpots}
           isLoading={isLoading}
-          isError={isError}
+          activeLot={activeLot}
+          selectedDate={selectedDate}
+          weekDays={weekDays}
+          today={today}
+          isMapMode={isMapMode}
+          keyNavRow={keyNavRow}
+          onLotSelect={handleLotSelect}
+          onDateSelect={setSelectedDate}
+        />
+
+        <MapViewToggle
+          isMapMode={isMapMode}
+          onSelectMap={() => setMapViewMode('map')}
+          onSelectGrid={() => setMapViewMode('grid')}
+        />
+
+        {isMapMode && (
+          <MapControls
+            sidebarOpen={sidebarOpen}
+            onSidebarToggle={() => setSidebarOpen((v) => !v)}
+            mapRef={mapRef}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={handleToggleFullscreen}
+          />
+        )}
+
+        <MapSidebar
+          isOpen={sidebarOpen}
+          activeLot={activeLot}
           lotSpots={lotSpots}
-          selectedSpotId={selectedSpot?.id ?? null}
-          highlightedSpotId={highlightedSpotId}
-          shouldBlurMap={shouldBlurMap}
-          onSpotClick={handleSpotClick}
-          mapRef={mapRef}
-          invertFloorPlan={isDark}
+          isLoading={isLoading}
+          onClose={() => setSidebarOpen(false)}
         />
-      )}
 
-      {!isMapMode && (
-        <div
-          className={`absolute inset-0 overflow-y-auto p-4 pt-56 transition-[filter] duration-300 sm:pt-52 ${shouldBlurMap ? 'blur-[3px]' : ''}`}
-        >
-          <GridContent isLoading={isLoading} lotSpots={lotSpots} />
-        </div>
-      )}
-
-      <LotDaySelector
-        lots={lots}
-        allSpots={allSpots}
-        isLoading={isLoading}
-        activeLot={activeLot}
-        selectedDate={selectedDate}
-        weekDays={weekDays}
-        today={today}
-        isMapMode={isMapMode}
-        keyNavRow={keyNavRow}
-        onLotSelect={handleLotSelect}
-        onDateSelect={setSelectedDate}
-      />
-
-      <MapViewToggle
-        isMapMode={isMapMode}
-        onSelectMap={() => setMapViewMode('map')}
-        onSelectGrid={() => setMapViewMode('grid')}
-      />
-
-      {isMapMode && (
-        <MapControls
-          sidebarOpen={sidebarOpen}
-          onSidebarToggle={() => setSidebarOpen((v) => !v)}
-          mapRef={mapRef}
-          isFullscreen={isFullscreen}
-          onToggleFullscreen={handleToggleFullscreen}
+        <NextWeekPrompt
+          isOpen={showNextWeekPrompt}
+          onGoToNextWeek={handleGoToNextWeek}
+          onDismiss={handleDismiss}
         />
-      )}
 
-      <MapSidebar
-        isOpen={sidebarOpen}
-        activeLot={activeLot}
-        lotSpots={lotSpots}
-        isLoading={isLoading}
-        onClose={() => setSidebarOpen(false)}
-      />
+        <MapOverlays
+          isLoadingPresence={isLoadingPresence}
+          isLoadingData={isLoading}
+          isWorkFreeDay={isWorkFreeDay}
+          selectedDate={selectedDate}
+        />
 
-      <NextWeekPrompt
-        isOpen={showNextWeekPrompt}
-        onGoToNextWeek={handleGoToNextWeek}
-        onDismiss={handleDismiss}
-      />
-
-      <MapOverlays
-        isLoadingPresence={isLoadingPresence}
-        isLoadingData={isLoading}
-        isWorkFreeDay={isWorkFreeDay}
-        selectedDate={selectedDate}
-      />
-
-      <SpotModal />
+        <SpotModal />
+      </DialogPortalTargetCtx.Provider>
     </div>
   )
 }
