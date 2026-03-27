@@ -1,3 +1,4 @@
+import { Select } from '@mantine/core'
 import { CheckCircle, Loader2 } from 'lucide-react'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -9,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Select } from '@/components/ui/select'
 import { useCreateFeedback } from '@/hooks/useFeedback'
 import type { FeedbackCategory } from '@/types'
 
@@ -119,18 +119,17 @@ export function HelpFeedbackDialog({
           </p>
 
           {submitted ? (
-            <div className="mt-4 flex flex-col items-center gap-3 rounded-lg bg-green-50 py-5 dark:bg-green-950/30">
-              <CheckCircle className="size-8 text-green-600 dark:text-green-400" />
-              <p className="text-sm text-green-700 dark:text-green-400">
+            <div className="mt-4 flex flex-col items-center gap-2.5 rounded-lg bg-green-50 px-4 py-4 text-center dark:bg-green-950/30">
+              <CheckCircle className="size-6 text-green-600 dark:text-green-400" />
+              <p className="text-xs text-green-700 dark:text-green-400">
                 {t('feedback.submitted')}
               </p>
-              <Button
-                variant="outline"
-                color="teal"
+              <button
                 onClick={() => handleOpenChange(false)}
+                className="cursor-pointer rounded-md border border-green-300 px-3 py-1.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-100 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-900/30"
               >
                 {t('common.close')}
-              </Button>
+              </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
@@ -192,6 +191,11 @@ export function HelpFeedbackDialog({
                     value={category}
                     onChange={(val) => {
                       if (val) setCategory(val as FeedbackCategory)
+                    }}
+                    allowDeselect={false}
+                    comboboxProps={{
+                      position: 'top',
+                      middlewares: { flip: true, shift: true },
                     }}
                   />
                 </div>
