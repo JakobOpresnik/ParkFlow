@@ -6,7 +6,7 @@ const en = {
     myBookings: 'My Bookings',
     myParking: 'My Parking',
     admin: 'Admin',
-    adminParking: 'Parking',
+    adminParking: 'Parking Spots',
     adminOwners: 'Owners',
     adminMapEditor: 'Map Editor',
     adminFeedback: 'Feedback',

@@ -104,10 +104,12 @@ export function SpotModal() {
     spot.active_booking_user_id === user.id &&
     spot.active_booking_expires_at?.slice(0, 10) === selectedDate
 
-  // Show reserved (yellow) only for the user's own booking.
+  // Show reserved (yellow) for the user's own booking or the owner's own spot.
   // Someone else's reservation should display as occupied (red).
   const bannerStatus =
-    spot.status === 'reserved' && !isMyBooking ? 'occupied' : spot.status
+    spot.status === 'reserved' && !isMyBooking && !isCurrentUserOwner
+      ? 'occupied'
+      : spot.status
 
   const bannerSubtext = buildBannerSubtext(
     { ...spot, status: bannerStatus },

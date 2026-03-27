@@ -6,6 +6,12 @@ import { cn } from '@/lib/utils'
 // Context so DialogContent can call onClose without prop-drilling
 const DialogCloseCtx = React.createContext<() => void>(() => {})
 
+// Context to let fullscreen containers redirect modal portals inside themselves
+const DialogPortalTargetCtx = React.createContext<HTMLElement | undefined>(
+  undefined,
+)
+export { DialogPortalTargetCtx }
+
 function Dialog({
   open,
   onOpenChange,
@@ -16,6 +22,7 @@ function Dialog({
   children?: React.ReactNode
 }) {
   const onClose = React.useCallback(() => onOpenChange?.(false), [onOpenChange])
+  const portalTarget = React.useContext(DialogPortalTargetCtx)
   return (
     <DialogCloseCtx.Provider value={onClose}>
       <Modal
@@ -28,6 +35,7 @@ function Dialog({
         overlayProps={{ backgroundOpacity: 0.5 }}
         transitionProps={{ transition: 'fade', duration: 150 }}
         classNames={{ content: 'overflow-visible' }}
+        portalProps={portalTarget ? { target: portalTarget } : undefined}
       >
         {children}
       </Modal>
