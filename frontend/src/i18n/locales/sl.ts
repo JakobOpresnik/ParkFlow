@@ -119,6 +119,7 @@ const sl = {
     bannerFreeElsewhere:
       'Imate rezervirano mesto {{label}}. Premik sem bo preklical to rezervacijo.',
     bannerReservedMine: 'To mesto ste rezervirali vi.',
+    bannerReservedByCoOwner: 'Solastnik ima rezervirano to mesto.',
     bannerReservedOther: 'To mesto je že rezervirano.',
     bannerOccupiedMine: 'Vaše mesto — trenutno ga uporabljate.',
     bannerOccupiedOwner: 'To mesto trenutno uporablja lastnik.',
@@ -436,6 +437,7 @@ const sl = {
     statusReserved: 'Rezervirano',
     reservedBy: 'Rezerviral:',
     until: 'Do:',
+    coOwner: 'solastnik',
     freeSpot: 'Sprosti mesto',
     occupySpot: 'Zasedi mesto',
     cancelReservation: 'Prekliči rezervacijo',

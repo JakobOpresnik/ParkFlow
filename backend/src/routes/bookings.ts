@@ -217,14 +217,24 @@ router.post('/', requireAuth, async (req, res, next) => {
         return;
       }
 
+      // Check if the booking is made by an owner (or co-owner) of the spot.
+      // Used later to prevent other co-owners from cancelling this booking.
+      const ownerCheck = await client.query(
+        `SELECT 1 FROM owners o
+         JOIN spots s ON s.owner_id = o.id
+         WHERE s.id = $1 AND $2 = ANY(string_to_array(o.user_id, ','))`,
+        [spot_id, req.user!.username],
+      );
+      const bookedByOwner = ownerCheck.rows.length > 0;
+
       // Create booking + reserve spot
       await client.query(`UPDATE spots SET status = 'reserved' WHERE id = $1`, [
         spot_id,
       ]);
       const startsAt = starts_at ? new Date(starts_at) : null;
       const booking = await client.query(
-        `INSERT INTO bookings (user_id, spot_id, starts_at, expires_at, reserved_by)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO bookings (user_id, spot_id, starts_at, expires_at, reserved_by, booked_by_owner)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING id, status, booked_at, starts_at, expires_at, ended_at`,
         [
           req.user!.userId,
@@ -232,6 +242,7 @@ router.post('/', requireAuth, async (req, res, next) => {
           startsAt ? startsAt.toISOString() : null,
           expiresAt.toISOString(),
           req.user!.displayName,
+          bookedByOwner,
         ],
       );
       await client.query('COMMIT');
@@ -349,7 +360,7 @@ router.patch('/:id/cancel', requireAuth, async (req, res, next) => {
 
       // Lock the booking row to prevent concurrent cancel/modify
       const bookingResult = await client.query(
-        `SELECT b.id, b.user_id, b.spot_id, b.status,
+        `SELECT b.id, b.user_id, b.spot_id, b.status, b.booked_by_owner,
                 o.user_id AS spot_owner_username
          FROM bookings b
          JOIN spots s ON s.id = b.spot_id
@@ -373,7 +384,12 @@ router.patch('/:id/cancel', requireAuth, async (req, res, next) => {
           .map((u: string) => u.trim()) ?? [];
       const isSpotOwner = spotOwnerUsernames.includes(req.user!.username);
 
-      if (!isBookingOwner && !isAdmin && !isSpotOwner) {
+      // Spot owners may cancel squatter bookings, but never another co-owner's booking.
+      const canCancel =
+        isBookingOwner ||
+        isAdmin ||
+        (isSpotOwner && !booking.booked_by_owner);
+      if (!canCancel) {
         await client.query('ROLLBACK');
         res.status(403).json({ error: 'Not your booking' });
         return;

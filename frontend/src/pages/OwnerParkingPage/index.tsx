@@ -2,6 +2,7 @@ import { ArrowRightLeft, Loader2, ParkingCircle } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { useAuthStore } from '@/store/authStore'
 import type { OwnerSpot } from '@/types'
 
 import { BookingHistory } from './BookingHistory'
@@ -22,6 +23,7 @@ import { WeekStrip } from './WeekStrip'
 
 export function OwnerParkingPage() {
   const { t, i18n } = useTranslation()
+  const currentUserId = useAuthStore((s) => s.user?.id ?? '')
   const today = new Date().toISOString().slice(0, 10)
   const [selectedDate, setSelectedDate] = useState(today)
   const [historySpotId, setHistorySpotId] = useState<string | null>(null)
@@ -181,6 +183,7 @@ export function OwnerParkingPage() {
                 isOverridden={isOverridden}
                 isNonWorkDay={isNonWorkDay(selectedDate, today, workFreeDays)}
                 isPastCutoff={isPastBookingCutoff(selectedDate, today)}
+                currentUserId={currentUserId}
                 switchedToSpotLabel={
                   isSwitchedFree
                     ? (myBookingElsewhere.spot_label ??

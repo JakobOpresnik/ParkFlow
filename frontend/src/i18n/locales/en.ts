@@ -118,6 +118,7 @@ const en = {
     bannerFreeElsewhere:
       'You have spot {{label}} reserved. Moving here will cancel it.',
     bannerReservedMine: 'You have reserved this spot.',
+    bannerReservedByCoOwner: 'A co-owner has reserved this spot.',
     bannerReservedOther: 'This spot has already been reserved.',
     bannerOccupiedMine: 'Your spot — you are currently using it.',
     bannerOccupiedOwner: 'This spot is currently in use by the owner.',
@@ -431,6 +432,7 @@ const en = {
     statusReserved: 'Reserved',
     reservedBy: 'Reserved:',
     until: 'Until:',
+    coOwner: 'co-owner',
     freeSpot: 'Free spot',
     occupySpot: 'Occupy spot',
     cancelReservation: 'Cancel reservation',

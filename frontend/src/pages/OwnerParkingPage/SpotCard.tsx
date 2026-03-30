@@ -34,6 +34,7 @@ export function SpotCard({
   isNonWorkDay,
   isPastCutoff,
   switchedToSpotLabel,
+  currentUserId,
   onSetDayStatus,
   onClearOverride,
   onCancelBooking,
@@ -46,6 +47,10 @@ export function SpotCard({
   const { color, border } = StatusConfig[status]
   const label = t(STATUS_LABEL_KEYS[status])
   const canModifyStatus = !isToggling && !isNonWorkDay && !isPastCutoff
+  // A co-owner's booking may only be cancelled by themselves or an admin (handled
+  // server-side). Hide the button entirely when another co-owner holds the booking.
+  const isMyBooking = spot.active_booking_user_id === currentUserId
+  const canCancelBooking = isMyBooking || !spot.active_booking_booked_by_owner
 
   return (
     <div className={`bg-card overflow-hidden rounded-2xl border ${border}`}>
@@ -104,6 +109,11 @@ export function SpotCard({
                 {spot.active_booking_reserved_by}
               </span>
             </span>
+            {spot.active_booking_booked_by_owner && !isMyBooking && (
+              <span className="ml-auto shrink-0 rounded-full bg-blue-200/60 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-800/40 dark:text-blue-300">
+                {t('ownerParking.coOwner')}
+              </span>
+            )}
           </div>
           {spot.active_booking_expires_at && (
             <div className="text-muted-foreground mt-1 flex items-center gap-2 text-xs">
@@ -139,17 +149,19 @@ export function SpotCard({
             {t('ownerParking.occupySpot')}
           </Button>
         )}
-        {status === 'reserved' && spot.active_booking_id && (
-          <Button
-            onClick={onCancelBooking}
-            disabled={isCancelling}
-            variant="destructive"
-            className="h-11 flex-1 gap-2 text-sm font-semibold"
-          >
-            <ShieldX className="size-4" />
-            {t('ownerParking.cancelReservation')}
-          </Button>
-        )}
+        {status === 'reserved' &&
+          spot.active_booking_id &&
+          canCancelBooking && (
+            <Button
+              onClick={onCancelBooking}
+              disabled={isCancelling}
+              variant="destructive"
+              className="h-11 flex-1 gap-2 text-sm font-semibold"
+            >
+              <ShieldX className="size-4" />
+              {t('ownerParking.cancelReservation')}
+            </Button>
+          )}
         {isOverridden && status !== 'reserved' && (
           <Button
             onClick={onClearOverride}

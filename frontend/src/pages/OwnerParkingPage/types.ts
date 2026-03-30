@@ -19,6 +19,7 @@ export interface SpotCardProps {
   readonly isNonWorkDay: boolean
   readonly isPastCutoff: boolean
   readonly switchedToSpotLabel?: string
+  readonly currentUserId: string
   readonly onSetDayStatus: (s: 'free' | 'occupied') => void
   readonly onClearOverride: () => void
   readonly onCancelBooking: () => void

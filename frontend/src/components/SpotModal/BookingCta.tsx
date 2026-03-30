@@ -28,6 +28,7 @@ interface BookingCtaProps {
   readonly reservationDuration: number
   readonly myReservedElsewhere: Spot | undefined
   readonly canCancelThisBooking: boolean
+  readonly isCoOwnerBooking: boolean
   readonly myOwnedSpot?: Spot
 }
 
@@ -48,6 +49,7 @@ export function BookingCta({
   reservationDuration,
   myReservedElsewhere,
   canCancelThisBooking,
+  isCoOwnerBooking,
   myOwnedSpot,
 }: BookingCtaProps) {
   const { t } = useTranslation()
@@ -244,6 +246,11 @@ export function BookingCta({
       {/* Occupied, or reserved by someone else */}
       {isUnavailableSpot && (
         <div className="text-muted-foreground flex flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed py-3 text-sm">
+          {isCoOwnerBooking && spot.active_booking_reserved_by && (
+            <span className="text-foreground text-xs font-medium">
+              {spot.active_booking_reserved_by}
+            </span>
+          )}
           {spot.status === 'reserved' && spot.active_booking_expires_at ? (
             <>
               <Clock className="size-4" />

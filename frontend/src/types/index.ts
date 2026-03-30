@@ -70,6 +70,7 @@ export interface Spot {
   active_booking_reserved_by: string | null
   active_booking_starts_at: string | null
   active_booking_expires_at: string | null
+  active_booking_booked_by_owner: boolean | null
 }
 
 export type SpotChangeType =
@@ -137,6 +138,7 @@ export interface OwnerSpot {
   active_booking_reserved_by: string | null
   active_booking_starts_at: string | null
   active_booking_expires_at: string | null
+  active_booking_booked_by_owner: boolean | null
 }
 
 export interface SpotDayOverride {

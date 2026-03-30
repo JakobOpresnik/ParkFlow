@@ -49,11 +49,12 @@ router.get("/me/spots", requireAuth, async (req, res, next) => {
         o.id            AS owner_id,
         o.name          AS owner_name,
         pl.name         AS lot_name,
-        b.id            AS active_booking_id,
-        b.user_id       AS active_booking_user_id,
-        b.reserved_by   AS active_booking_reserved_by,
-        b.starts_at     AS active_booking_starts_at,
-        b.expires_at    AS active_booking_expires_at
+        b.id               AS active_booking_id,
+        b.user_id          AS active_booking_user_id,
+        b.reserved_by      AS active_booking_reserved_by,
+        b.starts_at        AS active_booking_starts_at,
+        b.expires_at       AS active_booking_expires_at,
+        b.booked_by_owner  AS active_booking_booked_by_owner
       FROM spots s
       LEFT JOIN owners o ON s.owner_id = o.id
       LEFT JOIN parking_lots pl ON s.lot_id = pl.id

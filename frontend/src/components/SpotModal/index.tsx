@@ -22,6 +22,7 @@ function buildBannerSubtext(
   myReservedElsewhere: Spot | undefined,
   isMyBooking: boolean,
   isCurrentUserOwner: boolean,
+  isCoOwnerBooking: boolean,
   t: TFunc,
 ): string {
   if (spot.status === 'free') {
@@ -32,9 +33,9 @@ function buildBannerSubtext(
       : t('spotModal.bannerFree')
   }
   if (spot.status === 'reserved') {
-    return isMyBooking
-      ? t('spotModal.bannerReservedMine')
-      : t('spotModal.bannerReservedOther')
+    if (isMyBooking) return t('spotModal.bannerReservedMine')
+    if (isCoOwnerBooking) return t('spotModal.bannerReservedByCoOwner')
+    return t('spotModal.bannerReservedOther')
   }
   if (isCurrentUserOwner && spot.status === 'occupied')
     return t('spotModal.bannerOccupiedMine')
@@ -68,7 +69,12 @@ export function SpotModal() {
   if (!spot) return null
 
   const isCurrentUserOwner =
-    !!user && !!spot && spot.owner_user_id === user.username
+    !!user &&
+    !!spot?.owner_user_id &&
+    spot.owner_user_id
+      .split(',')
+      .map((u) => u.trim())
+      .includes(user.username)
 
   const myOwnedSpot = user
     ? allSpots.find(
@@ -87,6 +93,14 @@ export function SpotModal() {
           s.active_booking_expires_at?.slice(0, 10) === selectedDate,
       )
     : undefined
+
+  // Whether the active booking was made by a co-owner (not the current user).
+  // Used to show context and suppress cancel for the other co-owner.
+  const isCoOwnerBooking =
+    isCurrentUserOwner &&
+    !isMyBooking &&
+    spot.status === 'reserved' &&
+    !!spot.active_booking_booked_by_owner
 
   // Whether the logged-in user (or admin) can cancel this spot's active booking.
   // Must also verify the booking is for the selected date — stale booking data
@@ -116,6 +130,7 @@ export function SpotModal() {
     myReservedElsewhere,
     isMyBooking,
     isCurrentUserOwner,
+    isCoOwnerBooking,
     t as TFunc,
   )
 
@@ -170,6 +185,7 @@ export function SpotModal() {
             reservationDuration={reservationDuration}
             myReservedElsewhere={myReservedElsewhere}
             canCancelThisBooking={canCancelThisBooking}
+            isCoOwnerBooking={isCoOwnerBooking}
             myOwnedSpot={myOwnedSpot}
           />
         </div>
