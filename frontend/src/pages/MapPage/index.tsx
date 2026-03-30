@@ -33,7 +33,18 @@ interface GridContentProps {
 
 // — constants —
 
-const SKELETON_SPOT_IDS = ['s0', 's1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9']
+const SKELETON_SPOT_IDS = [
+  's0',
+  's1',
+  's2',
+  's3',
+  's4',
+  's5',
+  's6',
+  's7',
+  's8',
+  's9',
+]
 
 const BLUEPRINT_DARK: React.CSSProperties = {
   backgroundColor: '#1e3a5f',

@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { EllipsisVertical } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
-import { isActivePath, isAdminSection,NAV_ITEMS } from './constants'
+import { isActivePath, isAdminSection, NAV_ITEMS } from './constants'
 
 // — types —
 

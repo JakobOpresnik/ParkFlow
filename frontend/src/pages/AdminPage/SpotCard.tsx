@@ -57,9 +57,7 @@ export function SpotCard({ spot, lotName, onEdit, onDelete }: SpotCardProps) {
       <div className="text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
         {spot.label && <span>{spot.label}</span>}
         <span>{lotName}</span>
-        {spot.owner_name && (
-          <span className="truncate">{spot.owner_name}</span>
-        )}
+        {spot.owner_name && <span className="truncate">{spot.owner_name}</span>}
       </div>
     </div>
   )

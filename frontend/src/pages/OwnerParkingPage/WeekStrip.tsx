@@ -37,7 +37,7 @@ export function WeekStrip({
                   ? 'bg-primary text-primary-foreground cursor-pointer shadow-sm'
                   : isNonWork
                     ? 'text-muted-foreground/40 cursor-not-allowed'
-                    : 'cursor-pointer hover:bg-muted'
+                    : 'hover:bg-muted cursor-pointer'
               }`}
             >
               <span

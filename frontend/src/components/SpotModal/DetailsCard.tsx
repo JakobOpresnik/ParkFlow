@@ -31,8 +31,7 @@ export function DetailsCard({ spot, isCurrentUserOwner }: DetailsCardProps) {
 
   const icon = spot.type ? SPOT_TYPE_ICONS[spot.type] : undefined
   const labelKey = spot.type ? SPOT_TYPE_LABEL_KEYS[spot.type] : undefined
-  const typeInfo =
-    icon && labelKey ? { icon, label: t(labelKey) } : undefined
+  const typeInfo = icon && labelKey ? { icon, label: t(labelKey) } : undefined
   const isReservedByOther =
     spot.status === 'reserved' &&
     spot.active_booking_reserved_by &&
