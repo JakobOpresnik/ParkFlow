@@ -7,11 +7,11 @@ import { errorHandler } from './middleware/errorHandler.js';
 import authRouter from './routes/auth.js';
 import bookingsRouter from './routes/bookings.js';
 import changesRouter from './routes/changes.js';
+import feedbackRouter from './routes/feedback.js';
 import lotsRouter from './routes/lots.js';
 import ownersRouter from './routes/owners.js';
 import presenceRouter from './routes/presence.js';
 import spotsRouter from './routes/spots.js';
-import feedbackRouter from './routes/feedback.js';
 import subscribeRouter from './routes/subscribe.js';
 
 export function createApp() {

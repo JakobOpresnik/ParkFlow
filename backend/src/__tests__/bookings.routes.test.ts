@@ -1,5 +1,5 @@
-import request from "supertest";
 import jwt from "jsonwebtoken";
+import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createApp } from "../app.js";
