@@ -24,8 +24,8 @@ BEGIN
     coordinates = '{"x": 0.44416666666666665, "y": 0.23142857142857143, "width": 0.051666666666666666, "height": 0.04, "rotation": 45, "labelPosition": "top", "labelRotation": 0}'::jsonb
     WHERE lot_id = lot_0 AND number = 4;
 
-  -- Klet -1 -> Spot 5 (Tesla S): label=1VP51, type=ev
-  UPDATE spots SET label = '1VP51', type = 'ev',
+  -- Klet -1 -> Spot 5 (Tesla S): label=1VP51
+  UPDATE spots SET label = '1VP51', type = 'standard',
     coordinates = '{"x": 0.36666666666666664, "y": 0.2342857142857143, "width": 0.051666666666666666, "height": 0.04285714285714286, "rotation": 45, "labelPosition": "top", "labelRotation": 0}'::jsonb
     WHERE lot_id = lot_0 AND number = 5;
 
