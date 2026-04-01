@@ -24,8 +24,8 @@ BEGIN
     coordinates = '{"x": 0.44416666666666665, "y": 0.23142857142857143, "width": 0.051666666666666666, "height": 0.04, "rotation": 45, "labelPosition": "top", "labelRotation": 0}'::jsonb
     WHERE lot_id = lot_0 AND number = 4;
 
-  -- Klet -1 -> Spot 5 (Tesla S): label=1VP51, type=ev
-  UPDATE spots SET label = '1VP51', type = 'ev',
+  -- Klet -1 -> Spot 5 (Tesla S): label=1VP51
+  UPDATE spots SET label = '1VP51', type = 'standard',
     coordinates = '{"x": 0.36666666666666664, "y": 0.2342857142857143, "width": 0.051666666666666666, "height": 0.04285714285714286, "rotation": 45, "labelPosition": "top", "labelRotation": 0}'::jsonb
     WHERE lot_id = lot_0 AND number = 5;
 
@@ -34,12 +34,13 @@ BEGIN
     coordinates = '{"x": 0.6175, "y": 0.23285714285714285, "width": 0.051666666666666666, "height": 0.04285714285714286, "rotation": 315, "labelPosition": "top", "labelRotation": 0}'::jsonb
     WHERE lot_id = lot_0 AND number = 6;
 
-  -- Klet -1 -> Spot 8 (Borut Mrak): renumbered to 12, label=12, moved
-  UPDATE spots SET number = 12, label = '12',
-    coordinates = '{"x": 0.2875, "y": 0.4185714285714286, "width": 0.04833333333333333, "height": 0.037142857142857144, "rotation": 0, "labelPosition": "top", "labelRotation": 0}'::jsonb
-    WHERE lot_id = lot_0 AND number = 8;
+  -- Klet -1 -> Spot 8 (oddano v najem: MIK): label=K1-8, moved
+  -- Handles both fresh DB (number=8) and old DB that had it renumbered to 12.
+  UPDATE spots SET number = 8, label = 'K1-8',
+    coordinates = '{"x": 0.17583333333333334, "y": 0.41571428571428577, "width": 0.04833333333333333, "height": 0.037142857142857144, "rotation": 0, "labelPosition": "top", "labelRotation": 0}'::jsonb
+    WHERE lot_id = lot_0 AND (number = 8 OR number = 12);
 
-  -- Klet -1 -> Spot 9 (oddano v najem: MIK)
+  -- Klet -1 -> Spot 9 (Borut Mrak)
   UPDATE spots SET coordinates = '{"x": 0.17583333333333334, "y": 0.4542857142857143, "width": 0.05, "height": 0.04, "rotation": 0, "labelPosition": "top", "labelRotation": 0}'::jsonb
     WHERE lot_id = lot_0 AND number = 9;
 
@@ -83,11 +84,7 @@ BEGIN
     coordinates = '{"x": 0.5033333333333333, "y": 0.5871428571428572, "width": 0.05, "height": 0.04, "rotation": 0, "labelPosition": "top", "labelRotation": 0}'::jsonb
     WHERE lot_id = lot_0 AND number = 26;
 
-  -- Klet -1 -> Spot 27 (Barbara Kepic)
-  UPDATE spots SET coordinates = '{"x": 0.6675, "y": 0.41714285714285715, "width": 0.05, "height": 0.04, "rotation": 0, "labelPosition": "top", "labelRotation": 0}'::jsonb
-    WHERE lot_id = lot_0 AND number = 27;
-
-  -- Klet -1 -> Spot 28 (No Owner): type=ev
+  -- Klet -1 -> Spot 28 (Barbara Kepic): type=ev
   UPDATE spots SET type = 'ev',
     coordinates = '{"x": 0.6675, "y": 0.45714285714285713, "width": 0.05, "height": 0.04, "rotation": 0, "labelPosition": "top", "labelRotation": 0}'::jsonb
     WHERE lot_id = lot_0 AND number = 28;
@@ -147,8 +144,12 @@ BEGIN
   UPDATE spots SET coordinates = '{"x": 0.7791666666666667, "y": 0.74, "width": 0.04833333333333333, "height": 0.04, "rotation": 0, "labelPosition": "top", "labelRotation": 0}'::jsonb
     WHERE lot_id = lot_1 AND number = 95;
 
+  -- Klet -2 -> Spot 101 (K2-101)
+  UPDATE spots SET coordinates = '{"x": 0.665, "y": 0.8628571428571428, "width": 0.04833333333333333, "height": 0.037142857142857144, "rotation": 0, "labelPosition": "top", "labelRotation": 0}'::jsonb
+    WHERE lot_id = lot_1 AND number = 101;
+
   -- Zunanje parkirišče -> Spot 0 (kontejner - prenova): label=Z-0
-  UPDATE spots SET coordinates = '{"x": 0.425, "y": 0.7671428571428571, "width": 0.035, "height": 0.04857142857142857, "rotation": 0, "labelPosition": "top", "labelRotation": 0}'::jsonb
+  UPDATE spots SET coordinates = '{"x": 0.42916666666666664, "y": 0.7828571428571428, "width": 0.03, "height": 0.03571428571428571, "rotation": 0, "labelPosition": "top", "labelRotation": 0}'::jsonb
     WHERE lot_id = lot_z AND number = 0;
 
   -- Zunanje parkirišče -> Spot 3 (ACEX - kdor prej pride, prej melje): label=Z-3

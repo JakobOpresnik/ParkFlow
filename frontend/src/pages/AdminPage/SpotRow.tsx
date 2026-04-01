@@ -6,7 +6,11 @@ import { Highlight } from '@/components/ui/highlight'
 import { TableCell, TableRow } from '@/components/ui/table'
 import type { Spot, SpotType } from '@/types'
 
-import { SpotTypeConfig, StatusClass,STICKY_ACTIONS_CLASS } from './spotConstants'
+import {
+  SpotTypeConfig,
+  StatusClass,
+  STICKY_ACTIONS_CLASS,
+} from './spotConstants'
 
 // — types —
 

@@ -79,7 +79,9 @@ export function LotDaySelector({
 
   return (
     <div className="absolute top-3 left-3 z-20 max-w-[calc(100%-88px)] sm:max-w-[calc(100%-216px)]">
-      <div className={`flex flex-col gap-1 rounded-xl p-1.5 ${theme.container}`}>
+      <div
+        className={`flex flex-col gap-1 rounded-xl p-1.5 ${theme.container}`}
+      >
         {/* Row 1: lot tabs */}
         <div
           className={`flex flex-col gap-1 rounded-lg transition-shadow ${

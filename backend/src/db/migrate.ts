@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+
 import { pool } from "./pool.js";
 
 // Migrations that are safe to re-run on every startup (idempotent UPDATEs, etc.).

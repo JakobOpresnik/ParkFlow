@@ -1,6 +1,6 @@
+import { Router } from 'express';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import jwt from 'jsonwebtoken';
-import { Router } from 'express';
 
 import type { AuthPayload } from '../middleware/auth.js';
 import { requireAuth } from '../middleware/auth.js';

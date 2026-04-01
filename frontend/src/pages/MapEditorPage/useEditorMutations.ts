@@ -37,10 +37,7 @@ export function useEditorMutations(
   const createSpot = useCreateSpot()
   const isPending = patchCoords.isPending || createSpot.isPending
 
-  async function handleSaveToSpot(
-    spotId: string,
-    relCoords: SpotCoordinates,
-  ) {
+  async function handleSaveToSpot(spotId: string, relCoords: SpotCoordinates) {
     try {
       await patchCoords.mutateAsync({ id: spotId, coordinates: relCoords })
       notifications.show({

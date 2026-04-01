@@ -86,9 +86,7 @@ export function DayDropdown({
                 {isDayToday && (
                   <span
                     className={`ml-auto size-1.5 rounded-full ${
-                      isSelected
-                        ? theme.daySelectedDot
-                        : theme.dayUnselectedDot
+                      isSelected ? theme.daySelectedDot : theme.dayUnselectedDot
                     }`}
                   />
                 )}

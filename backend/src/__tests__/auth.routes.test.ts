@@ -1,5 +1,5 @@
-import request from "supertest";
 import jwt from "jsonwebtoken";
+import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createApp } from "../app.js";
@@ -25,9 +25,9 @@ function stubFetch(responses: Array<{ ok: boolean; body: object | string }>) {
     vi.fn().mockImplementation(() => {
       const r = responses[call++] ?? responses[responses.length - 1]!;
       return Promise.resolve({
-        ok: r!.ok,
-        text: async () => (typeof r!.body === "string" ? r!.body : JSON.stringify(r!.body)),
-        json: async () => r!.body,
+        ok: r.ok,
+        text: async () => (typeof r.body === "string" ? r.body : JSON.stringify(r.body)),
+        json: async () => r.body,
       });
     }),
   );
