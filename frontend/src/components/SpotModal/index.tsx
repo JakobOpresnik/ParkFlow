@@ -94,6 +94,13 @@ export function SpotModal() {
       )
     : undefined
 
+  // Whether the current user actually made this booking (not just can cancel as admin).
+  const isMyBooking =
+    !!spot.active_booking_id &&
+    !!user &&
+    spot.active_booking_user_id === user.id &&
+    spot.active_booking_expires_at?.slice(0, 10) === selectedDate
+
   // Whether the active booking was made by a co-owner (not the current user).
   // Used to show context and suppress cancel for the other co-owner.
   const isCoOwnerBooking =
@@ -109,13 +116,6 @@ export function SpotModal() {
     !!spot.active_booking_id &&
     !!user &&
     (spot.active_booking_user_id === user.id || user.role === 'admin') &&
-    spot.active_booking_expires_at?.slice(0, 10) === selectedDate
-
-  // Whether the current user actually made this booking (not just can cancel as admin).
-  const isMyBooking =
-    !!spot.active_booking_id &&
-    !!user &&
-    spot.active_booking_user_id === user.id &&
     spot.active_booking_expires_at?.slice(0, 10) === selectedDate
 
   // Show reserved (yellow) for the user's own booking or the owner's own spot.
