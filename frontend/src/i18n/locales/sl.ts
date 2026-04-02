@@ -64,7 +64,7 @@ const sl = {
     noSpotsInLot: 'V tem parkirišču ni mest',
     loadingTimesheet: 'Nalaganje podatkov o prisotnosti…',
     workFreeDay: 'Dela prost dan',
-    workFreeDayDesc: '{{date}} je državni praznik',
+    workFreeDayDesc: '{{date}} je v Sloveniji praznik',
     parkingMap: 'Parkirni zemljevid',
     noSpotsYet: 'V tem parkirišču še ni mest.',
     switchToNextWeek: 'Preklopi na naslednji teden?',

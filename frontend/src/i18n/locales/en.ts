@@ -63,7 +63,7 @@ const en = {
     noSpotsInLot: 'No spots in this lot',
     loadingTimesheet: 'Loading timesheet data…',
     workFreeDay: 'Work-Free Day',
-    workFreeDayDesc: '{{date}} is a public holiday',
+    workFreeDayDesc: '{{date}} is a holiday in Slovenia',
     parkingMap: 'Parking Map',
     noSpotsYet: 'No spots in this lot yet.',
     switchToNextWeek: 'Switch to next week?',
