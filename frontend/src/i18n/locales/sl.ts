@@ -97,6 +97,9 @@ const sl = {
     exitFullscreen: 'Izhod iz celozaslonskega načina',
     noFreeSpots: 'Ni prostih mest',
     freeCount: '{{count}} prostih',
+    prevWeek: 'Prejšnji teden',
+    nextWeek: 'Naslednji teden',
+    today: 'Danes',
   },
   spotModal: {
     parkingSpot: 'Parkirno mesto',

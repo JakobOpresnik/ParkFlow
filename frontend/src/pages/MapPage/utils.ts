@@ -49,6 +49,38 @@ export function computeFridayWindowPassed(
   )
 }
 
+// Returns a date in the adjacent week:
+//   'prev' → Friday of previous week  (Monday − 3 days)
+//   'next' → Monday of next week      (Friday + 3 days)
+export function getAdjacentWeekDay(
+  weekDays: string[],
+  direction: 'prev' | 'next',
+): string {
+  const ref =
+    direction === 'next' ? weekDays[weekDays.length - 1]! : weekDays[0]!
+  const d = new Date(ref + 'T12:00:00')
+  d.setDate(d.getDate() + (direction === 'next' ? 3 : -3))
+  return d.toISOString().slice(0, 10)
+}
+
+export function getWeekLabel(weekDays: string[], locale = 'en'): string {
+  if (weekDays.length === 0) return ''
+  const first = new Date(weekDays[0]! + 'T12:00:00')
+  const last = new Date(weekDays[weekDays.length - 1]! + 'T12:00:00')
+  const firstStr = first.toLocaleDateString(locale, {
+    month: 'short',
+    day: 'numeric',
+  })
+  if (first.getMonth() === last.getMonth()) {
+    return `${firstStr}–${last.getDate()}`
+  }
+  const lastStr = last.toLocaleDateString(locale, {
+    month: 'short',
+    day: 'numeric',
+  })
+  return `${firstStr} – ${lastStr}`
+}
+
 export function getTodayDotClass(
   isToday: boolean,
   isSelected: boolean,

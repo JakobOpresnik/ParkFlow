@@ -1,11 +1,21 @@
-import { CalendarDays } from 'lucide-react'
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  CornerUpLeft,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import type { ParkingLot, Spot } from '@/types'
 
 import { DayDropdown } from './DayDropdown'
 import { getTheme } from './lotDaySelectorTheme'
-import { formatDayLabel, getTodayDotClass, StatusDotClass } from './utils'
+import {
+  formatDayLabel,
+  getAdjacentWeekDay,
+  getTodayDotClass,
+  StatusDotClass,
+} from './utils'
 
 // — types —
 
@@ -159,8 +169,15 @@ export function LotDaySelector({
             />
           </div>
 
-          {/* sm+: full day strip */}
-          <div className="hidden gap-0.5 sm:flex">
+          {/* sm+: full day strip with week navigation */}
+          <div className="hidden items-center gap-0.5 sm:flex">
+            <button
+              onClick={() => onDateSelect(getAdjacentWeekDay(weekDays, 'prev'))}
+              title={t('map.prevWeek')}
+              className={`flex size-7 shrink-0 items-center justify-center rounded-lg transition-colors ${theme.dayUnselected}`}
+            >
+              <ChevronLeft className="size-3" />
+            </button>
             {weekDays.map((date) => {
               const { short, num } = formatDayLabel(date, i18n.language)
               const isToday = date === today
@@ -186,16 +203,32 @@ export function LotDaySelector({
                 </button>
               )
             })}
+            <button
+              onClick={() => onDateSelect(getAdjacentWeekDay(weekDays, 'next'))}
+              title={t('map.nextWeek')}
+              className={`flex size-7 shrink-0 items-center justify-center rounded-lg transition-colors ${theme.dayUnselected}`}
+            >
+              <ChevronRight className="size-3" />
+            </button>
           </div>
         </div>
 
-        {/* Row 3: projection note */}
+        {/* Row 3: projection note + today shortcut */}
         {selectedDate !== today && (
           <div
             className={`flex items-center gap-1.5 px-1 text-[10px] ${theme.projectionNote}`}
           >
             <CalendarDays className="size-3 shrink-0" />
-            {selectedDate < today ? t('map.historical') : t('map.projected')}
+            <span className="flex-1">
+              {selectedDate < today ? t('map.historical') : t('map.projected')}
+            </span>
+            <button
+              onClick={() => onDateSelect(today)}
+              className={`flex items-center gap-1 rounded-md px-2 py-0.5 transition-colors ${theme.todayBtn}`}
+            >
+              <CornerUpLeft className="size-2.5" />
+              {t('map.today')}
+            </button>
           </div>
         )}
       </div>

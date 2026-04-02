@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 
 import type { ParkingLot } from '@/types'
 
+import { getAdjacentWeekDay } from './utils'
+
 // — types —
 
 interface UseKeyboardNavOptions {
@@ -52,11 +54,19 @@ export function useKeyboardNav({
         if (next) setSelectedLotId(next.id)
       } else {
         const idx = weekDays.indexOf(selectedDate)
-        const nextIdx =
-          e.key === 'ArrowRight'
-            ? (idx + 1) % weekDays.length
-            : (idx - 1 + weekDays.length) % weekDays.length
-        setSelectedDate(weekDays[nextIdx] ?? selectedDate)
+        if (e.key === 'ArrowRight') {
+          if (idx === weekDays.length - 1) {
+            setSelectedDate(getAdjacentWeekDay(weekDays, 'next'))
+          } else {
+            setSelectedDate(weekDays[idx + 1] ?? selectedDate)
+          }
+        } else {
+          if (idx === 0) {
+            setSelectedDate(getAdjacentWeekDay(weekDays, 'prev'))
+          } else {
+            setSelectedDate(weekDays[idx - 1] ?? selectedDate)
+          }
+        }
       }
     }
     document.addEventListener('keydown', onKeyDown)

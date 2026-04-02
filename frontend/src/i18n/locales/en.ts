@@ -96,6 +96,9 @@ const en = {
     exitFullscreen: 'Exit fullscreen',
     noFreeSpots: 'No free spots',
     freeCount: '{{count}} free',
+    prevWeek: 'Previous week',
+    nextWeek: 'Next week',
+    today: 'Today',
   },
   spotModal: {
     parkingSpot: 'Parking Spot',

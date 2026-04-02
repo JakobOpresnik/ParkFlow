@@ -12,6 +12,7 @@ interface SelectorTheme {
   readonly dayUnselected: string
   readonly daySelectedDot: string
   readonly dayUnselectedDot: string
+  readonly todayBtn: string
   readonly projectionNote: string
   readonly keyNavRing: string
   readonly skeletonBg: string
@@ -32,6 +33,8 @@ const MAP_THEME: SelectorTheme = {
   dayUnselected: 'text-white/70 hover:bg-white/10 hover:text-white',
   daySelectedDot: 'bg-white',
   dayUnselectedDot: 'bg-white/50',
+  todayBtn:
+    'bg-white/20 text-white ring-1 ring-white/50 hover:bg-white/30 font-semibold',
   projectionNote: 'text-white/50',
   keyNavRing: 'ring-1 ring-white/40',
   skeletonBg: 'bg-white/10',
@@ -51,6 +54,8 @@ const NORMAL_THEME: SelectorTheme = {
   dayUnselected: 'text-muted-foreground hover:bg-muted hover:text-foreground',
   daySelectedDot: 'bg-primary-foreground',
   dayUnselectedDot: 'bg-primary',
+  todayBtn:
+    'bg-primary/15 text-primary ring-1 ring-primary/40 hover:bg-primary/25 font-semibold',
   projectionNote: 'text-muted-foreground',
   keyNavRing: 'ring-primary/50 ring-1',
   skeletonBg: 'bg-muted',
