@@ -1,5 +1,5 @@
 import { ArrowRightLeft, Loader2, ParkingCircle } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useAuthStore } from '@/store/authStore'
@@ -12,7 +12,9 @@ import { useOwnerParkingActions } from './useOwnerParkingActions'
 import { useOwnerParkingData } from './useOwnerParkingData'
 import {
   computeDayStatus,
-  getNext7Days,
+  getAdjacentWeek,
+  getFirstWorkday,
+  getWeekDays7,
   hasOverrideForDay,
   isNonWorkDay,
   isPastBookingCutoff,
@@ -26,9 +28,10 @@ export function OwnerParkingPage() {
   const currentUserId = useAuthStore((s) => s.user?.id ?? '')
   const today = new Date().toISOString().slice(0, 10)
   const [selectedDate, setSelectedDate] = useState(today)
+  const [weekRef, setWeekRef] = useState(today)
   const [historySpotId, setHistorySpotId] = useState<string | null>(null)
 
-  const days = getNext7Days(today)
+  const days = getWeekDays7(weekRef)
 
   const {
     owner,
@@ -41,7 +44,41 @@ export function OwnerParkingPage() {
     overrides,
     presenceMap,
     myBookingElsewhere,
-  } = useOwnerParkingData(selectedDate, today)
+  } = useOwnerParkingData(selectedDate, today, days[6] ?? today)
+
+  function handlePrevWeek() {
+    const newMonday = getAdjacentWeek(days, 'prev')
+    const newDays = getWeekDays7(newMonday)
+    setWeekRef(newMonday)
+    setSelectedDate(getFirstWorkday(newDays, today, workFreeDays))
+  }
+
+  function handleNextWeek() {
+    const newMonday = getAdjacentWeek(days, 'next')
+    const newDays = getWeekDays7(newMonday)
+    setWeekRef(newMonday)
+    setSelectedDate(getFirstWorkday(newDays, today, workFreeDays))
+  }
+
+  function handleGoToToday() {
+    setWeekRef(today)
+    setSelectedDate(today)
+  }
+
+  // Reactively correct the selected date once workFreeDays loads for the new
+  // week — workFreeDays for next week aren't available at navigation time, so
+  // we correct here once the presence fetch for the new week returns.
+
+  useEffect(() => {
+    if (
+      selectedDate >= today &&
+      isNonWorkDay(selectedDate, today, workFreeDays)
+    ) {
+      const corrected = getFirstWorkday(days, today, workFreeDays)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (corrected !== selectedDate) setSelectedDate(corrected)
+    }
+  }, [workFreeDays, selectedDate, today, days])
 
   const {
     handleSetDayStatus,
@@ -122,6 +159,9 @@ export function OwnerParkingPage() {
         today={today}
         selectedDate={selectedDate}
         onSelect={setSelectedDate}
+        onPrevWeek={handlePrevWeek}
+        onNextWeek={handleNextWeek}
+        onGoToToday={handleGoToToday}
         workFreeDays={workFreeDays}
       />
 
