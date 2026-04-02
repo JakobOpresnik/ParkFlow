@@ -9,6 +9,9 @@ export interface WeekStripProps {
   readonly today: string
   readonly selectedDate: string
   readonly onSelect: (date: string) => void
+  readonly onPrevWeek: () => void
+  readonly onNextWeek: () => void
+  readonly onGoToToday: () => void
   readonly workFreeDays: string[]
 }
 

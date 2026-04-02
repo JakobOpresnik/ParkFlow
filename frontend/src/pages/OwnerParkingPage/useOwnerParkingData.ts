@@ -9,11 +9,11 @@ import {
 } from '@/hooks/useOwnerParking'
 import { usePresence } from '@/hooks/usePresence'
 
-import { getNext7Days } from './utils'
-
-export function useOwnerParkingData(selectedDate: string, today: string) {
-  const weekEnd = getNext7Days(today)[6] ?? today
-
+export function useOwnerParkingData(
+  selectedDate: string,
+  today: string,
+  weekEnd: string,
+) {
   const {
     data: owner,
     isLoading: isOwnerLoading,

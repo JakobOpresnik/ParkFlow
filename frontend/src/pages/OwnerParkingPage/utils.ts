@@ -45,15 +45,52 @@ export function formatDate(dateStr: string, locale = 'en'): string {
   })
 }
 
-export function getNext7Days(today: string): string[] {
-  const days: string[] = []
-  const base = new Date(today + 'T00:00:00')
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(base)
-    d.setDate(base.getDate() + i)
-    days.push(d.toISOString().slice(0, 10))
+// Returns Mon–Sun of the week containing referenceDate
+export function getWeekDays7(referenceDate: string): string[] {
+  const ref = new Date(referenceDate + 'T12:00:00')
+  const dow = ref.getDay()
+  const monday = new Date(ref)
+  monday.setDate(ref.getDate() - (dow === 0 ? 6 : dow - 1))
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    return d.toISOString().slice(0, 10)
+  })
+}
+
+// Returns the Monday of the prev/next week
+export function getAdjacentWeek(
+  days: string[],
+  direction: 'prev' | 'next',
+): string {
+  const ref = days[0]!
+  const d = new Date(ref + 'T12:00:00')
+  d.setDate(d.getDate() + (direction === 'next' ? 7 : -7))
+  return d.toISOString().slice(0, 10)
+}
+
+export function getWeekLabel(days: string[], locale = 'en'): string {
+  if (days.length === 0) return ''
+  const first = new Date(days[0]! + 'T12:00:00')
+  const last = new Date(days[days.length - 1]! + 'T12:00:00')
+  const firstStr = first.toLocaleDateString(locale, {
+    month: 'short',
+    day: 'numeric',
+  })
+  if (first.getMonth() === last.getMonth()) {
+    return `${firstStr}–${last.getDate()}`
   }
-  return days
+  return `${firstStr} – ${last.toLocaleDateString(locale, { month: 'short', day: 'numeric' })}`
+}
+
+// Returns the first selectable workday in `days`, skipping past dates, weekends,
+// and holidays. Falls back to days[0] if the whole week is unavailable.
+export function getFirstWorkday(
+  days: string[],
+  today: string,
+  workFreeDays: string[],
+): string {
+  return days.find((d) => !isNonWorkDay(d, today, workFreeDays)) ?? days[0]!
 }
 
 export function isNonWorkDay(
