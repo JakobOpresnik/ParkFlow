@@ -97,10 +97,12 @@ export async function fetchWeekPresence(
   }
 
   const raw = await response.json();
-  const entries = Array.isArray(raw) ? (raw as TimesheetEntry[]) : [];
   if (!Array.isArray(raw)) {
-    console.error('Timesheet API returned unexpected shape:', raw);
+    throw new TypeError(
+      `Timesheet API returned unexpected shape: ${JSON.stringify(raw)}`,
+    );
   }
+  const entries = raw as TimesheetEntry[];
 
   // Extract work-free days from the first employee's data (holidays are the same for everyone)
   const workFreeDays: string[] = [];
@@ -115,7 +117,9 @@ export async function fetchWeekPresence(
 
   const employees = entries.map((entry: TimesheetEntry) => {
     if (!Array.isArray(entry.data)) {
-      console.error(`Timesheet entry missing data array for user: ${entry.name}`);
+      console.error(
+        `Timesheet entry missing data array for user: ${entry.name}`,
+      );
     }
     return {
       user_id: entry.user_id,
