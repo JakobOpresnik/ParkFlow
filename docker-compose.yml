@@ -22,18 +22,15 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     pull_policy: build
+    env_file:
+      - ./backend/.env
     environment:
       DATABASE_URL: postgresql://parkflow:parkflow@db:5432/parkflow
       PORT: 3001
-      JWT_SECRET: ${JWT_SECRET}
-      OAUTH_CLIENT_ID: ${OAUTH_CLIENT_ID}
-      OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET}
       OAUTH_TOKEN_URL: ${OAUTH_TOKEN_URL:-https://sso.matheo.si/application/o/token/}
       AUTHENTIK_USERINFO_URL: ${AUTHENTIK_USERINFO_URL:-https://sso.matheo.si/application/o/userinfo/}
       AUTHENTIK_ADMIN_GROUP: ${AUTHENTIK_ADMIN_GROUP:-parkflow-admins}
       TIMESHEET_API_URL: ${TIMESHEET_API_URL:-https://timesheet.abelium.com/api}
-      TIMESHEET_APP_ID: ${TIMESHEET_APP_ID}
-      TIMESHEET_SECRET: ${TIMESHEET_SECRET}
     ports:
       - '3001:3001'
     depends_on:
