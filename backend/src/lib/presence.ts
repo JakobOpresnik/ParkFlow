@@ -107,9 +107,12 @@ let presenceCacheExpiresAt = 0;
 
 /**
  * Fetches weekly presence data for the week containing targetDate.
+ * Pass { fresh: true } to bypass the cache — use this for booking checks
+ * where stale presence data could allow a booking on an owner who is in office.
  */
 export async function fetchWeekPresence(
   targetDate: string,
+  { fresh = false }: { fresh?: boolean } = {},
 ): Promise<WeekPresenceResponse> {
   const days: string[] = getWeekDays(targetDate);
   const from = days[0];
@@ -121,6 +124,7 @@ export async function fetchWeekPresence(
 
   const cacheKey = `${from}:${to}`;
   if (
+    !fresh &&
     cachedPresence &&
     presenceCacheKey === cacheKey &&
     Date.now() < presenceCacheExpiresAt
