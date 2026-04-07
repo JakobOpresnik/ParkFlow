@@ -159,7 +159,7 @@ export function LotDaySelector({
           }`}
         >
           {/* Mobile: compact dropdown */}
-          <div className="sm:hidden">
+          <div className="md:hidden">
             <DayDropdown
               weekDays={weekDays}
               selectedDate={selectedDate}
@@ -169,8 +169,8 @@ export function LotDaySelector({
             />
           </div>
 
-          {/* sm+: full day strip with week navigation */}
-          <div className="hidden items-center gap-0.5 sm:flex">
+          {/* md+: full day strip with week navigation */}
+          <div className="hidden items-center gap-0.5 md:flex">
             <button
               onClick={() => onDateSelect(getAdjacentWeekDay(weekDays, 'prev'))}
               title={t('map.prevWeek')}
