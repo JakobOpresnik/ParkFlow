@@ -54,6 +54,50 @@ async function getAppApiToken(): Promise<string> {
   return cachedToken;
 }
 
+// ─── Timesheet entries fetch (with token retry) ─────────────────────────────
+
+async function fetchTimesheetEntries(
+  from: string,
+  to: string,
+): Promise<TimesheetEntry[]> {
+  const attempt = async (): Promise<TimesheetEntry[]> => {
+    const token = await getAppApiToken();
+    const url = `${TIMESHEET_BASE_URL}/entries?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+    const response = await fetch(url, {
+      headers: { 'X-APP-API-TOKEN': token },
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Timesheet API error: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    const raw = await response.json();
+    if (!Array.isArray(raw)) {
+      // The API returned an error object (e.g. auth expired) with HTTP 200
+      throw new TimesheetAuthError(
+        `Timesheet API returned unexpected shape: ${JSON.stringify(raw)}`,
+      );
+    }
+    return raw as TimesheetEntry[];
+  };
+
+  try {
+    return await attempt();
+  } catch (err) {
+    if (err instanceof TimesheetAuthError) {
+      // Invalidate cached token and retry once
+      cachedToken = null;
+      tokenExpiresAt = 0;
+      return await attempt();
+    }
+    throw err;
+  }
+}
+
+class TimesheetAuthError extends Error {}
+
 // ─── Presence data cache ─────────────────────────────────────────────────────
 
 const PRESENCE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -84,25 +128,7 @@ export async function fetchWeekPresence(
     return cachedPresence;
   }
 
-  const token = await getAppApiToken();
-  const entries_url = `${TIMESHEET_BASE_URL}/entries?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
-  const response = await fetch(entries_url, {
-    headers: { 'X-APP-API-TOKEN': token },
-  });
-
-  if (!response.ok) {
-    throw new Error(
-      `Timesheet API error: ${response.status} ${response.statusText}`,
-    );
-  }
-
-  const raw = await response.json();
-  if (!Array.isArray(raw)) {
-    throw new TypeError(
-      `Timesheet API returned unexpected shape: ${JSON.stringify(raw)}`,
-    );
-  }
-  const entries = raw as TimesheetEntry[];
+  const entries = await fetchTimesheetEntries(from, to);
 
   // Extract work-free days from the first employee's data (holidays are the same for everyone)
   const workFreeDays: string[] = [];
