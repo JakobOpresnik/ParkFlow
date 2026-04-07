@@ -213,24 +213,28 @@ export function LotDaySelector({
           </div>
         </div>
 
-        {/* Row 3: projection note + today shortcut */}
-        {selectedDate !== today && (
-          <div
-            className={`flex items-center gap-1.5 px-1 text-[10px] ${theme.projectionNote}`}
+        {/* Row 3: projection note + today shortcut — always rendered for
+             consistent container width; collapsed to zero height when on today */}
+        <div
+          className={`flex items-center gap-1.5 px-1 text-[10px] ${theme.projectionNote}${
+            selectedDate === today
+              ? ' pointer-events-none -mt-1 h-0 overflow-hidden'
+              : ''
+          }`}
+          aria-hidden={selectedDate === today}
+        >
+          <CalendarDays className="size-3 shrink-0" />
+          <span className="flex-1">
+            {selectedDate < today ? t('map.historical') : t('map.projected')}
+          </span>
+          <button
+            onClick={() => onDateSelect(today)}
+            className={`flex items-center gap-1 rounded-md px-2 py-0.5 transition-colors ${theme.todayBtn}`}
           >
-            <CalendarDays className="size-3 shrink-0" />
-            <span className="flex-1">
-              {selectedDate < today ? t('map.historical') : t('map.projected')}
-            </span>
-            <button
-              onClick={() => onDateSelect(today)}
-              className={`flex items-center gap-1 rounded-md px-2 py-0.5 transition-colors ${theme.todayBtn}`}
-            >
-              <CornerUpLeft className="size-2.5" />
-              {t('map.today')}
-            </button>
-          </div>
-        )}
+            <CornerUpLeft className="size-2.5" />
+            {t('map.today')}
+          </button>
+        </div>
       </div>
     </div>
   )
