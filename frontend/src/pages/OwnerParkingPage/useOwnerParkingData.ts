@@ -51,12 +51,20 @@ export function useOwnerParkingData(
   const workFreeDays = presenceData?.work_free_days ?? []
 
   const presenceMap = useMemo(() => {
-    const map = new Map<string, string>()
+    const map = new Map<string, boolean>()
     const employees = presenceData?.employees ?? []
+    const isWorkFreeDay = (presenceData?.work_free_days ?? []).includes(
+      selectedDate,
+    )
     for (const emp of employees) {
-      const dayEntry = emp.week.find((d) => d.date === selectedDate)
-      if (dayEntry) {
-        map.set(emp.name.toLowerCase(), dayEntry.status)
+      if (isWorkFreeDay) {
+        // On holidays everyone's spot is available
+        map.set(emp.name.toLowerCase(), true)
+      } else {
+        const dayEntry = emp.week.find((d) => d.date === selectedDate)
+        if (dayEntry) {
+          map.set(emp.name.toLowerCase(), dayEntry.parking_available)
+        }
       }
     }
     return map

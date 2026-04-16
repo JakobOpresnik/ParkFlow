@@ -36,9 +36,12 @@ export function useEffectiveSpots(date: string) {
     }
 
     // Presence lookup: lowercase name → 'in_office' | 'absent'
+    // Only parking_available determines the spot state — work status is ignored.
+    // parking_available=true → owner freed their spot → 'absent' (bookable)
+    // parking_available=false → owner occupying their spot → 'in_office' (taken)
     const presenceByName = new Map<string, 'in_office' | 'absent'>()
 
-    // If it's a work-free day (holiday), everyone is absent
+    // If it's a work-free day (holiday), everyone's spot is free
     if (workFreeDays.includes(date)) {
       for (const p of employees) {
         presenceByName.set(p.name.toLowerCase(), 'absent')
@@ -49,7 +52,7 @@ export function useEffectiveSpots(date: string) {
         if (dayEntry) {
           presenceByName.set(
             p.name.toLowerCase(),
-            dayEntry.status === 'in_office' ? 'in_office' : 'absent',
+            dayEntry.parking_available ? 'absent' : 'in_office',
           )
         }
       }

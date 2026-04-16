@@ -10,6 +10,7 @@ export interface PresenceDayEntry {
   date: string;
   status: PresenceStatus;
   is_work_free_day: boolean;
+  parking_available: boolean;
 }
 
 export interface EmployeeWeekPresence {
@@ -32,6 +33,7 @@ export interface TimesheetDayEntry {
   date: string;
   status: PresenceStatus;
   is_work_free_day: boolean;
+  parking_available: boolean;
 }
 
 export interface TimesheetEntry {

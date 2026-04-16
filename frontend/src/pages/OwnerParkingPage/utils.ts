@@ -112,7 +112,7 @@ export function isPastBookingCutoff(date: string, today: string): boolean {
 export function computeDayStatus(
   spot: OwnerSpot,
   date: string,
-  presenceMap: Map<string, string>,
+  presenceMap: Map<string, boolean>,
   weekBookings: OwnerWeekBooking[],
   overrides: SpotDayOverride[],
 ): DayStatus {
@@ -131,9 +131,10 @@ export function computeDayStatus(
   if (override) return override.status
 
   if (spot.owner_name) {
-    const status = presenceMap.get(spot.owner_name.toLowerCase())
-    if (status && status !== 'in_office') return 'free'
-    if (status === 'in_office') return 'occupied'
+    const parkingAvailable = presenceMap.get(spot.owner_name.toLowerCase())
+    if (parkingAvailable === true) return 'free'
+    if (parkingAvailable === false) return 'occupied'
+    // undefined → no presence data, fall through to spot default
   }
 
   return spot.status === 'reserved' ? 'free' : spot.status

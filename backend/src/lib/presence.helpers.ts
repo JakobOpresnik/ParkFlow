@@ -14,9 +14,10 @@ export function getWeekDays(referenceDate: string): string[] {
 }
 
 /**
- * Returns true if the named owner is absent (not in_office) on the given date,
- * or if the date is a work-free day (holiday).
- * Returns false if the owner is not found in the timesheet data.
+ * Returns true if the named owner's parking spot is available for booking on
+ * the given date. Only parking_available is checked — work status is ignored.
+ * Work-free days (holidays) are always free regardless.
+ * Returns false (spot is occupied) if the owner is not found in the timesheet.
  */
 export function isOwnerAbsent(
   presence: WeekPresenceResponse,
@@ -30,5 +31,7 @@ export function isOwnerAbsent(
   );
   if (!entry) return false;
   const day = entry.week.find((d) => d.date === date);
-  return day !== undefined && day.status !== 'in_office';
+  if (!day) return false;
+
+  return day.parking_available === true;
 }
