@@ -218,7 +218,7 @@ export function LotDaySelector({
         <div
           className={`flex items-center gap-1.5 px-1 text-[10px] ${theme.projectionNote}${
             selectedDate === today
-              ? ' pointer-events-none -mt-1 h-0 overflow-hidden'
+              ? 'pointer-events-none -mt-1 h-0 overflow-hidden'
               : ''
           }`}
           aria-hidden={selectedDate === today}
