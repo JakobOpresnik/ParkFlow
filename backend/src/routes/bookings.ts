@@ -100,7 +100,7 @@ router.post('/', requireAuth, async (req, res, next) => {
     let presenceData: Awaited<ReturnType<typeof fetchWeekPresence>> | null =
       null;
     try {
-      presenceData = await fetchWeekPresence(targetDate, { fresh: true });
+      presenceData = await fetchWeekPresence(targetDate);
     } catch {
       // Presence API failure should not block booking — treat as unavailable
     }

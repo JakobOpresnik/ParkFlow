@@ -5,3 +5,8 @@
 
 # Word documents
 *.docx
+
+# Presentation assets
+presentation/
+
+websocket_test.html
