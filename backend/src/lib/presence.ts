@@ -1,5 +1,6 @@
 import { getWeekDays } from './presence.helpers.js';
 import type {
+  EmployeeWeekPresence,
   OAuthResponse,
   TimesheetDayEntry,
   TimesheetEntry,
@@ -17,8 +18,10 @@ export type {
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-const TIMESHEET_BASE_URL =
+export const TIMESHEET_BASE_URL =
   process.env.TIMESHEET_API_URL ?? 'https://timesheet.abelium.com/api';
+export const TIMESHEET_WS_URL =
+  process.env.TIMESHEET_WS_URL ?? 'wss://timesheet.abelium.com/cable';
 const TIMESHEET_APP_ID = process.env.TIMESHEET_APP_ID ?? '';
 const TIMESHEET_SECRET = process.env.TIMESHEET_SECRET ?? '';
 
@@ -27,7 +30,7 @@ const TIMESHEET_SECRET = process.env.TIMESHEET_SECRET ?? '';
 let cachedToken: string | null = null;
 let tokenExpiresAt = 0;
 
-async function getAppApiToken(): Promise<string> {
+export async function getAppApiToken(): Promise<string> {
   if (cachedToken && Date.now() < tokenExpiresAt) {
     return cachedToken;
   }
@@ -100,7 +103,7 @@ class TimesheetAuthError extends Error {}
 
 // ─── Presence data cache ─────────────────────────────────────────────────────
 
-const PRESENCE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const PRESENCE_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 let cachedPresence: WeekPresenceResponse | null = null;
 let presenceCacheKey = '';
 let presenceCacheExpiresAt = 0;
@@ -158,6 +161,7 @@ export async function fetchWeekPresence(
         date: d.date,
         status: d.status,
         is_work_free_day: d.is_work_free_day,
+        parking_available: d.parking_available ?? false,
       })),
     };
   });
@@ -172,4 +176,75 @@ export async function fetchWeekPresence(
   presenceCacheExpiresAt = Date.now() + PRESENCE_CACHE_TTL;
 
   return result;
+}
+
+// ─── Cache mutation helpers (used by WebSocket manager) ──────────────────────
+
+/**
+ * Replaces the entire presence cache with data received from the WebSocket
+ * initial message. The cache key is computed using the same Mon–Fri range as
+ * fetchWeekPresence so that subsequent REST refetches hit the cache instead of
+ * bypassing it (the WS data includes weekends, REST does not).
+ */
+export function setPresenceCacheFromWs(
+  employees: EmployeeWeekPresence[],
+): void {
+  // Use the first date in the WS data to anchor the Mon–Fri week range
+  const firstDate = employees[0]?.week[0]?.date;
+  if (!firstDate) return;
+
+  const weekDays = getWeekDays(firstDate);
+  const from = weekDays[0];
+  const to = weekDays[weekDays.length - 1];
+  if (!from || !to) return;
+
+  // Collect work-free days across all employees
+  const wfdSet = new Set<string>();
+  for (const emp of employees) {
+    for (const d of emp.week) {
+      if (d.is_work_free_day) wfdSet.add(d.date);
+    }
+  }
+
+  cachedPresence = { employees, work_free_days: Array.from(wfdSet) };
+  presenceCacheKey = `${from}:${to}`;
+  // Extend TTL so the WS-seeded cache isn't immediately evicted
+  presenceCacheExpiresAt = Date.now() + PRESENCE_CACHE_TTL;
+}
+
+/**
+ * Updates a single employee in the presence cache (from a WebSocket update
+ * message). A no-op if the cache doesn't cover the same week yet.
+ */
+export function updatePresenceCacheEmployee(
+  employee: EmployeeWeekPresence,
+): void {
+  if (!cachedPresence) return;
+
+  const idx = cachedPresence.employees.findIndex(
+    (e) => e.user_id === employee.user_id,
+  );
+  if (idx === -1) {
+    cachedPresence.employees.push(employee);
+  } else {
+    cachedPresence.employees[idx] = employee;
+  }
+
+  // Re-derive work-free days in case they changed
+  const wfdSet = new Set<string>();
+  for (const emp of cachedPresence.employees) {
+    for (const d of emp.week) {
+      if (d.is_work_free_day) wfdSet.add(d.date);
+    }
+  }
+  cachedPresence.work_free_days = Array.from(wfdSet);
+
+  // Keep cache fresh — reset TTL so a REST call doesn't overwrite us too soon
+  presenceCacheExpiresAt = Date.now() + PRESENCE_CACHE_TTL;
+}
+
+/** Invalidates the cached OAuth token (call when WebSocket reports auth failure). */
+export function invalidateAppApiToken(): void {
+  cachedToken = null;
+  tokenExpiresAt = 0;
 }
