@@ -9,6 +9,27 @@ const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 
 export let authInitPromise: Promise<void> = Promise.resolve()
 
+let expiryTimer: ReturnType<typeof setTimeout> | null = null
+
+function decodeJwtExp(token: string): number | null {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    const payload = JSON.parse(
+      atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')),
+    ) as { exp?: unknown }
+    return typeof payload.exp === 'number' ? payload.exp : null
+  } catch {
+    return null
+  }
+}
+
+function scheduleExpiry(exp: number, onExpire: () => void) {
+  if (expiryTimer) clearTimeout(expiryTimer)
+  const ms = exp * 1000 - Date.now()
+  if (ms > 0) expiryTimer = setTimeout(onExpire, ms)
+}
+
 interface AuthStore {
   user: AppUser | null
   accessToken: string | null
@@ -56,6 +77,19 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
         const user = (await res.json()) as AppUser
         set({ user, isLoading: false })
+
+        // Schedule proactive session expiry based on token's exp claim
+        const exp = decodeJwtExp(token)
+        if (exp) {
+          scheduleExpiry(exp, () => {
+            localStorage.removeItem(ACCESS_TOKEN_KEY)
+            localStorage.removeItem(ID_TOKEN_KEY)
+            set({ user: null, accessToken: null, sessionExpired: true })
+            setTimeout(() => {
+              window.location.href = '/login'
+            }, 3000)
+          })
+        }
       } catch {
         localStorage.removeItem(ACCESS_TOKEN_KEY)
         localStorage.removeItem(ID_TOKEN_KEY)
@@ -82,3 +116,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     window.location.href = `${oauthConfig.endSessionUrl}?${params.toString()}`
   },
 }))
+
+// When the user returns to an open tab, immediately check whether the token
+// has expired rather than waiting for the next API call to bounce with 401.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return
+  const token = localStorage.getItem(ACCESS_TOKEN_KEY)
+  if (!token) return
+  const exp = decodeJwtExp(token)
+  if (exp && exp * 1000 < Date.now()) {
+    useAuthStore.getState().setSessionExpired()
+    setTimeout(() => {
+      window.location.href = '/login'
+    }, 3000)
+  }
+})
