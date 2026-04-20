@@ -1,4 +1,4 @@
-import { Activity, CheckCircle2, Clock, ParkingCircle } from 'lucide-react'
+import { Activity, CheckCircle2, ParkingCircle } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -39,14 +39,6 @@ const STAT_CARD_STYLES = [
       'border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20',
   },
   {
-    labelKey: 'dashboard.reserved',
-    Icon: Clock,
-    iconColor: 'text-amber-600 dark:text-amber-400',
-    iconBg: 'bg-amber-100 dark:bg-amber-900/30',
-    cardClass:
-      'border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20',
-  },
-  {
     labelKey: 'dashboard.totalSpots',
     Icon: Activity,
     iconColor: 'text-indigo-600 dark:text-indigo-400',
@@ -69,36 +61,22 @@ export function DashboardPage() {
 
   const totalFree = countByStatus(allSpots, 'free')
   const totalOccupied = countByStatus(allSpots, 'occupied')
-  const totalReservedByStatus = countByStatus(allSpots, 'reserved')
-  // Also count occupied spots with an active booking (owner has booked their own spot —
-  // backend marks these as 'occupied' rather than 'reserved').
-  const totalReserved =
-    totalReservedByStatus +
-    allSpots.filter(
-      (s) => s.status === 'occupied' && s.active_booking_id !== null,
-    ).length
+  const totalReserved = countByStatus(allSpots, 'reserved')
   const total = allSpots.length
-  // Occupancy % uses raw status counts to avoid double-counting self-booked occupied spots.
   const occupancyPct = total
-    ? Math.round(((totalOccupied + totalReservedByStatus) / total) * 100)
+    ? Math.round(((totalOccupied + totalReserved) / total) * 100)
     : 0
 
   const supportingCards: readonly StatCard[] = [
     {
       ...STAT_CARD_STYLES[0],
       label: t(STAT_CARD_STYLES[0].labelKey),
-      value: totalOccupied,
+      value: totalOccupied + totalReserved,
       sub: t('dashboard.occupancyPct', { pct: occupancyPct }),
     },
     {
       ...STAT_CARD_STYLES[1],
       label: t(STAT_CARD_STYLES[1].labelKey),
-      value: totalReserved,
-      sub: t('dashboard.bookedSpots'),
-    },
-    {
-      ...STAT_CARD_STYLES[2],
-      label: t(STAT_CARD_STYLES[2].labelKey),
       value: total,
       sub: t('dashboard.acrossAllLots'),
     },
@@ -118,7 +96,7 @@ export function DashboardPage() {
       {isLoading ? (
         <div className="space-y-3">
           <div className="bg-muted h-24 animate-pulse rounded-xl border" />
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             {([0, 1, 2] as const).map((k) => (
               <div
                 key={k}
@@ -148,7 +126,7 @@ export function DashboardPage() {
           </div>
 
           {/* Supporting */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             {supportingCards.map(
               ({ label, value, sub, Icon, iconColor, iconBg, cardClass }) => (
                 <div

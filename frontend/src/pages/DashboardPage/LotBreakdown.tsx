@@ -10,7 +10,6 @@ interface LotBarProps {
   readonly name: string
   readonly free: number
   readonly occupied: number
-  readonly reserved: number
   readonly total: number
 }
 
@@ -24,15 +23,13 @@ interface LotBreakdownProps {
 const LOT_LEGEND_CONFIG = [
   { labelKey: 'dashboard.free', color: 'var(--color-spot-free)' },
   { labelKey: 'dashboard.occupied', color: 'var(--color-spot-occupied)' },
-  { labelKey: 'dashboard.reserved', color: 'var(--color-spot-reserved)' },
 ] as const
 
 // — sub-components —
 
-function LotBar({ name, free, occupied, reserved, total }: LotBarProps) {
+function LotBar({ name, free, occupied, total }: LotBarProps) {
   const freePct = total ? (free / total) * 100 : 0
   const occupiedPct = total ? (occupied / total) * 100 : 0
-  const reservedPct = total ? (reserved / total) * 100 : 0
 
   return (
     <div className="space-y-1.5">
@@ -50,13 +47,6 @@ function LotBar({ name, free, occupied, reserved, total }: LotBarProps) {
           style={{
             width: `${occupiedPct}%`,
             background: 'var(--color-spot-occupied)',
-          }}
-        />
-        <div
-          className="h-full transition-all duration-500"
-          style={{
-            width: `${reservedPct}%`,
-            background: 'var(--color-spot-reserved)',
           }}
         />
         <div
@@ -105,8 +95,10 @@ export function LotBreakdown({ lots, allSpots }: LotBreakdownProps) {
               key={lot.id}
               name={lot.name}
               free={countByStatus(lotSpots, 'free')}
-              occupied={countByStatus(lotSpots, 'occupied')}
-              reserved={countByStatus(lotSpots, 'reserved')}
+              occupied={
+                countByStatus(lotSpots, 'occupied') +
+                countByStatus(lotSpots, 'reserved')
+              }
               total={lotSpots.length}
             />
           )
