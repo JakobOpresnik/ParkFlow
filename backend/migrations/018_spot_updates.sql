@@ -38,7 +38,7 @@ BEGIN
   UPDATE spots
     SET number   = 8,
         label    = 'K1-8',
-        owner_id = 'b0000000-0000-0000-0000-000000000016',
+        owner_id = 'b0000000-0000-0000-0000-000000000018',  -- Bernard Sovdat
         status   = 'occupied',
         coordinates = '{"x": 0.17583333333333334, "y": 0.41571428571428577, "width": 0.04833333333333333, "height": 0.037142857142857144, "rotation": 0, "labelPosition": "top", "labelRotation": 0}'::jsonb
     WHERE lot_id = lot_0 AND (number = 12 OR number = 8);
