@@ -7,7 +7,7 @@ import type { Spot, SpotType } from '@/types'
 
 interface DetailsCardProps {
   readonly spot: Spot
-  readonly isCurrentUserOwner?: boolean
+  readonly currentUserDisplayName?: string
 }
 
 // — constants —
@@ -26,7 +26,10 @@ const SPOT_TYPE_LABEL_KEYS: Partial<Record<SpotType, string>> = {
 
 // — main component —
 
-export function DetailsCard({ spot, isCurrentUserOwner }: DetailsCardProps) {
+export function DetailsCard({
+  spot,
+  currentUserDisplayName,
+}: DetailsCardProps) {
   const { t } = useTranslation()
 
   const icon = spot.type ? SPOT_TYPE_ICONS[spot.type] : undefined
@@ -68,30 +71,27 @@ export function DetailsCard({ spot, isCurrentUserOwner }: DetailsCardProps) {
         </span>
         {spot.owner_name ? (
           <div className="min-w-0">
-            {isCurrentUserOwner ? (
-              <p className="text-sm leading-snug font-medium">
-                {t('spotModal.you')}
-              </p>
-            ) : (
-              spot.owner_name.split('/').map((name) => {
-                const isInOffice =
-                  spot.in_office_owner?.toLowerCase() ===
-                  name.trim().toLowerCase()
-                return (
-                  <p
-                    key={name}
-                    className="flex items-center gap-1.5 text-sm leading-snug font-medium"
-                  >
-                    {name.trim()}
-                    {isInOffice && (
-                      <span className="text-spot-occupied bg-spot-occupied/10 rounded-full px-1.5 py-0.5 text-xs font-medium">
-                        {t('spotModal.inOffice')}
-                      </span>
-                    )}
-                  </p>
-                )
-              })
-            )}
+            {spot.owner_name.split('/').map((name) => {
+              const trimmed = name.trim()
+              const isInOffice =
+                spot.in_office_owner?.toLowerCase() === trimmed.toLowerCase()
+              const isCurrentUser =
+                !!currentUserDisplayName &&
+                currentUserDisplayName.toLowerCase() === trimmed.toLowerCase()
+              return (
+                <p
+                  key={name}
+                  className="flex items-center gap-1.5 text-sm leading-snug font-medium"
+                >
+                  {isCurrentUser ? t('spotModal.you') : trimmed}
+                  {isInOffice && (
+                    <span className="text-spot-occupied bg-spot-occupied/10 rounded-full px-1.5 py-0.5 text-xs font-medium">
+                      {t('spotModal.inOffice')}
+                    </span>
+                  )}
+                </p>
+              )
+            })}
             {spot.owner_vehicle_plate && (
               <p className="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-xs">
                 <Car className="size-3" />
