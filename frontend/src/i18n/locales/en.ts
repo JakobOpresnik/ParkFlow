@@ -125,6 +125,9 @@ const en = {
     bannerReservedOther: 'This spot has already been reserved.',
     bannerOccupiedMine: 'Your spot — you are currently using it.',
     bannerOccupiedOwner: 'This spot is currently in use by the owner.',
+    bannerOccupiedSharedByMe: 'This spot is currently in use by you.',
+    bannerOccupiedSharedByCoOwner:
+      'This spot is currently in use by one of the co-owners.',
     bannerOccupied: 'This spot is currently in use.',
     reserveParkingSpot: 'Reserve Parking Spot',
     moveToThisSpot: 'Move to This Spot',

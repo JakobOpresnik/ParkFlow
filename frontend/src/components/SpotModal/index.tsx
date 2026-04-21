@@ -23,6 +23,8 @@ function buildBannerSubtext(
   isMyBooking: boolean,
   isCurrentUserOwner: boolean,
   isCoOwnerBooking: boolean,
+  isSharedSpot: boolean,
+  isCurrentUserInOffice: boolean,
   t: TFunc,
 ): string {
   if (spot.status === 'free') {
@@ -37,8 +39,13 @@ function buildBannerSubtext(
     if (isCoOwnerBooking) return t('spotModal.bannerReservedByCoOwner')
     return t('spotModal.bannerReservedOther')
   }
-  if (isCurrentUserOwner && spot.status === 'occupied')
+  if (isCurrentUserOwner && spot.status === 'occupied') {
+    if (isSharedSpot)
+      return isCurrentUserInOffice
+        ? t('spotModal.bannerOccupiedSharedByMe')
+        : t('spotModal.bannerOccupiedSharedByCoOwner')
     return t('spotModal.bannerOccupiedMine')
+  }
   return spot.owner_name
     ? t('spotModal.bannerOccupiedOwner')
     : t('spotModal.bannerOccupied')
@@ -75,6 +82,10 @@ export function SpotModal() {
       .split(',')
       .map((u) => u.trim())
       .includes(user.username)
+
+  const isSharedSpot =
+    (spot.owner_name?.includes('/') ?? false) ||
+    (spot.owner_user_id?.includes(',') ?? false)
 
   const myOwnedSpot = user
     ? allSpots.find(
@@ -125,12 +136,20 @@ export function SpotModal() {
       ? 'occupied'
       : spot.status
 
+  const isCurrentUserInOffice =
+    isCurrentUserOwner &&
+    !!spot.in_office_owner &&
+    !!user &&
+    spot.in_office_owner.toLowerCase() === user.displayName.toLowerCase()
+
   const bannerSubtext = buildBannerSubtext(
     { ...spot, status: bannerStatus },
     myReservedElsewhere,
     isMyBooking,
     isCurrentUserOwner,
     isCoOwnerBooking,
+    isSharedSpot,
+    isCurrentUserInOffice,
     t as TFunc,
   )
 
@@ -162,12 +181,12 @@ export function SpotModal() {
             status={bannerStatus}
             subtext={bannerSubtext}
             titleOverride={
-              isCurrentUserOwner && bannerStatus === 'occupied'
+              isCurrentUserOwner && !isSharedSpot && bannerStatus === 'occupied'
                 ? t('spotModal.yourSpot')
                 : undefined
             }
           />
-          <DetailsCard spot={spot} isCurrentUserOwner={isCurrentUserOwner} />
+          <DetailsCard spot={spot} currentUserDisplayName={user?.displayName} />
 
           {/* Management accordion (admins only) */}
           {user?.role === 'admin' && <ManagementAccordion spot={spot} />}

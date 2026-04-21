@@ -126,6 +126,9 @@ const sl = {
     bannerReservedOther: 'To mesto je že rezervirano.',
     bannerOccupiedMine: 'Vaše mesto — trenutno ga uporabljate.',
     bannerOccupiedOwner: 'To mesto trenutno uporablja lastnik.',
+    bannerOccupiedSharedByMe: 'To mesto trenutno uporabljate vi.',
+    bannerOccupiedSharedByCoOwner:
+      'To mesto trenutno uporablja eden od solastnikov.',
     bannerOccupied: 'To mesto je trenutno v uporabi.',
     reserveParkingSpot: 'Rezerviraj parkirno mesto',
     moveToThisSpot: 'Premakni sem',
