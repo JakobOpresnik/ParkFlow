@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import {
   ChevronDown,
   HelpCircle,
+  Info,
   LogIn,
   LogOut,
   ParkingCircle,
@@ -30,6 +31,7 @@ interface DesktopSidebarProps {
   readonly pathname: string
   readonly onLogout: () => void
   readonly onHelpOpen: () => void
+  readonly onAboutOpen: () => void
 }
 
 // — main component —
@@ -39,6 +41,7 @@ export function DesktopSidebar({
   pathname,
   onLogout,
   onHelpOpen,
+  onAboutOpen,
 }: DesktopSidebarProps) {
   const { t } = useTranslation()
   const isAdmin = isAdminSection(pathname)
@@ -47,13 +50,22 @@ export function DesktopSidebar({
   return (
     <aside className="bg-card hidden w-56 shrink-0 flex-col border-r sm:flex">
       {/* Logo */}
-      <div className="flex h-14 cursor-pointer items-center border-b px-4">
+      <div className="flex h-14 items-center border-b px-4">
         <div className="bg-primary/10 flex size-7 shrink-0 items-center justify-center rounded-lg">
           <ParkingCircle className="text-primary size-4" />
         </div>
         <span className="ml-2.5 text-sm font-semibold tracking-tight">
           ParkFlow
         </span>
+        <button
+          type="button"
+          onClick={onAboutOpen}
+          title={t('about.buttonTitle')}
+          aria-label={t('about.buttonTitle')}
+          className="text-muted-foreground/70 hover:text-muted-foreground ml-auto cursor-pointer rounded-full p-1 transition-colors"
+        >
+          <Info className="size-4" />
+        </button>
       </div>
 
       {/* Nav */}
@@ -109,12 +121,12 @@ export function DesktopSidebar({
       </nav>
 
       {/* Bottom — user info + logout / login */}
-      <div className="border-t p-3">
+      <div className="border-t px-3 py-0.5">
         {user ? (
-          <div className="space-y-2">
+          <div className="space-y-0.5">
             <Link
               to="/profile"
-              className="hover:bg-muted rounded-md px-2 py-0.5"
+              className="rounded-md px-2"
               title={t('nav.profile')}
             >
               <p className="text-xs font-medium">{user.displayName}</p>

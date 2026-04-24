@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-react'
 import { type ReactNode, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { AboutModal } from '@/components/AboutModal'
 import { HelpFeedbackDialog } from '@/components/HelpFeedbackDialog'
 import { useRealtimeSync } from '@/hooks/useRealtimeSync'
 import { useAuthStore } from '@/store/authStore'
@@ -35,6 +36,7 @@ export function Layout({ children, noPadding }: LayoutProps) {
   const setMoreOpen = useUIStore((s) => s.setMoreDrawerOpen)
 
   const [helpOpen, setHelpOpen] = useState(false)
+  const [aboutOpen, setAboutOpen] = useState(false)
 
   // Close the "More" drawer when the viewport grows past the sm breakpoint
   useEffect(() => {
@@ -45,6 +47,30 @@ export function Layout({ children, noPadding }: LayoutProps) {
     mq.addEventListener('change', handleChange)
     return () => mq.removeEventListener('change', handleChange)
   }, [setMoreOpen])
+
+  // Keyboard shortcut: press 'i' to toggle the About modal
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key !== 'i' && e.key !== 'I') return
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+      const target = e.target as HTMLElement | null
+      if (target) {
+        const tag = target.tagName
+        if (
+          tag === 'INPUT' ||
+          tag === 'TEXTAREA' ||
+          tag === 'SELECT' ||
+          target.isContentEditable
+        ) {
+          return
+        }
+      }
+      e.preventDefault()
+      setAboutOpen((prev) => !prev)
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [])
 
   if (isLoading) {
     return (
@@ -68,6 +94,7 @@ export function Layout({ children, noPadding }: LayoutProps) {
         pathname={pathname}
         onLogout={logout}
         onHelpOpen={() => setHelpOpen(true)}
+        onAboutOpen={() => setAboutOpen(true)}
       />
 
       {/* Main content area */}
@@ -95,6 +122,8 @@ export function Layout({ children, noPadding }: LayoutProps) {
       />
 
       <HelpFeedbackDialog open={helpOpen} onOpenChange={setHelpOpen} />
+
+      <AboutModal open={aboutOpen} onOpenChange={setAboutOpen} />
     </div>
   )
 }
