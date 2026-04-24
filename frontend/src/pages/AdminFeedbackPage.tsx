@@ -36,6 +36,8 @@ const STATUS_COLORS: Record<string, string> = {
   done: 'border-green-400/50 bg-green-50/50 dark:border-green-500/30 dark:bg-green-950/20',
   dismissed:
     'border-gray-300/50 bg-gray-50/50 dark:border-gray-600/30 dark:bg-gray-900/20',
+  archived:
+    'border-slate-300/50 bg-slate-50/50 dark:border-slate-600/30 dark:bg-slate-900/20',
 }
 
 const STATUS_HEADER_COLORS: Record<string, string> = {
@@ -43,6 +45,7 @@ const STATUS_HEADER_COLORS: Record<string, string> = {
   in_progress: 'text-blue-700 dark:text-blue-400',
   done: 'text-green-700 dark:text-green-400',
   dismissed: 'text-gray-500 dark:text-gray-400',
+  archived: 'text-slate-500 dark:text-slate-400',
 }
 
 const STATUS_DOT: Record<string, string> = {
@@ -50,6 +53,7 @@ const STATUS_DOT: Record<string, string> = {
   in_progress: 'bg-blue-500',
   done: 'bg-green-500',
   dismissed: 'bg-gray-400',
+  archived: 'bg-slate-500',
 }
 
 const STATUS_ORDER: FeedbackStatus[] = [
@@ -57,6 +61,7 @@ const STATUS_ORDER: FeedbackStatus[] = [
   'in_progress',
   'done',
   'dismissed',
+  'archived',
 ]
 
 const STATUS_LABEL_KEYS: Record<FeedbackStatus, string> = {
@@ -64,6 +69,7 @@ const STATUS_LABEL_KEYS: Record<FeedbackStatus, string> = {
   in_progress: 'feedback.statusInProgress',
   done: 'feedback.statusDone',
   dismissed: 'feedback.statusDismissed',
+  archived: 'feedback.statusArchived',
 }
 
 const CATEGORY_LABEL_KEYS: Record<string, string> = {

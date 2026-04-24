@@ -56,7 +56,7 @@ router.patch("/:id/status", requireAuth, requireAdmin, async (req, res, next) =>
     const { id } = req.params;
     const { status } = req.body as { status?: string };
 
-    const validStatuses = ["open", "in_progress", "done", "dismissed"];
+    const validStatuses = ["open", "in_progress", "done", "dismissed", "archived"];
     if (!status || !validStatuses.includes(status)) {
       res.status(400).json({ error: "Invalid status" });
       return;
