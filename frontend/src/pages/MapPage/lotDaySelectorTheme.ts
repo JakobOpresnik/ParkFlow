@@ -22,23 +22,23 @@ interface SelectorTheme {
 // — constants —
 
 const MAP_THEME: SelectorTheme = {
-  container: 'bg-black/40 backdrop-blur-sm',
-  divider: 'bg-white/15',
-  lotActive: 'bg-white text-blue-950',
-  lotInactive: 'text-white/80 hover:bg-white/10 hover:text-white',
-  dayToggleActive: 'bg-white/20 text-white',
-  dayToggleInactive: 'text-white/70 hover:bg-white/10 hover:text-white',
-  dayDropdownMenu: 'bg-black/80 backdrop-blur-sm',
-  daySelected: 'bg-white/20 text-white',
-  dayUnselected: 'text-white/70 hover:bg-white/10 hover:text-white',
-  daySelectedDot: 'bg-white',
-  dayUnselectedDot: 'bg-white/50',
+  container: 'bg-primary/10 backdrop-blur-sm',
+  divider: 'bg-primary/20',
+  lotActive: 'bg-card text-primary shadow-sm',
+  lotInactive: 'text-primary/70 hover:bg-primary/10 hover:text-primary',
+  dayToggleActive: 'bg-primary/15 text-primary',
+  dayToggleInactive: 'text-primary/70 hover:bg-primary/10 hover:text-primary',
+  dayDropdownMenu: 'bg-card border shadow-md',
+  daySelected: 'bg-primary text-primary-foreground',
+  dayUnselected: 'text-muted-foreground hover:bg-muted hover:text-foreground',
+  daySelectedDot: 'bg-primary-foreground',
+  dayUnselectedDot: 'bg-primary',
   todayBtn:
-    'bg-white/20 text-white ring-1 ring-white/50 hover:bg-white/30 font-semibold',
-  projectionNote: 'text-white/50',
-  keyNavRing: 'ring-1 ring-white/40',
-  skeletonBg: 'bg-white/10',
-  todayDot: 'bg-white',
+    'bg-primary/15 text-primary ring-1 ring-primary/40 hover:bg-primary/25 font-semibold',
+  projectionNote: 'text-primary/60',
+  keyNavRing: 'ring-1 ring-primary/40',
+  skeletonBg: 'bg-primary/10',
+  todayDot: 'bg-primary',
 }
 
 const NORMAL_THEME: SelectorTheme = {

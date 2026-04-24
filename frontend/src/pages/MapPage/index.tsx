@@ -47,12 +47,12 @@ const SKELETON_SPOT_IDS = [
 ]
 
 const BLUEPRINT_DARK: React.CSSProperties = {
-  backgroundColor: '#1e3a5f',
+  backgroundColor: 'oklch(0.245 0 0)',
   backgroundImage: [
-    'linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)',
-    'linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)',
-    'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)',
-    'linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
+    'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)',
+    'linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)',
+    'linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px)',
+    'linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)',
   ].join(', '),
   backgroundSize: '100px 100px, 100px 100px, 20px 20px, 20px 20px',
   backgroundPosition: '-1px -1px, -1px -1px, -1px -1px, -1px -1px',
