@@ -17,6 +17,7 @@ import type {
   SpotDayOverride,
   SpotStatus,
   SpotType,
+  StatsHistory,
 } from '@/types'
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
@@ -183,6 +184,22 @@ export const api = {
         ? `/api/changes?lot_id=${encodeURIComponent(lot_id)}`
         : '/api/changes',
     ),
+
+  // Stats history
+  getStatsHistory: (
+    lot_id?: string,
+    days?: number,
+    heatmap_days?: number,
+  ) => {
+    const qs = new URLSearchParams()
+    if (lot_id) qs.set('lot_id', lot_id)
+    if (days != null) qs.set('days', String(days))
+    if (heatmap_days != null) qs.set('heatmap_days', String(heatmap_days))
+    const suffix = qs.toString()
+    return request<StatsHistory>(
+      suffix ? `/api/stats/history?${suffix}` : '/api/stats/history',
+    )
+  },
 
   // Auth
   getMe: () => request<AppUser>('/api/auth/me'),

@@ -1,38 +1,18 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Select } from '@/components/ui/select'
 import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
 import { useLots } from '@/hooks/useLots'
+import { useStatsHistory } from '@/hooks/useStatsHistory'
 import type { SpotStatus } from '@/types'
 
-// — types —
-
-interface Segment {
-  readonly label: string
-  readonly count: number
-  readonly pct: number
-  readonly colorVar: string
-}
-
-interface DonutSlice extends Segment {
-  readonly dashLen: number
-  readonly startAngle: number
-}
-
-interface DonutChartProps {
-  readonly segments: Segment[]
-  readonly total: number
-}
-
-interface StatusProgressRowProps {
-  readonly segment: Segment
-  readonly total: number
-}
-
-// — constants —
-
-const DONUT_RADIUS = 72
+import { DonutChart, type Segment } from './DonutChart'
+import { FloorBreakdown } from './FloorBreakdown'
+import { type HeatmapRange, PeakHoursHeatmap } from './PeakHoursHeatmap'
+import { StatsSkeleton } from './StatsSkeleton'
+import { TrendChart, type TrendRange } from './TrendChart'
+import { computeFloorStats, computePct, type FloorStats } from './utils'
 
 const StatusColorVar: Record<SpotStatus, string> = {
   free: '--color-spot-free',
@@ -46,89 +26,9 @@ const STATUS_LABEL_KEYS: Record<SpotStatus, string> = {
   reserved: 'stats.occupied',
 }
 
-// — helpers —
-
-function computePct(n: number, total: number): number {
-  return total > 0 ? Math.round((n / total) * 100) : 0
-}
-
-function buildSlices(segments: Segment[], total: number): DonutSlice[] {
-  const circ = 2 * Math.PI * DONUT_RADIUS
-  const GAP_DEG = total > 1 ? 2 : 0
-  let accumulated = 0
-  return segments.map((seg) => {
-    const pct = seg.count / total
-    const angleDeg = pct * 360
-    const dashLen = Math.max(0, ((angleDeg - GAP_DEG) / 360) * circ)
-    const startAngle = accumulated * 360 - 90
-    accumulated += pct
-    return { ...seg, dashLen, startAngle }
-  })
-}
-
-// — sub-components —
-
-function TotalSpotsText({
-  cx,
-  cy,
-}: {
-  readonly cx: number
-  readonly cy: number
-}) {
-  const { t } = useTranslation()
-  return (
-    <text
-      x={cx}
-      y={cy + 18}
-      textAnchor="middle"
-      dominantBaseline="middle"
-      fontSize={11}
-      className="fill-muted-foreground"
-    >
-      {t('stats.totalSpots')}
-    </text>
-  )
-}
-
-function DonutChart({ segments, total }: DonutChartProps) {
-  const r = DONUT_RADIUS
-  const cx = 100
-  const cy = 100
-  const circ = 2 * Math.PI * r
-  const slices = buildSlices(segments, total)
-
-  return (
-    <svg viewBox="0 0 200 200" className="size-44 drop-shadow-sm sm:size-52">
-      {slices.map((slice) => {
-        if (slice.count === 0) return null
-        return (
-          <circle
-            key={slice.label}
-            cx={cx}
-            cy={cy}
-            r={r}
-            fill="none"
-            strokeWidth="28"
-            strokeDasharray={`${slice.dashLen} ${circ}`}
-            transform={`rotate(${slice.startAngle} ${cx} ${cy})`}
-            style={{ stroke: `var(${slice.colorVar})` }}
-          />
-        )
-      })}
-      <text
-        x={cx}
-        y={cy - 6}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fontSize={28}
-        fontWeight={700}
-        className="fill-foreground"
-      >
-        {total}
-      </text>
-      <TotalSpotsText cx={cx} cy={cy} />
-    </svg>
-  )
+interface StatusProgressRowProps {
+  readonly segment: Segment
+  readonly total: number
 }
 
 function StatusProgressRow({ segment, total }: StatusProgressRowProps) {
@@ -160,8 +60,6 @@ function StatusProgressRow({ segment, total }: StatusProgressRowProps) {
   )
 }
 
-// — main component —
-
 export function StatsPage() {
   const { t } = useTranslation()
   const today = new Date().toISOString().slice(0, 10)
@@ -169,13 +67,33 @@ export function StatsPage() {
     useEffectiveSpots(today)
   const { data: lots = [], isLoading: isLotsLoading } = useLots()
   const [selectedLotId, setSelectedLotId] = useState<string>('__all__')
+  const [trendRange, setTrendRange] = useState<TrendRange>(30)
+  const [heatmapRange, setHeatmapRange] = useState<HeatmapRange>(90)
+  const scopedLotId = selectedLotId === '__all__' ? undefined : selectedLotId
+  const { data: history } = useStatsHistory(
+    scopedLotId,
+    trendRange,
+    heatmapRange,
+  )
 
   const isLoading = isSpotsLoading || isLotsLoading
 
-  const spots =
-    selectedLotId === '__all__'
-      ? allSpots
-      : allSpots.filter((s) => s.lot_id === selectedLotId)
+  const spots = useMemo(
+    () =>
+      selectedLotId === '__all__'
+        ? allSpots
+        : allSpots.filter((s) => s.lot_id === selectedLotId),
+    [allSpots, selectedLotId],
+  )
+
+  const floors: FloorStats[] = useMemo(() => {
+    return lots
+      .map((lot) => {
+        const lotSpots = allSpots.filter((s) => s.lot_id === lot.id)
+        return computeFloorStats(lot.id, lot.name, lotSpots)
+      })
+      .filter((f) => f.total > 0)
+  }, [lots, allSpots])
 
   const total = spots.length
   const counts: Record<SpotStatus, number> = {
@@ -183,7 +101,6 @@ export function StatsPage() {
     occupied: spots.filter((s) => s.status === 'occupied').length,
     reserved: spots.filter((s) => s.status === 'reserved').length,
   }
-
   const mergedCounts = {
     free: counts.free,
     occupied: counts.occupied + counts.reserved,
@@ -198,7 +115,6 @@ export function StatsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">{t('stats.title')}</h1>
@@ -220,9 +136,7 @@ export function StatsPage() {
         )}
       </div>
 
-      {isLoading && (
-        <div className="bg-muted h-64 animate-pulse rounded-lg border" />
-      )}
+      {isLoading && <StatsSkeleton />}
 
       {!isLoading && total === 0 && (
         <div className="text-muted-foreground rounded-lg border border-dashed p-12 text-center text-sm">
@@ -232,7 +146,6 @@ export function StatsPage() {
 
       {!isLoading && total > 0 && (
         <>
-          {/* Summary cards */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {segments.map((seg) => (
               <div
@@ -252,9 +165,23 @@ export function StatsPage() {
                 </p>
               </div>
             ))}
+            <div className="bg-card flex flex-col gap-1 rounded-lg border p-4 shadow-sm">
+              <div className="bg-primary/80 h-1 w-10 rounded-full" />
+              <p className="text-2xl font-bold tabular-nums sm:text-3xl">
+                {computePct(mergedCounts.occupied, total)}%
+              </p>
+              <p className="text-muted-foreground text-sm">
+                {t('stats.occupancyRate')}
+              </p>
+              <p className="text-xs font-medium">
+                {t('stats.spotsInUse', {
+                  used: mergedCounts.occupied,
+                  total,
+                })}
+              </p>
+            </div>
           </div>
 
-          {/* Chart + breakdown */}
           <div className="grid gap-4 md:grid-cols-2">
             <div className="bg-card flex flex-col items-center justify-center gap-4 rounded-lg border p-4 shadow-sm sm:p-6">
               <p className="text-muted-foreground self-start text-sm font-medium">
@@ -316,6 +243,23 @@ export function StatsPage() {
               </div>
             </div>
           </div>
+
+          {floors.length > 1 && <FloorBreakdown floors={floors} />}
+
+          {history && (
+            <div className="grid gap-4 lg:grid-cols-2">
+              <PeakHoursHeatmap
+                data={history.heatmap}
+                days={heatmapRange}
+                onRangeChange={setHeatmapRange}
+              />
+              <TrendChart
+                data={history.daily}
+                days={trendRange}
+                onRangeChange={setTrendRange}
+              />
+            </div>
+          )}
         </>
       )}
     </div>
