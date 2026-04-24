@@ -37,13 +37,13 @@ const DONUT_RADIUS = 72
 const StatusColorVar: Record<SpotStatus, string> = {
   free: '--color-spot-free',
   occupied: '--color-spot-occupied',
-  reserved: '--color-spot-reserved',
+  reserved: '--color-spot-occupied',
 }
 
 const STATUS_LABEL_KEYS: Record<SpotStatus, string> = {
   free: 'stats.free',
   occupied: 'stats.occupied',
-  reserved: 'stats.reserved',
+  reserved: 'stats.occupied',
 }
 
 // — helpers —
@@ -184,12 +184,15 @@ export function StatsPage() {
     reserved: spots.filter((s) => s.status === 'reserved').length,
   }
 
-  const segments: Segment[] = (
-    ['free', 'occupied', 'reserved'] as SpotStatus[]
-  ).map((s) => ({
+  const mergedCounts = {
+    free: counts.free,
+    occupied: counts.occupied + counts.reserved,
+  }
+
+  const segments: Segment[] = (['free', 'occupied'] as const).map((s) => ({
     label: t(STATUS_LABEL_KEYS[s]),
-    count: counts[s],
-    pct: computePct(counts[s], total),
+    count: mergedCounts[s],
+    pct: computePct(mergedCounts[s], total),
     colorVar: StatusColorVar[s],
   }))
 
@@ -293,20 +296,20 @@ export function StatsPage() {
                     {t('stats.occupancyRate')}
                   </span>
                   <span className="font-semibold">
-                    {computePct(counts.occupied + counts.reserved, total)}%
+                    {computePct(mergedCounts.occupied, total)}%
                   </span>
                 </div>
                 <div className="bg-muted mt-2 h-2.5 w-full overflow-hidden rounded-full">
                   <div
                     className="bg-primary h-full rounded-full transition-all duration-500"
                     style={{
-                      width: `${computePct(counts.occupied + counts.reserved, total)}%`,
+                      width: `${computePct(mergedCounts.occupied, total)}%`,
                     }}
                   />
                 </div>
                 <p className="text-muted-foreground mt-1 text-xs">
                   {t('stats.spotsInUse', {
-                    used: counts.occupied + counts.reserved,
+                    used: mergedCounts.occupied,
                     total,
                   })}
                 </p>
