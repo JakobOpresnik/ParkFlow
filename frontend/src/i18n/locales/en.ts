@@ -1,4 +1,47 @@
 const en = {
+  about: {
+    buttonTitle: 'About ParkFlow',
+    title: 'About ParkFlow',
+    subtitle: 'Smart office parking, without the chaos',
+    intro:
+      'ParkFlow turns the daily hunt for a parking spot into a quiet, predictable process. Owners, visitors, and admins share a single live picture of who is parked where, who is on their way in, and which spots are genuinely free right now.',
+    featuresHeading: 'What it does',
+    benefitsHeading: 'Why it helps',
+    footer:
+      'Built for Acex & Abelium · open a feedback item from the Help menu',
+    features: {
+      map: {
+        title: 'Interactive parking map',
+        desc: 'Pan & zoom the real floor plan. We can see status, owner, and booking info for every parking spot.',
+      },
+      booking: {
+        title: 'One-tap reservations',
+        desc: 'Reserve a free spot for the day or the week. Cancel any time — owners get priority back.',
+      },
+      owners: {
+        title: 'Owner spots + presence',
+        desc: 'Owner-assigned spots free themselves automatically when the owner is marked absent in the company timesheet system or when the owner marks his or her spot available for the day.',
+      },
+      stats: {
+        title: 'Live stats & peak hours',
+        desc: 'Occupancy pie chart, per-floor breakdown, 7/30/90-day trend, and a weekday × hour heatmap.',
+      },
+      realtime: {
+        title: 'Real-time updates',
+        desc: 'Every booking, override, and status change propagates instantly over WebSocket — no refresh needed.',
+      },
+      admin: {
+        title: 'Admin controls',
+        desc: 'Manage lots, spots, owners, day-overrides, and audit every change via a built-in change log.',
+      },
+    },
+    benefits: {
+      noMorePhotos: 'No more "who\'s in Klet -1 today?" photos in chat',
+      fairUsage:
+        'Fair access — free spots surface automatically when owners are away',
+      visibility: 'Instant visibility into parking pressure, not guesswork',
+    },
+  },
   nav: {
     map: 'Map',
     dashboard: 'Dashboard',
@@ -58,6 +101,12 @@ const en = {
     daysAgo: '{{d}}d ago',
     ownerAssigned: 'owner → {{name}}',
     statusChangedTo: '→ {{status}}',
+    hotSpots: 'Hot spots',
+    hotSpotsSub: 'most activity recently',
+    hotSpotsEmpty: 'Not enough activity yet.',
+    changesCount: '{{n}} change(s)',
+    recentlyFreed: 'Just freed up',
+    recentlyFreedSub: 'within the last 2h',
   },
   map: {
     noSpotsInLot: 'No spots in this lot',
@@ -201,6 +250,34 @@ const en = {
     occupied: 'Occupied',
     reserved: 'Reserved',
     spots: '{{count}} / {{total}} spots',
+    byFloor: 'By floor',
+    floor: 'Floor',
+    total: 'Total',
+    utilization: 'Utilization',
+    exportCsv: 'Export CSV',
+    exportCsvTooltip: 'Download current stats as CSV',
+    peakHours: 'Peak hours',
+    peakHoursSub: 'booked spot-hours · last 90 days',
+    less: 'Less',
+    more: 'More',
+    trend30d: 'Daily bookings',
+    trendInfo:
+      'For each day in the selected range, counts how many spots were booked on that day. Includes active + cancelled bookings and owner "occupied" overrides.',
+    peakHoursInfo:
+      'For each weekday and hour, counts how many spots were booked during that hour across the selected range. Bookings use their actual start/end times, so non-standard hours are respected. Owner "occupied" overrides don\'t carry hour info and count as 09:00–17:00.',
+    range7d: '7d',
+    range30d: '30d',
+    range90d: '90d',
+    avgPerDay: 'avg {{n}}/day',
+    weekdays: {
+      mon: 'Mon',
+      tue: 'Tue',
+      wed: 'Wed',
+      thu: 'Thu',
+      fri: 'Fri',
+      sat: 'Sat',
+      sun: 'Sun',
+    },
   },
   bookings: {
     title: 'My Bookings',
@@ -503,6 +580,7 @@ const en = {
     statusInProgress: 'In progress',
     statusDone: 'Done',
     statusDismissed: 'Dismissed',
+    statusArchived: 'Archived',
   },
   common: {
     loading: 'Loading…',
