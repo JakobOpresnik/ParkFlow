@@ -22,8 +22,8 @@ export function OverlayButton({
       onClick={onClick}
       title={title}
       aria-label={title}
-      className={`flex size-11 items-center justify-center rounded-lg text-white transition-colors ${
-        active ? 'bg-white/20' : 'hover:bg-white/10'
+      className={`text-primary flex size-11 items-center justify-center rounded-lg transition-colors ${
+        active ? 'bg-primary/20' : 'hover:bg-primary/15'
       }`}
     >
       {children}

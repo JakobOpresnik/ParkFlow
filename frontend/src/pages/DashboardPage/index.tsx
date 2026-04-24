@@ -7,7 +7,9 @@ import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
 import { useLots } from '@/hooks/useLots'
 
 import { ActivityFeed } from './ActivityFeed'
+import { HotSpots } from './HotSpots'
 import { LotBreakdown } from './LotBreakdown'
+import { RecentlyFreed } from './RecentlyFreed'
 import { countByStatus } from './utils'
 
 // — types —
@@ -154,6 +156,8 @@ export function DashboardPage() {
         </div>
       )}
 
+      {!isLoading && <RecentlyFreed changes={changes} spots={allSpots} />}
+
       {!isLoading && <div className="border-t" />}
 
       {/* Two-column: lot breakdown + activity feed */}
@@ -164,6 +168,12 @@ export function DashboardPage() {
           <div className={lots.length === 0 ? 'lg:col-span-2' : ''}>
             <ActivityFeed changes={changes} isLoading={changesLoading} />
           </div>
+
+          <HotSpots
+            changes={changes}
+            spots={allSpots}
+            isLoading={changesLoading}
+          />
         </div>
       )}
     </div>

@@ -1,6 +1,22 @@
 export type SpotStatus = 'free' | 'occupied' | 'reserved'
 export type SpotType = 'standard' | 'ev' | 'handicap' | 'compact'
 
+export interface StatsHeatmapCell {
+  weekday: number
+  hour: number
+  count: number
+}
+
+export interface StatsDailyPoint {
+  date: string
+  count: number
+}
+
+export interface StatsHistory {
+  heatmap: StatsHeatmapCell[]
+  daily: StatsDailyPoint[]
+}
+
 export interface AppUser {
   id: string
   username: string
@@ -175,7 +191,12 @@ export interface SpotBooking {
 }
 
 export type FeedbackCategory = 'general' | 'bug' | 'feature' | 'improvement'
-export type FeedbackStatus = 'open' | 'in_progress' | 'done' | 'dismissed'
+export type FeedbackStatus =
+  | 'open'
+  | 'in_progress'
+  | 'done'
+  | 'dismissed'
+  | 'archived'
 
 export interface FeatureRequest {
   id: string

@@ -22,7 +22,7 @@ export function MapViewToggle({
       <div
         className={`flex flex-col gap-0.5 rounded-xl p-1 min-[800px]:flex-row ${
           isMapMode
-            ? 'bg-black/40 backdrop-blur-sm'
+            ? 'bg-primary/10 backdrop-blur-sm'
             : 'bg-card border shadow-sm'
         }`}
       >
@@ -31,7 +31,7 @@ export function MapViewToggle({
           title={t('map.mapView')}
           className={`flex min-h-11 min-w-15 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-colors ${
             isMapMode
-              ? 'bg-white/20 text-white'
+              ? 'bg-primary/20 text-primary'
               : 'text-muted-foreground hover:bg-muted hover:text-foreground'
           }`}
         >
@@ -44,7 +44,7 @@ export function MapViewToggle({
           className={`flex min-h-11 min-w-15 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-colors ${
             !isMapMode
               ? 'bg-accent text-foreground'
-              : 'text-white/60 hover:bg-white/10 hover:text-white'
+              : 'text-primary/70 hover:bg-primary/15 hover:text-primary'
           }`}
         >
           <LayoutGrid className="size-4 shrink-0" />

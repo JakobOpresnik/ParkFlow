@@ -35,7 +35,7 @@ export function MapControls({
   const { t } = useTranslation()
   return (
     <div className="absolute right-3 bottom-20 z-20 flex flex-col gap-2 sm:bottom-3">
-      <div className="rounded-xl bg-black/40 p-1 backdrop-blur-sm">
+      <div className="bg-primary/10 rounded-xl p-1 backdrop-blur-sm">
         <OverlayButton
           onClick={onSidebarToggle}
           title={t('map.toggleSidebar')}
@@ -44,21 +44,21 @@ export function MapControls({
           <PanelRight className="size-5" />
         </OverlayButton>
       </div>
-      <div className="flex flex-col rounded-xl bg-black/40 p-1 backdrop-blur-sm">
+      <div className="bg-primary/10 flex flex-col rounded-xl p-1 backdrop-blur-sm">
         <OverlayButton
           onClick={() => mapRef.current?.zoomIn()}
           title={t('map.zoomIn')}
         >
           <Plus className="size-5" />
         </OverlayButton>
-        <div className="mx-1 h-px bg-white/20" />
+        <div className="mx-1 h-px bg-primary/20" />
         <OverlayButton
           onClick={() => mapRef.current?.zoomOut()}
           title={t('map.zoomOut')}
         >
           <Minus className="size-5" />
         </OverlayButton>
-        <div className="mx-1 h-px bg-white/20" />
+        <div className="mx-1 h-px bg-primary/20" />
         <OverlayButton
           onClick={() => mapRef.current?.resetZoom()}
           title={t('map.resetZoom')}
@@ -66,7 +66,7 @@ export function MapControls({
           <RotateCcw className="size-4" />
         </OverlayButton>
       </div>
-      <div className="rounded-xl bg-black/40 p-1 backdrop-blur-sm">
+      <div className="bg-primary/10 rounded-xl p-1 backdrop-blur-sm">
         <OverlayButton
           onClick={onToggleFullscreen}
           title={isFullscreen ? t('map.exitFullscreen') : t('map.fullscreen')}

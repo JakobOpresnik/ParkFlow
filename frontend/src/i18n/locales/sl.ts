@@ -1,4 +1,47 @@
 const sl = {
+  about: {
+    buttonTitle: 'O aplikaciji ParkFlow',
+    title: 'O aplikaciji ParkFlow',
+    subtitle: 'Pametno pisarniško parkiranje brez zmede',
+    intro:
+      'ParkFlow vsakodnevno iskanje parkirnega mesta spremeni v miren, predvidljiv proces. Lastniki, obiskovalci in skrbniki imajo skupen pregled v realnem času — kdo je parkiran, kdo prihaja in katera mesta so zares prosta.',
+    featuresHeading: 'Kaj ponuja',
+    benefitsHeading: 'Zakaj je koristno',
+    footer:
+      'Razvito za Acex & Abelium · povratne informacije pošljite prek menija Pomoč',
+    features: {
+      map: {
+        title: 'Interaktivni zemljevid',
+        desc: 'Pomikaj in povečuj dejanski tloris. Vsako mesto prikazuje stanje, lastnika in rezervacijo v živo.',
+      },
+      booking: {
+        title: 'Rezervacije z enim klikom',
+        desc: 'Rezerviraj prosto mesto za dan ali teden. Prekliči kadarkoli — lastniki dobijo prednost nazaj.',
+      },
+      owners: {
+        title: 'Lastniška mesta + prisotnost',
+        desc: 'Lastniška mesta se samodejno sprostijo, ko je lastnik odsoten v podjetniškem sistemu za evidenco prisotnosti ali ko lastnik sam označi svoje mesto kot prosto za določen dan.',
+      },
+      stats: {
+        title: 'Statistika in ure konic',
+        desc: 'Tortni diagram zasedenosti, razdelitev po etažah, trend 7/30/90 dni ter toplotna karta po dnevih in urah.',
+      },
+      realtime: {
+        title: 'Osveževanje v realnem času',
+        desc: 'Vsaka rezervacija, oznaka in sprememba statusa se takoj posreduje prek WebSocketa — brez osveževanja.',
+      },
+      admin: {
+        title: 'Skrbniška orodja',
+        desc: 'Upravljaj parkirišča, mesta, lastnike, dnevne oznake ter spremljaj vse spremembe prek dnevnika.',
+      },
+    },
+    benefits: {
+      noMorePhotos: 'Konec fotografij "kdo je danes v Kleti -1?" v klepetu',
+      fairUsage:
+        'Pravična raba — prosta mesta se samodejno prikažejo, ko so lastniki odsotni',
+      visibility: 'Takojšen pregled pritiska na parkirišče, brez ugibanja',
+    },
+  },
   nav: {
     map: 'Zemljevid',
     dashboard: 'Nadzorna plošča',
@@ -59,6 +102,12 @@ const sl = {
     daysAgo: 'pred {{d}}d',
     ownerAssigned: 'lastnik → {{name}}',
     statusChangedTo: '→ {{status}}',
+    hotSpots: 'Najbolj aktivna mesta',
+    hotSpotsSub: 'največ aktivnosti v zadnjem času',
+    hotSpotsEmpty: 'Še ni dovolj aktivnosti.',
+    changesCount: '{{n}} spremembe',
+    recentlyFreed: 'Pravkar sproščeno',
+    recentlyFreedSub: 'v zadnjih 2 urah',
   },
   map: {
     noSpotsInLot: 'V tem parkirišču ni mest',
@@ -202,6 +251,34 @@ const sl = {
     occupied: 'Zasedeno',
     reserved: 'Rezervirano',
     spots: '{{count}} / {{total}} mest',
+    byFloor: 'Po etažah',
+    floor: 'Etaža',
+    total: 'Skupaj',
+    utilization: 'Zasedenost',
+    exportCsv: 'Izvoz CSV',
+    exportCsvTooltip: 'Prenesi statistiko kot CSV',
+    peakHours: 'Najbolj obremenjene ure',
+    peakHoursSub: 'rezervirane ure · zadnjih 90 dni',
+    less: 'Manj',
+    more: 'Več',
+    trend30d: 'Dnevne rezervacije',
+    trendInfo:
+      'Za vsak dan v izbranem obdobju prešteje, koliko mest je bilo rezerviranih. Vključuje aktivne + preklicane rezervacije in lastniške oznake "zasedeno".',
+    peakHoursInfo:
+      'Za vsak dan v tednu in uro prešteje, koliko mest je bilo rezerviranih v tej uri v izbranem obdobju. Rezervacije uporabljajo svoje dejanske ure začetka/konca, zato so nestandardne ure upoštevane. Lastniške oznake "zasedeno" nimajo informacije o urah in se štejejo kot 09:00–17:00.',
+    range7d: '7d',
+    range30d: '30d',
+    range90d: '90d',
+    avgPerDay: 'povp. {{n}}/dan',
+    weekdays: {
+      mon: 'Pon',
+      tue: 'Tor',
+      wed: 'Sre',
+      thu: 'Čet',
+      fri: 'Pet',
+      sat: 'Sob',
+      sun: 'Ned',
+    },
   },
   bookings: {
     title: 'Moje rezervacije',
@@ -508,6 +585,7 @@ const sl = {
     statusInProgress: 'V obravnavi',
     statusDone: 'Zaključeno',
     statusDismissed: 'Zavrnjeno',
+    statusArchived: 'Arhivirano',
   },
   common: {
     loading: 'Nalaganje…',
