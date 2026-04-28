@@ -51,14 +51,14 @@ export function MapControls({
         >
           <Plus className="size-5" />
         </OverlayButton>
-        <div className="mx-1 h-px bg-primary/20" />
+        <div className="bg-primary/20 mx-1 h-px" />
         <OverlayButton
           onClick={() => mapRef.current?.zoomOut()}
           title={t('map.zoomOut')}
         >
           <Minus className="size-5" />
         </OverlayButton>
-        <div className="mx-1 h-px bg-primary/20" />
+        <div className="bg-primary/20 mx-1 h-px" />
         <OverlayButton
           onClick={() => mapRef.current?.resetZoom()}
           title={t('map.resetZoom')}

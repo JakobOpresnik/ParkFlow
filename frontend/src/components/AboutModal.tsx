@@ -128,10 +128,7 @@ export function AboutModal({ open, onOpenChange }: AboutModalProps) {
             </h3>
             <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-[repeat(2,minmax(0,1fr))]">
               {FEATURES.map(({ Icon, titleKey, descKey, tint }) => (
-                <li
-                  key={titleKey}
-                  className="flex min-w-0 items-start gap-3"
-                >
+                <li key={titleKey} className="flex min-w-0 items-start gap-3">
                   <div
                     className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${tint}`}
                   >

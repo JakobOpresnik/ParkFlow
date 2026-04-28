@@ -186,11 +186,7 @@ export const api = {
     ),
 
   // Stats history
-  getStatsHistory: (
-    lot_id?: string,
-    days?: number,
-    heatmap_days?: number,
-  ) => {
+  getStatsHistory: (lot_id?: string, days?: number, heatmap_days?: number) => {
     const qs = new URLSearchParams()
     if (lot_id) qs.set('lot_id', lot_id)
     if (days != null) qs.set('days', String(days))
