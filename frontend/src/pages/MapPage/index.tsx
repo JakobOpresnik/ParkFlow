@@ -59,12 +59,12 @@ const BLUEPRINT_DARK: React.CSSProperties = {
 }
 
 const BLUEPRINT_LIGHT: React.CSSProperties = {
-  backgroundColor: '#eef2f7',
+  backgroundColor: '#fafafa',
   backgroundImage: [
-    'linear-gradient(rgba(59,130,246,0.10) 1px, transparent 1px)',
-    'linear-gradient(90deg, rgba(59,130,246,0.10) 1px, transparent 1px)',
-    'linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px)',
-    'linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px)',
+    'linear-gradient(rgba(0,0,0,0.06) 1px, transparent 1px)',
+    'linear-gradient(90deg, rgba(0,0,0,0.06) 1px, transparent 1px)',
+    'linear-gradient(rgba(0,0,0,0.025) 1px, transparent 1px)',
+    'linear-gradient(90deg, rgba(0,0,0,0.025) 1px, transparent 1px)',
   ].join(', '),
   backgroundSize: '100px 100px, 100px 100px, 20px 20px, 20px 20px',
   backgroundPosition: '-1px -1px, -1px -1px, -1px -1px, -1px -1px',
