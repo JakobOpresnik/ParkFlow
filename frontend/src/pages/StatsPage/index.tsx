@@ -247,7 +247,7 @@ export function StatsPage() {
           {floors.length > 1 && <FloorBreakdown floors={floors} />}
 
           {history && (
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid gap-4 min-[1250px]:grid-cols-2">
               <PeakHoursHeatmap
                 data={history.heatmap}
                 days={heatmapRange}
