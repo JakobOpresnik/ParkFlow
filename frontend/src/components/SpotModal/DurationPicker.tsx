@@ -30,35 +30,34 @@ export function DurationPicker({
 }: DurationPickerProps) {
   const { t } = useTranslation()
   return (
-    <div className="bg-muted/50 space-y-2 rounded-lg px-4 py-3">
-      <div className="flex items-center justify-between">
-        <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
-          <Clock className="size-3.5" />
+    <div className="bg-muted/50 flex items-center justify-between gap-3 rounded-lg px-4 py-3">
+      <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
+        <Clock className="size-3.5" />
+        <span>
           {t('spotModal.durationFrom', { time: arrivalTime })}
+          {' · '}
+          {t('spotModal.durationUntil', { time: expiryStr })}
         </span>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => onChange(Math.max(0.5, duration - 0.5))}
-            className="hover:bg-background flex size-6 items-center justify-center rounded border transition-colors"
-            aria-label={t('spotModal.decreaseDuration')}
-          >
-            <Minus className="size-3" />
-          </button>
-          <span className="w-14 text-center text-sm font-medium">
-            {formatDuration(duration)}
-          </span>
-          <button
-            onClick={() => onChange(Math.min(24, duration + 0.5))}
-            className="hover:bg-background flex size-6 items-center justify-center rounded border transition-colors"
-            aria-label={t('spotModal.increaseDuration')}
-          >
-            <Plus className="size-3" />
-          </button>
-        </div>
+      </span>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => onChange(Math.max(0.5, duration - 0.5))}
+          className="hover:bg-background flex size-6 items-center justify-center rounded border transition-colors"
+          aria-label={t('spotModal.decreaseDuration')}
+        >
+          <Minus className="size-3" />
+        </button>
+        <span className="w-14 text-center text-sm font-medium">
+          {formatDuration(duration)}
+        </span>
+        <button
+          onClick={() => onChange(Math.min(24, duration + 0.5))}
+          className="hover:bg-background flex size-6 items-center justify-center rounded border transition-colors"
+          aria-label={t('spotModal.increaseDuration')}
+        >
+          <Plus className="size-3" />
+        </button>
       </div>
-      <p className="text-muted-foreground text-right text-xs">
-        {t('spotModal.durationUntil', { time: expiryStr })}
-      </p>
     </div>
   )
 }

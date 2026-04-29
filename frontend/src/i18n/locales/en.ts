@@ -193,6 +193,7 @@ const en = {
     reservationWindowEnded:
       "Today's reservation window has ended — arrival at {{time}}, until {{expiry}}",
     spotUnavailableOccupied: 'Spot unavailable — currently occupied',
+    occupiedHours: 'In use today: {{start}} – {{end}}',
     spotUnavailableReserved: 'Spot unavailable — already reserved',
     manageSpot: 'Manage spot',
     statusSection: 'Status',

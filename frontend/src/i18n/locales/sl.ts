@@ -194,6 +194,7 @@ const sl = {
     reservationWindowEnded:
       'Rezervacijsko okno za danes je zaprto — prihod ob {{time}}, do {{expiry}}',
     spotUnavailableOccupied: 'Mesto ni na voljo — trenutno zasedeno',
+    occupiedHours: 'V uporabi danes: {{start}} – {{end}}',
     spotUnavailableReserved: 'Mesto ni na voljo — že rezervirano',
     manageSpot: 'Upravljanje mesta',
     statusSection: 'Status',

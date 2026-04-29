@@ -251,7 +251,7 @@ export function BookingCta({
               {spot.active_booking_reserved_by}
             </span>
           )}
-          {spot.status === 'reserved' && spot.active_booking_expires_at ? (
+          {spot.active_booking_expires_at?.slice(0, 10) === selectedDate ? (
             <>
               <Clock className="size-4" />
               <ReservationTimer
@@ -263,6 +263,16 @@ export function BookingCta({
                 }
               />
             </>
+          ) : spot.status === 'occupied' ? (
+            <div className="flex items-center gap-1.5">
+              <Clock className="size-4" />
+              <span>
+                {t('spotModal.occupiedHours', {
+                  start: '09:00',
+                  end: '17:00',
+                })}
+              </span>
+            </div>
           ) : (
             <span>{unavailableMsg}</span>
           )}
