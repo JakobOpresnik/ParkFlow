@@ -72,6 +72,7 @@ export function TrendChart({ data, days, onRangeChange }: TrendChartProps) {
 
   const total = series.reduce((sum, p) => sum + p.count, 0)
   const avg = total / n
+  const avgLabel = Number.isInteger(avg) ? String(avg) : avg.toFixed(1)
 
   const yTicks = [0, Math.round(max / 2), max]
 
@@ -123,14 +124,16 @@ export function TrendChart({ data, days, onRangeChange }: TrendChartProps) {
         </div>
       </div>
 
-      <div className="mb-2 flex items-end justify-between">
-        <div />
-        <div className="text-right">
-          <p className="text-2xl font-bold tabular-nums">{total}</p>
-          <p className="text-muted-foreground text-[11px]">
-            {t('stats.avgPerDay', { n: avg.toFixed(1) })}
+      <div className="mb-5 flex flex-col items-end">
+        <div className="flex items-baseline gap-2">
+          <p className="text-muted-foreground text-sm font-medium">
+            {t('stats.total')}
           </p>
+          <p className="text-2xl font-bold tabular-nums">{total}</p>
         </div>
+        <p className="text-muted-foreground mt-1.5 text-[11px]">
+          {t('stats.avgPerDay', { n: avgLabel })}
+        </p>
       </div>
 
       <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="h-auto w-full">

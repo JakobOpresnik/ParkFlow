@@ -69,7 +69,7 @@ export function PeakHoursHeatmap({
 
   return (
     <div className="bg-card rounded-lg border p-4 shadow-sm sm:p-6">
-      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-1.5">
           <p className="text-muted-foreground text-sm font-medium">
             {t('stats.peakHours')}
@@ -159,7 +159,7 @@ export function PeakHoursHeatmap({
       </div>
 
       {/* Legend */}
-      <div className="text-muted-foreground mt-3 flex items-center gap-2 text-[10px]">
+      <div className="text-muted-foreground mt-10 flex items-center gap-2 text-[10px]">
         <span>{t('stats.less')}</span>
         {[0.1, 0.25, 0.5, 0.75, 1].map((a) => (
           <div

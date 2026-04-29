@@ -20,7 +20,7 @@ export function FloorBreakdown({ floors }: FloorBreakdownProps) {
         <table className="w-full min-w-[520px] text-sm">
           <thead>
             <tr className="text-muted-foreground text-left text-xs">
-              <th className="px-4 pb-2 font-medium sm:px-6">
+              <th className="w-px px-4 pb-2 font-medium whitespace-nowrap sm:px-6">
                 {t('stats.floor')}
               </th>
               <th className="px-2 pb-2 text-right font-medium tabular-nums">
@@ -32,7 +32,7 @@ export function FloorBreakdown({ floors }: FloorBreakdownProps) {
               <th className="px-2 pb-2 text-right font-medium tabular-nums">
                 {t('stats.total')}
               </th>
-              <th className="w-1/3 px-4 pb-2 font-medium sm:px-6">
+              <th className="w-1/2 px-4 pb-2 font-medium sm:px-6">
                 {t('stats.utilization')}
               </th>
             </tr>
@@ -40,7 +40,9 @@ export function FloorBreakdown({ floors }: FloorBreakdownProps) {
           <tbody>
             {floors.map((f) => (
               <tr key={f.lotId} className="border-t">
-                <td className="px-4 py-3 font-medium sm:px-6">{f.name}</td>
+                <td className="px-4 py-3 font-medium whitespace-nowrap sm:px-6">
+                  {f.name}
+                </td>
                 <td className="px-2 py-3 text-right tabular-nums">{f.free}</td>
                 <td className="px-2 py-3 text-right tabular-nums">
                   {f.occupied}
