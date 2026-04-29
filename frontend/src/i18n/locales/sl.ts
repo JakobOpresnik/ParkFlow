@@ -266,7 +266,7 @@ const sl = {
     trendInfo:
       'Za vsak dan v izbranem obdobju prešteje, koliko mest je bilo rezerviranih. Vključuje aktivne + preklicane rezervacije in lastniške oznake "zasedeno".',
     peakHoursInfo:
-      'Za vsak dan v tednu in uro prešteje, koliko mest je bilo rezerviranih v tej uri v izbranem obdobju. Rezervacije uporabljajo svoje dejanske ure začetka/konca, zato so nestandardne ure upoštevane. Lastniške oznake "zasedeno" nimajo informacije o urah in se štejejo kot 09:00–17:00.',
+      'Za vsak dan v tednu in uro prešteje, koliko mest je bilo rezerviranih ob tej uri v izbranem obdobju. Rezervacije uporabljajo svoje dejanske ure začetka/konca, zato so tudi nestandardne ure upoštevane. Lastniške oznake "zasedeno" nimajo informacije o urah in se štejejo za zasedene od 09:00 do 17:00.',
     range7d: '7d',
     range30d: '30d',
     range90d: '90d',

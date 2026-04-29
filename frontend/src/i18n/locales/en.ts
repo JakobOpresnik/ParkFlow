@@ -265,7 +265,7 @@ const en = {
     trendInfo:
       'For each day in the selected range, counts how many spots were booked on that day. Includes active + cancelled bookings and owner "occupied" overrides.',
     peakHoursInfo:
-      'For each weekday and hour, counts how many spots were booked during that hour across the selected range. Bookings use their actual start/end times, so non-standard hours are respected. Owner "occupied" overrides don\'t carry hour info and count as 09:00–17:00.',
+      'For each weekday and hour, counts how many spots were booked during that hour across the selected range. Bookings use their actual start/end times, so non-standard hours are respected. Owner "occupied" overrides don\'t carry hour info and count as occupied from 09:00 to 17:00.',
     range7d: '7d',
     range30d: '30d',
     range90d: '90d',
