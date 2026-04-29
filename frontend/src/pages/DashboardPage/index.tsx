@@ -160,20 +160,23 @@ export function DashboardPage() {
 
       {!isLoading && <div className="border-t" />}
 
-      {/* Two-column: lot breakdown + activity feed */}
+      {/* Two-column: lot breakdown + hot spots stacked on the left,
+          activity feed on the right. items-start prevents the left column
+          from stretching to match a tall activity feed. */}
       {!isLoading && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {lots.length > 0 && <LotBreakdown lots={lots} allSpots={allSpots} />}
-
-          <div className={lots.length === 0 ? 'lg:col-span-2' : ''}>
-            <ActivityFeed changes={changes} isLoading={changesLoading} />
+        <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+          <div className="space-y-4">
+            {lots.length > 0 && (
+              <LotBreakdown lots={lots} allSpots={allSpots} />
+            )}
+            <HotSpots
+              changes={changes}
+              spots={allSpots}
+              isLoading={changesLoading}
+            />
           </div>
 
-          <HotSpots
-            changes={changes}
-            spots={allSpots}
-            isLoading={changesLoading}
-          />
+          <ActivityFeed changes={changes} isLoading={changesLoading} />
         </div>
       )}
     </div>
