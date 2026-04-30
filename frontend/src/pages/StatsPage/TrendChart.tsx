@@ -72,7 +72,10 @@ export function TrendChart({ data, days, onRangeChange }: TrendChartProps) {
 
   const total = series.reduce((sum, p) => sum + p.count, 0)
   const avg = total / n
-  const avgLabel = Number.isInteger(avg) ? String(avg) : avg.toFixed(1)
+  const avgRounded = Math.round(avg * 10) / 10
+  const avgLabel = Number.isInteger(avgRounded)
+    ? String(avgRounded)
+    : avgRounded.toFixed(1)
 
   const yTicks = [0, Math.round(max / 2), max]
 
