@@ -84,8 +84,8 @@ export function MoreDrawer({
           </>
         )}
 
-        {/* Profile link */}
-        {user && (
+        {/* Profile link (signed-in users only — guests have no profile) */}
+        {user && user.role !== 'guest' && (
           <Link
             to="/profile"
             onClick={onClose}
@@ -100,23 +100,33 @@ export function MoreDrawer({
           </Link>
         )}
 
+        {user?.role === 'guest' && (
+          <div className="px-3 py-2">
+            <span className="bg-primary/10 text-primary inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold">
+              {t('auth.guestMode')}
+            </span>
+          </div>
+        )}
+
         {/* Utility row */}
         <div className="flex items-center gap-1 px-2 py-2">
           <ThemeToggle />
           <LanguageSwitcher compact />
-          <button
-            onClick={() => {
-              onClose()
-              onHelpOpen()
-            }}
-            className="bg-muted text-muted-foreground hover:text-foreground flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 transition-colors"
-            style={{ fontSize: 12 }}
-          >
-            <HelpCircle className="size-3.5" />
-            {t('feedback.help')}
-          </button>
+          {user && user.role !== 'guest' && (
+            <button
+              onClick={() => {
+                onClose()
+                onHelpOpen()
+              }}
+              className="bg-muted text-muted-foreground hover:text-foreground flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 transition-colors"
+              style={{ fontSize: 12 }}
+            >
+              <HelpCircle className="size-3.5" />
+              {t('feedback.help')}
+            </button>
+          )}
           <div className="flex-1" />
-          {user ? (
+          {user && user.role !== 'guest' ? (
             <Button
               variant="ghost"
               size="icon"
@@ -125,6 +135,16 @@ export function MoreDrawer({
               className="text-muted-foreground hover:text-foreground"
             >
               <LogOut className="size-4" />
+            </Button>
+          ) : user?.role === 'guest' ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onLogout}
+              className="text-muted-foreground hover:text-foreground gap-1.5 px-2"
+            >
+              <LogIn className="size-3.5" />
+              <span className="text-xs">{t('nav.signIn')}</span>
             </Button>
           ) : (
             <Link
