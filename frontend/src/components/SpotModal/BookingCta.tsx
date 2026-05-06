@@ -1,3 +1,4 @@
+import { Tooltip } from '@mantine/core'
 import {
   ArrowRightLeft,
   CalendarCheck,
@@ -85,12 +86,22 @@ export function BookingCta({
     handleSaveInterval,
   } = useIntervalEditor(spot, arrivalTime)
 
+  const isGuest = user?.role === 'guest'
   const canReserveNow =
-    spot.status === 'free' && !!user && isBookableDate && !arrivalWindowPassed
+    spot.status === 'free' &&
+    !!user &&
+    !isGuest &&
+    isBookableDate &&
+    !arrivalWindowPassed
   const freeWindowExpired =
-    spot.status === 'free' && !!user && isBookableDate && arrivalWindowPassed
+    spot.status === 'free' &&
+    !!user &&
+    !isGuest &&
+    isBookableDate &&
+    arrivalWindowPassed
+  const guestCannotReserve = spot.status === 'free' && isGuest && isBookableDate
   const freeButUnavailable =
-    spot.status === 'free' && (!user || !isBookableDate)
+    spot.status === 'free' && !guestCannotReserve && (!user || !isBookableDate)
   const isUnavailableSpot =
     spot.status === 'occupied' ||
     (spot.status === 'reserved' && !canCancelThisBooking)
@@ -168,6 +179,27 @@ export function BookingCta({
             </p>
           )}
         </div>
+      )}
+
+      {/* Guest: show disabled reserve button + tooltip prompting sign-in */}
+      {guestCannotReserve && (
+        <Tooltip
+          label={t('spotModal.signInToReserve')}
+          position="top"
+          withArrow
+          events={{ hover: true, focus: true, touch: true }}
+        >
+          <span className="block">
+            <Button
+              className="h-11 w-full gap-2 text-[15px] font-semibold"
+              style={STRETCH_BUTTON_STYLE}
+              disabled
+            >
+              <CalendarCheck className="size-5" />
+              {t('spotModal.reserveParkingSpot')}
+            </Button>
+          </span>
+        </Tooltip>
       )}
 
       {/* Free spot: arrival window passed for today */}
