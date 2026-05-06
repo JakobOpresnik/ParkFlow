@@ -19,9 +19,9 @@ import type { AppUser } from '@/types'
 import {
   ACTIVE_LINK_CLASS,
   ADMIN_ITEMS,
+  getNavItems,
   isAdminSection,
   LINK_CLASS,
-  NAV_ITEMS,
 } from './constants'
 
 // — types —
@@ -70,7 +70,7 @@ export function DesktopSidebar({
 
       {/* Nav */}
       <nav className="flex flex-1 flex-col gap-0.5 p-3">
-        {NAV_ITEMS.map(({ to, labelKey, Icon }) => (
+        {getNavItems(user?.role).map(({ to, labelKey, Icon }) => (
           <Link
             key={to}
             to={to}
@@ -122,7 +122,7 @@ export function DesktopSidebar({
 
       {/* Bottom — user info + logout / login */}
       <div className="border-t px-3 py-0.5">
-        {user ? (
+        {user && user.role !== 'guest' ? (
           <div className="space-y-0.5">
             <Link
               to="/profile"
@@ -155,6 +155,26 @@ export function DesktopSidebar({
                 className="text-muted-foreground hover:text-foreground"
               >
                 <LogOut className="size-4" />
+              </Button>
+            </div>
+          </div>
+        ) : user?.role === 'guest' ? (
+          <div className="space-y-1.5 py-1.5">
+            <span className="bg-primary/10 text-primary inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold">
+              {t('auth.guestMode')}
+            </span>
+            <div className="flex items-center gap-1">
+              <ThemeToggle />
+              <LanguageSwitcher compact />
+              <div className="flex-1" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onLogout}
+                className="text-muted-foreground hover:text-foreground shrink-0 gap-1.5 px-2"
+              >
+                <LogIn className="size-3.5" />
+                <span className="text-xs">{t('nav.signIn')}</span>
               </Button>
             </div>
           </div>

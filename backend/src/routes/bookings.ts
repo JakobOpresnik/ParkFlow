@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { pool } from '../db/pool.js';
 import { broadcast } from '../lib/broadcast.js';
 import { fetchWeekPresence, isOwnerAbsent } from '../lib/presence.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireNonGuest } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -39,7 +39,7 @@ async function expireStaleBookings(): Promise<void> {
 }
 
 // GET /api/bookings/my — current user's bookings (active first, then history)
-router.get('/my', requireAuth, async (req, res, next) => {
+router.get('/my', requireAuth, requireNonGuest, async (req, res, next) => {
   try {
     await expireStaleBookings();
 
@@ -71,7 +71,7 @@ router.get('/my', requireAuth, async (req, res, next) => {
 });
 
 // POST /api/bookings — book a free spot
-router.post('/', requireAuth, async (req, res, next) => {
+router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
   try {
     await expireStaleBookings();
 
@@ -268,7 +268,7 @@ router.post('/', requireAuth, async (req, res, next) => {
 });
 
 // PATCH /api/bookings/:id/times — update reservation interval
-router.patch('/:id/times', requireAuth, async (req, res, next) => {
+router.patch('/:id/times', requireAuth, requireNonGuest, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { starts_at, expires_at } = req.body as {
@@ -350,7 +350,7 @@ router.patch('/:id/times', requireAuth, async (req, res, next) => {
 
 // PATCH /api/bookings/:id/cancel — cancel an active booking
 // Allowed by: booking owner, admin, or spot owner
-router.patch('/:id/cancel', requireAuth, async (req, res, next) => {
+router.patch('/:id/cancel', requireAuth, requireNonGuest, async (req, res, next) => {
   try {
     const { id } = req.params;
 

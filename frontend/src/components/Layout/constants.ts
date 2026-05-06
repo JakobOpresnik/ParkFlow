@@ -11,6 +11,8 @@ import {
   Users,
 } from 'lucide-react'
 
+import type { Role } from '@/types'
+
 // — types —
 
 export interface NavItem {
@@ -64,6 +66,14 @@ export const ADMIN_ITEMS: AdminItem[] = [
 ]
 
 export const ADMIN_PATHS = ADMIN_ITEMS.map((i) => i.to)
+
+// Guests can only see the live map. Everything else (dashboard, stats,
+// bookings, owner views) is gated server-side too — this just keeps the nav
+// honest.
+export function getNavItems(role: Role | undefined): NavItem[] {
+  if (role === 'guest') return NAV_ITEMS.filter((i) => i.to === '/')
+  return NAV_ITEMS
+}
 
 export const LINK_CLASS =
   'relative text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors'

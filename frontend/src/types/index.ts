@@ -17,11 +17,13 @@ export interface StatsHistory {
   daily: StatsDailyPoint[]
 }
 
+export type Role = 'admin' | 'user' | 'guest'
+
 export interface AppUser {
   id: string
   username: string
   displayName: string
-  role: 'admin' | 'user'
+  role: Role
 }
 
 export type BookingStatus = 'active' | 'cancelled' | 'expired'

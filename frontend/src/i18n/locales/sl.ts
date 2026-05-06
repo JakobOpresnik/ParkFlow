@@ -63,12 +63,16 @@ const sl = {
   auth: {
     sessionExpired: 'Seja je potekla — preusmerjanje na ponovno prijavo…',
     logOut: 'Odjava',
+    guestMode: 'Gostovski način',
   },
   login: {
     tagline: 'Pametno parkiranje za vašo ekipo!',
     signInWithSSO: 'Prijava z SSO',
     redirecting: 'Preusmerjanje…',
     ssoNote: 'Uporabite enotno prijavo prek vašega poslovnega računa',
+    continueAsGuest: 'Nadaljuj kot gost',
+    guestNote: 'Brskajte po zemljevidu brez prijave (samo za ogled)',
+    failedToStartGuest: 'Napaka pri zagonu gostovske seje',
     featureLiveMap: 'Zemljevid s podatki v realnem času',
     featureLiveMapDesc:
       'Preverite razpoložljivost parkirnih mest v realnem času',

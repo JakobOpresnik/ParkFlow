@@ -1,11 +1,13 @@
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
+export type Role = 'admin' | 'user' | 'guest';
+
 export interface AuthPayload {
   userId: string;
   username: string;
   displayName: string;
-  role: string;
+  role: Role;
 }
 
 declare global {
@@ -47,6 +49,35 @@ export function requireAuth(
   }
 }
 
+// Populates req.user if a valid bearer token is present, otherwise passes
+// through. Use on read endpoints that need to vary their response per role
+// (e.g. PII stripping for guests) without forcing authentication.
+export function optionalAuth(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): void {
+  const header = req.headers.authorization;
+  if (!header?.startsWith('Bearer ')) {
+    next();
+    return;
+  }
+  const token = header.slice(7);
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as AuthPayload &
+      jwt.JwtPayload;
+    req.user = {
+      userId: payload.userId,
+      username: payload.username,
+      displayName: payload.displayName,
+      role: payload.role,
+    };
+  } catch {
+    // invalid/expired token on an optional path — proceed unauthenticated
+  }
+  next();
+}
+
 export function requireAdmin(
   req: Request,
   res: Response,
@@ -54,6 +85,18 @@ export function requireAdmin(
 ): void {
   if (req.user?.role !== 'admin') {
     res.status(403).json({ error: 'Admin access required' });
+    return;
+  }
+  next();
+}
+
+export function requireNonGuest(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  if (req.user?.role === 'guest') {
+    res.status(403).json({ error: 'Guest accounts cannot perform this action' });
     return;
   }
   next();

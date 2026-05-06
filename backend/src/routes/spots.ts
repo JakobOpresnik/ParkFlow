@@ -2,7 +2,11 @@ import { Router } from 'express';
 
 import { pool } from '../db/pool.js';
 import { broadcast } from '../lib/broadcast.js';
-import { requireAdmin, requireAuth } from '../middleware/auth.js';
+import {
+  optionalAuth,
+  requireAdmin,
+  requireAuth,
+} from '../middleware/auth.js';
 
 const router = Router();
 
@@ -38,6 +42,23 @@ const SPOT_SELECT = `
   LEFT JOIN bookings b ON b.spot_id = s.id AND b.status = 'active'
 `;
 
+// Strip owner contact details and booker identity from spot rows before
+// returning them to a guest caller. Owner name + active booking timing remain
+// so the map still shows occupancy state correctly.
+function scrubSpotForGuest<T extends Record<string, unknown>>(row: T): T {
+  return {
+    ...row,
+    owner_email: null,
+    owner_phone: null,
+    owner_vehicle_plate: null,
+    owner_user_id: null,
+    owner_notes: null,
+    active_booking_user_id: null,
+    active_booking_reserved_by: null,
+    active_booking_booked_by_owner: null,
+  };
+}
+
 // GET /api/spots/day-overrides?date=YYYY-MM-DD — all per-day overrides for a date
 router.get('/day-overrides', async (req, res, next) => {
   try {
@@ -59,7 +80,7 @@ router.get('/day-overrides', async (req, res, next) => {
 });
 
 // BE-1: GET /api/spots — all spots, optionally filtered by ?lot_id=
-router.get('/', async (req, res, next) => {
+router.get('/', optionalAuth, async (req, res, next) => {
   try {
     const { lot_id } = req.query as { lot_id?: string };
 
@@ -73,16 +94,21 @@ router.get('/', async (req, res, next) => {
     query += ' ORDER BY s.number';
 
     const result = await pool.query(query, params);
-    res.json(result.rows);
+    const rows =
+      req.user?.role === 'guest'
+        ? result.rows.map(scrubSpotForGuest)
+        : result.rows;
+    res.json(rows);
   } catch (err) {
     next(err);
   }
 });
 
 // BE-2: GET /api/spots/:number — single spot by number (first match across lots)
-router.get('/:number', async (req, res, next) => {
+router.get('/:number', optionalAuth, async (req, res, next) => {
   try {
-    const number = Number.parseInt(req.params.number, 10);
+    const numberParam = req.params.number as string;
+    const number = Number.parseInt(numberParam, 10);
     if (Number.isNaN(number)) {
       res.status(400).json({ error: 'Spot number must be an integer' });
       return;
@@ -98,18 +124,37 @@ router.get('/:number', async (req, res, next) => {
       return;
     }
 
-    res.json(result.rows[0]);
+    const row =
+      req.user?.role === 'guest'
+        ? scrubSpotForGuest(result.rows[0])
+        : result.rows[0];
+    res.json(row);
   } catch (err) {
     next(err);
   }
 });
 
-// GET /api/spots/:id/bookings — booking history for a specific spot
-router.get('/:id/bookings', async (req, res, next) => {
+// GET /api/spots/:id/bookings — booking history for a specific spot.
+// Guests see only the current active booking with minimal fields
+// (no booker identity, no past activity).
+router.get('/:id/bookings', optionalAuth, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { limit } = req.query as { limit?: string };
     const maxRows = Math.min(Number.parseInt(limit ?? '50', 10) || 50, 200);
+
+    if (req.user?.role === 'guest') {
+      const guestResult = await pool.query(
+        `SELECT b.id, b.status, b.starts_at, b.expires_at
+         FROM bookings b
+         WHERE b.spot_id = $1 AND b.status = 'active'
+         ORDER BY b.booked_at DESC
+         LIMIT 1`,
+        [id],
+      );
+      res.json(guestResult.rows);
+      return;
+    }
 
     const result = await pool.query(
       `SELECT

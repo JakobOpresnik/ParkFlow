@@ -1,11 +1,13 @@
 import { Router } from "express";
 
 import { pool } from "../db/pool.js";
+import { requireAuth, requireNonGuest } from "../middleware/auth.js";
 
 const router = Router();
 
-// GET /api/changes — last 50 spot changes, with spot number and lot info
-router.get("/", async (req, res, next) => {
+// GET /api/changes — last 50 spot changes, with spot number and lot info.
+// Hidden from guests because the audit log exposes usernames + behavioral patterns.
+router.get("/", requireAuth, requireNonGuest, async (req, res, next) => {
   try {
     const { lot_id } = req.query as { lot_id?: string };
 

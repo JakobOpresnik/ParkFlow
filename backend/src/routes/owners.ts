@@ -2,12 +2,12 @@ import { Router } from "express";
 
 import { pool } from "../db/pool.js";
 import { broadcast } from "../lib/broadcast.js";
-import { requireAdmin, requireAuth } from "../middleware/auth.js";
+import { requireAdmin, requireAuth, requireNonGuest } from "../middleware/auth.js";
 
 const router = Router();
 
 // GET /api/owners/me — owner profile for authenticated user
-router.get("/me", requireAuth, async (req, res, next) => {
+router.get("/me", requireAuth, requireNonGuest, async (req, res, next) => {
   try {
     const result = await pool.query(
       "SELECT * FROM owners WHERE $1 = ANY(string_to_array(user_id, ','))",
@@ -24,7 +24,7 @@ router.get("/me", requireAuth, async (req, res, next) => {
 });
 
 // GET /api/owners/me/spots — spots owned by authenticated user with active booking info
-router.get("/me/spots", requireAuth, async (req, res, next) => {
+router.get("/me/spots", requireAuth, requireNonGuest, async (req, res, next) => {
   try {
     const ownerResult = await pool.query(
       "SELECT id FROM owners WHERE $1 = ANY(string_to_array(user_id, ','))",
@@ -71,7 +71,7 @@ router.get("/me/spots", requireAuth, async (req, res, next) => {
 });
 
 // GET /api/owners/me/week — bookings on owner's spots for a date range
-router.get("/me/week", requireAuth, async (req, res, next) => {
+router.get("/me/week", requireAuth, requireNonGuest, async (req, res, next) => {
   try {
     const ownerResult = await pool.query(
       "SELECT id FROM owners WHERE $1 = ANY(string_to_array(user_id, ','))",
@@ -116,7 +116,7 @@ router.get("/me/week", requireAuth, async (req, res, next) => {
 });
 
 // GET /api/owners/me/overrides?from=&to= — per-day status overrides for owner's spots
-router.get("/me/overrides", requireAuth, async (req, res, next) => {
+router.get("/me/overrides", requireAuth, requireNonGuest, async (req, res, next) => {
   try {
     const ownerResult = await pool.query(
       "SELECT id FROM owners WHERE $1 = ANY(string_to_array(user_id, ','))",
@@ -149,7 +149,7 @@ router.get("/me/overrides", requireAuth, async (req, res, next) => {
 });
 
 // PUT /api/owners/me/spots/:spotId/day-status — set or clear per-day override
-router.put("/me/spots/:spotId/day-status", requireAuth, async (req, res, next) => {
+router.put("/me/spots/:spotId/day-status", requireAuth, requireNonGuest, async (req, res, next) => {
   try {
     const { spotId } = req.params;
     const { date, status } = req.body as { date: string; status: string | null };

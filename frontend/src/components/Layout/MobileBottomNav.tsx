@@ -2,7 +2,9 @@ import { Link } from '@tanstack/react-router'
 import { EllipsisVertical } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
-import { isActivePath, isAdminSection, NAV_ITEMS } from './constants'
+import { useAuthStore } from '@/store/authStore'
+
+import { getNavItems, isActivePath, isAdminSection } from './constants'
 
 // — types —
 
@@ -20,11 +22,13 @@ export function MobileBottomNav({
   onMoreOpen,
 }: MobileBottomNavProps) {
   const { t } = useTranslation()
+  const role = useAuthStore((s) => s.user?.role)
   const isAdmin = isAdminSection(pathname)
+  const navItems = getNavItems(role)
 
   return (
     <nav className="bg-card fixed inset-x-0 bottom-0 z-40 flex items-end justify-around border-t sm:hidden">
-      {NAV_ITEMS.map(({ to, shortLabelKey, Icon }) => {
+      {navItems.map(({ to, shortLabelKey, Icon }) => {
         const active = isActivePath(pathname, to, to === '/')
         return (
           <Link

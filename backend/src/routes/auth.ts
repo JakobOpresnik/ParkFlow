@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { Router } from 'express';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import jwt from 'jsonwebtoken';
@@ -10,6 +12,7 @@ const router = Router();
 const JWT_SECRET =
   process.env.JWT_SECRET ?? 'dev-secret-change-in-production';
 const JWT_EXPIRES_IN = '8h';
+const GUEST_JWT_EXPIRES_IN = '4h';
 
 const OAUTH_TOKEN_URL = process.env.OAUTH_TOKEN_URL ?? '';
 const OAUTH_JWKS_URL = process.env.OAUTH_JWKS_URL ?? '';
@@ -120,6 +123,21 @@ router.post('/exchange', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+// POST /api/auth/guest — issues a short-lived JWT for read-only browsing.
+// No body required; each call mints a fresh anonymous identity.
+router.post('/guest', (_req, res) => {
+  const payload: AuthPayload = {
+    userId: `guest:${randomUUID()}`,
+    username: 'guest',
+    displayName: 'Guest',
+    role: 'guest',
+  };
+  const token = jwt.sign(payload, JWT_SECRET, {
+    expiresIn: GUEST_JWT_EXPIRES_IN,
+  });
+  res.json({ token, id_token: null });
 });
 
 // GET /api/auth/me — returns current user info from backend JWT

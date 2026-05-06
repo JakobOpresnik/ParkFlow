@@ -2,12 +2,12 @@ import { Router } from "express";
 
 import { pool } from "../db/pool.js";
 import { broadcast } from "../lib/broadcast.js";
-import { requireAdmin, requireAuth } from "../middleware/auth.js";
+import { requireAdmin, requireAuth, requireNonGuest } from "../middleware/auth.js";
 
 const router = Router();
 
 // POST /api/feedback — create a feature request (authenticated users)
-router.post("/", requireAuth, async (req, res, next) => {
+router.post("/", requireAuth, requireNonGuest, async (req, res, next) => {
   try {
     const user = req.user!;
     const { title, description, category } = req.body as {

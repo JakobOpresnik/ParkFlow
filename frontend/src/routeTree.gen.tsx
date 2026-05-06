@@ -28,6 +28,13 @@ async function requireAuth() {
   if (!user) throw redirect({ to: '/login' })
 }
 
+async function requireNonGuest() {
+  await authInitPromise
+  const { user } = useAuthStore.getState()
+  if (!user) throw redirect({ to: '/login' })
+  if (user.role === 'guest') throw redirect({ to: '/' })
+}
+
 // Root — bare Outlet (no layout of its own)
 const rootRoute = createRootRoute({ component: Outlet })
 
@@ -78,54 +85,63 @@ const mapRoute = createRoute({
 const dashboardRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/dashboard',
+  beforeLoad: requireNonGuest,
   component: DashboardPage,
 })
 
 const ownersRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/owners',
+  beforeLoad: requireNonGuest,
   component: OwnersPage,
 })
 
 const statsRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/stats',
+  beforeLoad: requireNonGuest,
   component: StatsPage,
 })
 
 const myBookingsRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/my-bookings',
+  beforeLoad: requireNonGuest,
   component: MyBookingsPage,
 })
 
 const adminRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/admin',
+  beforeLoad: requireNonGuest,
   component: AdminPage,
 })
 
 const adminFeedbackRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/admin/feedback',
+  beforeLoad: requireNonGuest,
   component: AdminFeedbackPage,
 })
 
 const mapEditorRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/map-editor',
+  beforeLoad: requireNonGuest,
   component: MapEditorPage,
 })
 
 const ownerParkingRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/my-parking',
+  beforeLoad: requireNonGuest,
   component: OwnerParkingPage,
 })
 
 const profileRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/profile',
+  beforeLoad: requireNonGuest,
   component: ProfilePage,
 })
 
