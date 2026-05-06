@@ -63,12 +63,16 @@ const en = {
   auth: {
     sessionExpired: 'Session expired — redirecting back to sign in…',
     logOut: 'Log out',
+    guestMode: 'Guest mode',
   },
   login: {
     tagline: 'Smart parking for your team!',
     signInWithSSO: 'Sign in with SSO',
     redirecting: 'Redirecting…',
     ssoNote: 'Use single sign-on via your company account',
+    continueAsGuest: 'Continue as guest',
+    guestNote: 'Browse the map without signing in (read-only)',
+    failedToStartGuest: 'Failed to start guest session',
     featureLiveMap: 'Live map',
     featureLiveMapDesc: 'Inspect real-time parking spot availability',
     featureReservations: 'Reservations',

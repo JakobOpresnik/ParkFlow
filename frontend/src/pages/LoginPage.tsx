@@ -1,5 +1,13 @@
 import { notifications } from '@mantine/notifications'
-import { BarChart2, Calendar, LogIn, Map, ParkingCircle } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
+import {
+  BarChart2,
+  Calendar,
+  LogIn,
+  Map,
+  ParkingCircle,
+  UserRound,
+} from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -8,6 +16,7 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui/button'
 import { oauthConfig } from '@/lib/oauth'
 import { generateCodeChallenge, generateCodeVerifier } from '@/lib/pkce'
+import { useAuthStore } from '@/store/authStore'
 
 // — constants —
 
@@ -39,7 +48,25 @@ const FEATURE_CONFIG = [
 
 export function LoginPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const loginAsGuest = useAuthStore((s) => s.loginAsGuest)
   const [loading, setLoading] = useState(false)
+  const [guestLoading, setGuestLoading] = useState(false)
+
+  async function handleGuest() {
+    setGuestLoading(true)
+    try {
+      await loginAsGuest()
+      await navigate({ to: '/' })
+    } catch (err) {
+      notifications.show({
+        message:
+          err instanceof Error ? err.message : t('login.failedToStartGuest'),
+        color: 'red',
+      })
+      setGuestLoading(false)
+    }
+  }
 
   async function handleLogin() {
     setLoading(true)
@@ -104,16 +131,32 @@ export function LoginPage() {
 
         {/* Card */}
         <div className="bg-card flex flex-col items-center rounded-2xl border p-6 shadow-lg shadow-black/5">
-          <Button
-            className="gap-2"
-            disabled={loading}
-            onClick={() => void handleLogin()}
-          >
-            <LogIn className="size-4" />
-            {loading ? t('login.redirecting') : t('login.signInWithSSO')}
-          </Button>
+          <div className="flex w-56 flex-col gap-2">
+            <Button
+              className="w-full gap-2"
+              disabled={loading || guestLoading}
+              onClick={() => void handleLogin()}
+            >
+              <LogIn className="size-4" />
+              {loading ? t('login.redirecting') : t('login.signInWithSSO')}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full gap-2"
+              disabled={loading || guestLoading}
+              onClick={() => void handleGuest()}
+            >
+              <UserRound className="size-4" />
+              {guestLoading
+                ? t('login.redirecting')
+                : t('login.continueAsGuest')}
+            </Button>
+          </div>
           <p className="text-muted-foreground mt-4 text-center text-xs">
             {t('login.ssoNote')}
+          </p>
+          <p className="text-muted-foreground/80 mt-1 text-center text-[11px]">
+            {t('login.guestNote')}
           </p>
         </div>
 
