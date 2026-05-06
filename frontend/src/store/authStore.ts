@@ -38,6 +38,7 @@ interface AuthStore {
   setAuth: (user: AppUser, accessToken: string, idToken?: string) => void
   setSessionExpired: () => void
   initialize: () => Promise<void>
+  loginAsGuest: () => Promise<void>
   logout: () => void
 }
 
@@ -101,11 +102,48 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     return authInitPromise
   },
 
+  loginAsGuest: async () => {
+    const res = await fetch(`${API_BASE}/api/auth/guest`, { method: 'POST' })
+    if (!res.ok) {
+      throw new Error('Failed to start guest session')
+    }
+    const { token } = (await res.json()) as { token: string }
+    localStorage.setItem(ACCESS_TOKEN_KEY, token)
+
+    const meRes = await fetch(`${API_BASE}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!meRes.ok) {
+      localStorage.removeItem(ACCESS_TOKEN_KEY)
+      throw new Error('Failed to start guest session')
+    }
+    const user = (await meRes.json()) as AppUser
+    set({ user, accessToken: token, isLoading: false })
+
+    const exp = decodeJwtExp(token)
+    if (exp) {
+      scheduleExpiry(exp, () => {
+        localStorage.removeItem(ACCESS_TOKEN_KEY)
+        set({ user: null, accessToken: null, sessionExpired: true })
+        setTimeout(() => {
+          window.location.href = '/login'
+        }, 3000)
+      })
+    }
+  },
+
   logout: () => {
+    const isGuest = get().user?.role === 'guest'
     const idToken = localStorage.getItem(ID_TOKEN_KEY)
     localStorage.removeItem(ACCESS_TOKEN_KEY)
     localStorage.removeItem(ID_TOKEN_KEY)
     set({ user: null, accessToken: null })
+
+    if (isGuest) {
+      // Guests have no Authentik session — just bounce back to /login
+      window.location.href = '/login'
+      return
+    }
 
     // RP-initiated logout via Authentik
     const params = new URLSearchParams({
