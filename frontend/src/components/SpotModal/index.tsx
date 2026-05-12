@@ -148,6 +148,17 @@ export function SpotModal() {
     !!user &&
     spot.in_office_owner.toLowerCase() === user.displayName.toLowerCase()
 
+  // Co-owner is one of 2+ in-office candidates on an unconfirmed shared spot —
+  // letting them reserve resolves the ambiguity. A co-owner who freed the spot
+  // (PP=true) won't appear in possible_occupiers, so this naturally excludes them.
+  const isCurrentUserPossibleOccupier =
+    !!user &&
+    spot.status === 'unconfirmed' &&
+    !!spot.possible_occupiers &&
+    spot.possible_occupiers.some(
+      (n) => n.toLowerCase() === user.displayName.toLowerCase(),
+    )
+
   const bannerSubtext = buildBannerSubtext(
     { ...spot, status: bannerStatus },
     myReservedElsewhere,
@@ -211,6 +222,7 @@ export function SpotModal() {
             myReservedElsewhere={myReservedElsewhere}
             canCancelThisBooking={canCancelThisBooking}
             isCoOwnerBooking={isCoOwnerBooking}
+            isCurrentUserPossibleOccupier={isCurrentUserPossibleOccupier}
             myOwnedSpot={myOwnedSpot}
           />
         </div>
