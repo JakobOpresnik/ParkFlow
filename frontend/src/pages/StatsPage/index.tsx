@@ -18,12 +18,14 @@ const StatusColorVar: Record<SpotStatus, string> = {
   free: '--color-spot-free',
   occupied: '--color-spot-occupied',
   reserved: '--color-spot-occupied',
+  unconfirmed: '--color-spot-occupied',
 }
 
 const STATUS_LABEL_KEYS: Record<SpotStatus, string> = {
   free: 'stats.free',
   occupied: 'stats.occupied',
   reserved: 'stats.occupied',
+  unconfirmed: 'stats.occupied',
 }
 
 interface StatusProgressRowProps {
@@ -100,10 +102,12 @@ export function StatsPage() {
     free: spots.filter((s) => s.status === 'free').length,
     occupied: spots.filter((s) => s.status === 'occupied').length,
     reserved: spots.filter((s) => s.status === 'reserved').length,
+    unconfirmed: spots.filter((s) => s.status === 'unconfirmed').length,
   }
+  // Unconfirmed grouped with occupied — the spot is not freely bookable either way.
   const mergedCounts = {
     free: counts.free,
-    occupied: counts.occupied + counts.reserved,
+    occupied: counts.occupied + counts.reserved + counts.unconfirmed,
   }
 
   const segments: Segment[] = (['free', 'occupied'] as const).map((s) => ({

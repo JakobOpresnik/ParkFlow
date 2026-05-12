@@ -137,7 +137,9 @@ export function computeDayStatus(
     // undefined → no presence data, fall through to spot default
   }
 
-  return spot.status === 'reserved' ? 'free' : spot.status
+  // 'unconfirmed' is only a derived UI state, not a stored OwnerSpot status,
+  // but TS narrowing requires we collapse anything non-'occupied' to 'free'.
+  return spot.status === 'occupied' ? 'occupied' : 'free'
 }
 
 export function hasOverrideForDay(

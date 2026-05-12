@@ -97,7 +97,8 @@ export function LotBreakdown({ lots, allSpots }: LotBreakdownProps) {
               free={countByStatus(lotSpots, 'free')}
               occupied={
                 countByStatus(lotSpots, 'occupied') +
-                countByStatus(lotSpots, 'reserved')
+                countByStatus(lotSpots, 'reserved') +
+                countByStatus(lotSpots, 'unconfirmed')
               }
               total={lotSpots.length}
             />

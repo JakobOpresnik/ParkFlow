@@ -24,6 +24,7 @@ const STATUS_BADGE: Record<SpotStatus, StatusBadgeClass> = {
   free: { badge: 'bg-spot-free text-white border-transparent' },
   occupied: { badge: 'bg-spot-occupied text-white border-transparent' },
   reserved: { badge: 'bg-spot-reserved text-white border-transparent' },
+  unconfirmed: { badge: 'bg-spot-unconfirmed text-white border-transparent' },
 }
 
 // — sub-components —
@@ -34,6 +35,7 @@ function SpotResult({ spot, onClick }: SpotResultProps) {
     free: t('map.free'),
     occupied: t('map.occupied'),
     reserved: t('map.reserved'),
+    unconfirmed: t('map.unconfirmed'),
   }
   const config = STATUS_BADGE[spot.status]
 

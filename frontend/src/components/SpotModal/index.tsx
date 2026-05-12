@@ -39,6 +39,12 @@ function buildBannerSubtext(
     if (isCoOwnerBooking) return t('spotModal.bannerReservedByCoOwner')
     return t('spotModal.bannerReservedOther')
   }
+  if (spot.status === 'unconfirmed') {
+    const names = (spot.possible_occupiers ?? []).join(', ')
+    return names
+      ? t('spotModal.bannerUnconfirmedNamed', { names })
+      : t('spotModal.bannerUnconfirmed')
+  }
   if (isCurrentUserOwner && spot.status === 'occupied') {
     if (isSharedSpot)
       return isCurrentUserInOffice

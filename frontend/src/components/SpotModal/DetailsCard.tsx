@@ -73,11 +73,16 @@ export function DetailsCard({
           <div className="min-w-0">
             {spot.owner_name.split('/').map((name) => {
               const trimmed = name.trim()
-              const isInOffice =
-                spot.in_office_owner?.toLowerCase() === trimmed.toLowerCase()
+              const lower = trimmed.toLowerCase()
+              const isInOffice = spot.in_office_owner?.toLowerCase() === lower
+              const isPossible =
+                spot.status === 'unconfirmed' &&
+                (spot.possible_occupiers ?? []).some(
+                  (n) => n.toLowerCase() === lower,
+                )
               const isCurrentUser =
                 !!currentUserDisplayName &&
-                currentUserDisplayName.toLowerCase() === trimmed.toLowerCase()
+                currentUserDisplayName.toLowerCase() === lower
               return (
                 <p
                   key={name}
@@ -87,6 +92,11 @@ export function DetailsCard({
                   {isInOffice && (
                     <span className="text-spot-occupied bg-spot-occupied/10 rounded-full px-1.5 py-0.5 text-xs font-medium">
                       {t('spotModal.inOffice')}
+                    </span>
+                  )}
+                  {isPossible && (
+                    <span className="text-spot-unconfirmed bg-spot-unconfirmed/10 rounded-full px-1.5 py-0.5 text-xs font-medium">
+                      {t('spotModal.maybeInOffice')}
                     </span>
                   )}
                 </p>

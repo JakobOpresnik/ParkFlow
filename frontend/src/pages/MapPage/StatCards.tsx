@@ -16,12 +16,22 @@ export function StatCards({ spots }: StatCardsProps) {
   const free = spots.filter((s) => s.status === 'free').length
   const occupied = spots.filter((s) => s.status === 'occupied').length
   const reserved = spots.filter((s) => s.status === 'reserved').length
+  const unconfirmed = spots.filter((s) => s.status === 'unconfirmed').length
 
   const cards = [
     { label: t('map.total'), value: total, dot: 'bg-muted-foreground' },
     { label: t('map.free'), value: free, dot: 'bg-spot-free' },
     { label: t('map.occupied'), value: occupied, dot: 'bg-spot-occupied' },
     { label: t('map.reserved'), value: reserved, dot: 'bg-spot-reserved' },
+    ...(unconfirmed > 0
+      ? [
+          {
+            label: t('map.unconfirmed'),
+            value: unconfirmed,
+            dot: 'bg-spot-unconfirmed',
+          },
+        ]
+      : []),
   ]
 
   return (

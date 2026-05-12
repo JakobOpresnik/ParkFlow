@@ -41,6 +41,7 @@ const STATUS_LABEL_KEYS: Record<SpotStatus, string> = {
   free: 'map.free',
   occupied: 'map.occupied',
   reserved: 'map.reserved',
+  unconfirmed: 'map.unconfirmed',
 }
 
 const STATUS_CONFIG: Record<SpotStatus, StatusConfigDetails> = {
@@ -58,6 +59,11 @@ const STATUS_CONFIG: Record<SpotStatus, StatusConfigDetails> = {
     accent: 'bg-spot-reserved',
     badgeText: 'text-spot-reserved',
     badgeBg: 'bg-spot-reserved/15',
+  },
+  unconfirmed: {
+    accent: 'bg-spot-unconfirmed',
+    badgeText: 'text-spot-unconfirmed',
+    badgeBg: 'bg-spot-unconfirmed/15',
   },
 }
 
@@ -82,21 +88,36 @@ function OwnerNameRows({ spot }: { readonly spot: Spot }) {
     )
   }
 
+  const possibleSet = new Set(
+    (spot.possible_occupiers ?? []).map((n) => n.toLowerCase()),
+  )
+  const isUnconfirmed = spot.status === 'unconfirmed' && possibleSet.size > 0
+
   return (
     <>
       {spot.owner_name.split('/').map((name: string) => {
-        const isInOffice =
-          spot.in_office_owner?.toLowerCase() === name.trim().toLowerCase()
+        const trimmed = name.trim()
+        const lower = trimmed.toLowerCase()
+        const isInOffice = spot.in_office_owner?.toLowerCase() === lower
+        const isPossible = isUnconfirmed && possibleSet.has(lower)
+
+        const textClass = isInOffice
+          ? 'text-spot-occupied font-medium'
+          : isPossible
+            ? 'text-spot-unconfirmed font-medium'
+            : 'text-muted-foreground'
 
         return (
-          <p
-            key={name}
-            className={`text-xs ${isInOffice ? 'text-spot-occupied font-medium' : 'text-muted-foreground'}`}
-          >
-            {name.trim()}
+          <p key={name} className={`text-xs ${textClass}`}>
+            {trimmed}
             {isInOffice && (
               <span className="ml-1 opacity-70">
                 · {t('spotModal.inOffice')}
+              </span>
+            )}
+            {isPossible && (
+              <span className="ml-1 opacity-70">
+                · {t('spotModal.maybeInOffice')}
               </span>
             )}
           </p>

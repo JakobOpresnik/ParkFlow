@@ -129,6 +129,7 @@ const sl = {
     free: 'Prosto',
     occupied: 'Zasedeno',
     reserved: 'Rezervirano',
+    unconfirmed: 'Nepotrjeno',
     mapView: 'Karta',
     gridView: 'Mreža',
     historical: 'Zgodovinsko · na podlagi zabeležene prisotnosti',
@@ -160,6 +161,7 @@ const sl = {
     available: 'Na voljo',
     occupied: 'Zasedeno',
     reservedStatus: 'Rezervirano',
+    unconfirmedStatus: 'Nepotrjeno',
     floor: 'Etaža',
     type: 'Vrsta',
     owner: 'Lastnik',
@@ -167,6 +169,7 @@ const sl = {
     unassigned: 'Nedodeljeno',
     you: 'Vi',
     inOffice: 'v pisarni',
+    maybeInOffice: 'morda v pisarni',
     reservedBy: 'Rezerviral/a {{name}}',
     evCharging: 'EV polnjenje',
     handicapAccessible: 'Dostopno za invalide',
@@ -183,6 +186,10 @@ const sl = {
     bannerOccupiedSharedByCoOwner:
       'To mesto trenutno uporablja eden od solastnikov.',
     bannerOccupied: 'To mesto je trenutno v uporabi.',
+    bannerUnconfirmed:
+      'Več solastnikov ima označeno, da bodo prišli — ne moremo ugotoviti, kateri od njih danes uporablja mesto.',
+    bannerUnconfirmedNamed:
+      'Več solastnikov ima označeno, da bodo prišli ({{names}}) — ne moremo ugotoviti, kateri od njih danes uporablja mesto.',
     reserveParkingSpot: 'Rezerviraj parkirno mesto',
     moveToThisSpot: 'Premakni sem',
     cancelReservation: 'Prekliči rezervacijo',
@@ -200,6 +207,8 @@ const sl = {
     spotUnavailableOccupied: 'Mesto ni na voljo — trenutno zasedeno',
     occupiedHours: 'V uporabi danes: {{start}} – {{end}}',
     spotUnavailableReserved: 'Mesto ni na voljo — že rezervirano',
+    spotUnavailableUnconfirmed:
+      'Mesto ni na voljo — solastnik ga morda danes uporablja',
     manageSpot: 'Upravljanje mesta',
     statusSection: 'Status',
     unassign: 'Odstrani dodelitev',
