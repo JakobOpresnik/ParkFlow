@@ -6,6 +6,7 @@ export const StatusDotClass: Record<SpotStatus, string> = {
   free: 'bg-spot-free',
   occupied: 'bg-spot-occupied',
   reserved: 'bg-spot-reserved',
+  unconfirmed: 'bg-spot-unconfirmed',
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────

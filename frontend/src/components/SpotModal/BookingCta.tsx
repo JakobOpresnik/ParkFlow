@@ -104,6 +104,7 @@ export function BookingCta({
     spot.status === 'free' && !guestCannotReserve && (!user || !isBookableDate)
   const isUnavailableSpot =
     spot.status === 'occupied' ||
+    spot.status === 'unconfirmed' ||
     (spot.status === 'reserved' && !canCancelThisBooking)
 
   return (
@@ -305,6 +306,10 @@ export function BookingCta({
                 })}
               </span>
             </div>
+          ) : spot.status === 'unconfirmed' ? (
+            <span className="px-3 text-center text-xs leading-snug">
+              {t('spotModal.spotUnavailableUnconfirmed')}
+            </span>
           ) : (
             <span>{unavailableMsg}</span>
           )}

@@ -16,6 +16,7 @@ export function useManagementAccordion(spot: Spot) {
     free: t('spotModal.available'),
     occupied: t('spotModal.occupied'),
     reserved: t('spotModal.reservedStatus'),
+    unconfirmed: t('spotModal.unconfirmedStatus'),
   }
 
   function handleStatusChange(status: SpotStatus) {

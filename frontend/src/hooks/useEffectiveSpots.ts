@@ -87,7 +87,7 @@ export function useEffectiveSpots(date: string) {
         .map((n) => n.trim())
         .filter(Boolean)
 
-      const inOfficeOwner = ownerNames.find(
+      const inOfficeOwners = ownerNames.filter(
         (n) => presenceByName.get(n.toLowerCase()) === 'in_office',
       )
       const anyPresenceData = ownerNames.some(
@@ -101,10 +101,27 @@ export function useEffectiveSpots(date: string) {
           : spot
       }
 
+      // Shared-spot ambiguity rule:
+      //   0 in-office co-owners → spot is free
+      //   1 in-office co-owner  → confirmed, that's the occupier
+      //  2+ in-office co-owners → unconfirmed (PP signal can't pick one)
+      if (inOfficeOwners.length >= 2) {
+        return {
+          ...spot,
+          status: 'unconfirmed' as const,
+          in_office_owner: null,
+          possible_occupiers: inOfficeOwners,
+        }
+      }
+
       return {
         ...spot,
-        status: inOfficeOwner ? ('occupied' as const) : ('free' as const),
-        in_office_owner: inOfficeOwner ?? null,
+        status:
+          inOfficeOwners.length === 1
+            ? ('occupied' as const)
+            : ('free' as const),
+        in_office_owner: inOfficeOwners[0] ?? null,
+        possible_occupiers: null,
       }
     })
 

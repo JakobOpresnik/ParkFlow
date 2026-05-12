@@ -16,6 +16,10 @@ export function MapLegend() {
         <span className="bg-spot-reserved size-2.5 rounded-sm" />
         {t('map.reserved')}
       </span>
+      <span className="flex items-center gap-1.5">
+        <span className="bg-spot-unconfirmed size-2.5 rounded-sm" />
+        {t('map.unconfirmed')}
+      </span>
     </div>
   )
 }

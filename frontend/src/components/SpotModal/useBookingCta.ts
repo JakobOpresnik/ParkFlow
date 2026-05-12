@@ -66,7 +66,9 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
   const unavailableMsg =
     spot.status === 'occupied'
       ? t('spotModal.spotUnavailableOccupied')
-      : t('spotModal.spotUnavailableReserved')
+      : spot.status === 'unconfirmed'
+        ? t('spotModal.spotUnavailableUnconfirmed')
+        : t('spotModal.spotUnavailableReserved')
 
   async function handleBook() {
     if (bookingInFlight.current) return

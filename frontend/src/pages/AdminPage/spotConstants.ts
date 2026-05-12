@@ -7,6 +7,8 @@ export const StatusClass: Record<SpotStatus, string> = {
   occupied: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   reserved:
     'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+  unconfirmed:
+    'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
 }
 
 export const SpotTypeConfig: Record<

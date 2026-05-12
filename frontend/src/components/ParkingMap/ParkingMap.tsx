@@ -56,6 +56,10 @@ const StatusConfig: Record<SpotStatus, StatusConfigDetails> = {
   free: { fill: 'rgba(34,197,94,0.45)', stroke: 'rgba(34,197,94,0.9)' },
   occupied: { fill: 'rgba(239,68,68,0.45)', stroke: 'rgba(239,68,68,0.9)' },
   reserved: { fill: 'rgba(234,179,8,0.45)', stroke: 'rgba(234,179,8,0.9)' },
+  unconfirmed: {
+    fill: 'rgba(139,92,246,0.45)',
+    stroke: 'rgba(139,92,246,0.9)',
+  },
 }
 
 // — helpers —

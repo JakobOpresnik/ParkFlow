@@ -128,6 +128,7 @@ const en = {
     free: 'Free',
     occupied: 'Occupied',
     reserved: 'Reserved',
+    unconfirmed: 'Unconfirmed',
     mapView: 'Map',
     gridView: 'Grid',
     historical: 'Historical · based on recorded attendance',
@@ -159,6 +160,7 @@ const en = {
     available: 'Available',
     occupied: 'Occupied',
     reservedStatus: 'Reserved',
+    unconfirmedStatus: 'Unconfirmed',
     floor: 'Floor',
     type: 'Type',
     owner: 'Owner',
@@ -166,6 +168,7 @@ const en = {
     unassigned: 'Unassigned',
     you: 'You',
     inOffice: 'in office',
+    maybeInOffice: 'may be in office',
     reservedBy: 'Reserved by {{name}}',
     evCharging: 'EV Charging',
     handicapAccessible: 'Handicap Accessible',
@@ -182,6 +185,10 @@ const en = {
     bannerOccupiedSharedByCoOwner:
       'This spot is currently in use by one of the co-owners.',
     bannerOccupied: 'This spot is currently in use.',
+    bannerUnconfirmed:
+      "Multiple co-owners are flagged as coming in — we can't tell which one is using the spot today.",
+    bannerUnconfirmedNamed:
+      "Multiple co-owners are flagged as coming in ({{names}}) — we can't tell which one is using the spot today.",
     reserveParkingSpot: 'Reserve Parking Spot',
     moveToThisSpot: 'Move to This Spot',
     cancelReservation: 'Cancel Reservation',
@@ -199,6 +206,8 @@ const en = {
     spotUnavailableOccupied: 'Spot unavailable — currently occupied',
     occupiedHours: 'In use today: {{start}} – {{end}}',
     spotUnavailableReserved: 'Spot unavailable — already reserved',
+    spotUnavailableUnconfirmed:
+      'Spot unavailable — a co-owner may be using it today',
     manageSpot: 'Manage spot',
     statusSection: 'Status',
     unassign: 'Unassign',

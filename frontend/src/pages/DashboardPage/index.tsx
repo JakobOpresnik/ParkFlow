@@ -64,16 +64,16 @@ export function DashboardPage() {
   const totalFree = countByStatus(allSpots, 'free')
   const totalOccupied = countByStatus(allSpots, 'occupied')
   const totalReserved = countByStatus(allSpots, 'reserved')
+  const totalUnconfirmed = countByStatus(allSpots, 'unconfirmed')
+  const totalInUse = totalOccupied + totalReserved + totalUnconfirmed
   const total = allSpots.length
-  const occupancyPct = total
-    ? Math.round(((totalOccupied + totalReserved) / total) * 100)
-    : 0
+  const occupancyPct = total ? Math.round((totalInUse / total) * 100) : 0
 
   const supportingCards: readonly StatCard[] = [
     {
       ...STAT_CARD_STYLES[0],
       label: t(STAT_CARD_STYLES[0].labelKey),
-      value: totalOccupied + totalReserved,
+      value: totalInUse,
       sub: t('dashboard.occupancyPct', { pct: occupancyPct }),
     },
     {

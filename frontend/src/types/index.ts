@@ -1,4 +1,4 @@
-export type SpotStatus = 'free' | 'occupied' | 'reserved'
+export type SpotStatus = 'free' | 'occupied' | 'reserved' | 'unconfirmed'
 export type SpotType = 'standard' | 'ev' | 'handicap' | 'compact'
 
 export interface StatsHeatmapCell {
@@ -82,6 +82,9 @@ export interface Spot {
   owner_user_id: string | null
   // set by useEffectiveSpots: which specific owner is in office (for shared spots)
   in_office_owner?: string | null
+  // set by useEffectiveSpots for shared spots where 2+ co-owners are flagged as
+  // coming (PP signal ambiguous) — lists all candidates so the UI can show them.
+  possible_occupiers?: string[] | null
   // joined from bookings table (active booking for this spot, if any)
   active_booking_id: string | null
   active_booking_user_id: string | null
