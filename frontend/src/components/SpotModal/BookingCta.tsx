@@ -30,7 +30,7 @@ interface BookingCtaProps {
   readonly myReservedElsewhere: Spot | undefined
   readonly canCancelThisBooking: boolean
   readonly isCoOwnerBooking: boolean
-  readonly isCurrentUserPossibleOccupier: boolean
+  readonly isCurrentUserCoOwnerOnUnconfirmed: boolean
   readonly myOwnedSpot?: Spot
 }
 
@@ -52,7 +52,7 @@ export function BookingCta({
   myReservedElsewhere,
   canCancelThisBooking,
   isCoOwnerBooking,
-  isCurrentUserPossibleOccupier,
+  isCurrentUserCoOwnerOnUnconfirmed,
   myOwnedSpot,
 }: BookingCtaProps) {
   const { t } = useTranslation()
@@ -89,10 +89,12 @@ export function BookingCta({
   } = useIntervalEditor(spot, arrivalTime)
 
   const isGuest = user?.role === 'guest'
-  // Co-owners flagged as in-office on an unconfirmed shared spot can reserve it,
-  // which converts the ambiguous state into a concrete reservation.
+  // Any co-owner of an unconfirmed shared spot can reserve it — including
+  // co-owners with PP=true — which converts the ambiguous state into a
+  // concrete reservation. Once the spot is 'occupied' (single PP=false owner),
+  // no co-owner can reserve it anymore.
   const isReservableForUser =
-    spot.status === 'free' || isCurrentUserPossibleOccupier
+    spot.status === 'free' || isCurrentUserCoOwnerOnUnconfirmed
   const canReserveNow =
     isReservableForUser &&
     !!user &&
@@ -110,7 +112,7 @@ export function BookingCta({
     isReservableForUser && !guestCannotReserve && (!user || !isBookableDate)
   const isUnavailableSpot =
     spot.status === 'occupied' ||
-    (spot.status === 'unconfirmed' && !isCurrentUserPossibleOccupier) ||
+    (spot.status === 'unconfirmed' && !isCurrentUserCoOwnerOnUnconfirmed) ||
     (spot.status === 'reserved' && !canCancelThisBooking)
 
   return (
