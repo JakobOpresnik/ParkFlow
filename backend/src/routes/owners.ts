@@ -6,12 +6,30 @@ import { requireAdmin, requireAuth, requireNonGuest } from "../middleware/auth.j
 
 const router = Router();
 
+// Co-owner predicate: a user matches an owner row (aliased `o`) if either the
+// admin-linked user_id list contains their username ($1), or their displayName
+// ($2) matches a name segment of o.name (slash-separated). Mirrors the JS
+// isUserCoOwner helper in routes/bookings.ts so all server-side ownership
+// checks stay aligned. Use as: `WHERE ${OWNER_MATCHES_USER}` with
+// [username, displayName] as the first two params.
+const OWNER_MATCHES_USER = `(
+  $1 = ANY(string_to_array(o.user_id, ','))
+  OR LOWER($2) IN (
+    SELECT TRIM(LOWER(n))
+    FROM unnest(string_to_array(o.name, '/')) AS t(n)
+  )
+)`;
+
 // GET /api/owners/me — owner profile for authenticated user
 router.get("/me", requireAuth, requireNonGuest, async (req, res, next) => {
   try {
     const result = await pool.query(
-      "SELECT * FROM owners WHERE $1 = ANY(string_to_array(user_id, ','))",
-      [req.user!.username],
+      // Prefer rows matched by user_id (explicit admin linkage) over name
+      // matches (heuristic) when both exist; keeps single-owner semantics stable.
+      `SELECT * FROM owners AS o WHERE ${OWNER_MATCHES_USER}
+       ORDER BY CASE WHEN $1 = ANY(string_to_array(o.user_id, ',')) THEN 0 ELSE 1 END, o.id
+       LIMIT 1`,
+      [req.user!.username, req.user!.displayName],
     );
     if (result.rows.length === 0) {
       res.status(404).json({ error: "No owner profile linked to your account" });
@@ -27,8 +45,10 @@ router.get("/me", requireAuth, requireNonGuest, async (req, res, next) => {
 router.get("/me/spots", requireAuth, requireNonGuest, async (req, res, next) => {
   try {
     const ownerResult = await pool.query(
-      "SELECT id FROM owners WHERE $1 = ANY(string_to_array(user_id, ','))",
-      [req.user!.username],
+      `SELECT id FROM owners AS o WHERE ${OWNER_MATCHES_USER}
+       ORDER BY CASE WHEN $1 = ANY(string_to_array(o.user_id, ',')) THEN 0 ELSE 1 END, o.id
+       LIMIT 1`,
+      [req.user!.username, req.user!.displayName],
     );
     if (ownerResult.rows.length === 0) {
       res.status(404).json({ error: "No owner profile linked to your account" });
@@ -74,8 +94,10 @@ router.get("/me/spots", requireAuth, requireNonGuest, async (req, res, next) => 
 router.get("/me/week", requireAuth, requireNonGuest, async (req, res, next) => {
   try {
     const ownerResult = await pool.query(
-      "SELECT id FROM owners WHERE $1 = ANY(string_to_array(user_id, ','))",
-      [req.user!.username],
+      `SELECT id FROM owners AS o WHERE ${OWNER_MATCHES_USER}
+       ORDER BY CASE WHEN $1 = ANY(string_to_array(o.user_id, ',')) THEN 0 ELSE 1 END, o.id
+       LIMIT 1`,
+      [req.user!.username, req.user!.displayName],
     );
     if (ownerResult.rows.length === 0) {
       res.status(404).json({ error: "No owner profile linked to your account" });
@@ -119,8 +141,10 @@ router.get("/me/week", requireAuth, requireNonGuest, async (req, res, next) => {
 router.get("/me/overrides", requireAuth, requireNonGuest, async (req, res, next) => {
   try {
     const ownerResult = await pool.query(
-      "SELECT id FROM owners WHERE $1 = ANY(string_to_array(user_id, ','))",
-      [req.user!.username],
+      `SELECT id FROM owners AS o WHERE ${OWNER_MATCHES_USER}
+       ORDER BY CASE WHEN $1 = ANY(string_to_array(o.user_id, ',')) THEN 0 ELSE 1 END, o.id
+       LIMIT 1`,
+      [req.user!.username, req.user!.displayName],
     );
     if (ownerResult.rows.length === 0) {
       res.status(404).json({ error: "No owner profile linked to your account" });
@@ -159,12 +183,19 @@ router.put("/me/spots/:spotId/day-status", requireAuth, requireNonGuest, async (
       return;
     }
 
-    // Verify the caller owns this spot
+    // Verify the caller owns this spot (either via user_id linkage or
+    // displayName matching a segment of owner.name).
     const check = await pool.query(
       `SELECT s.id FROM spots s
        JOIN owners o ON s.owner_id = o.id
-       WHERE s.id = $1 AND $2 = ANY(string_to_array(o.user_id, ','))`,
-      [spotId, req.user!.username],
+       WHERE s.id = $1 AND (
+         $2 = ANY(string_to_array(o.user_id, ','))
+         OR LOWER($3) IN (
+           SELECT TRIM(LOWER(n))
+           FROM unnest(string_to_array(o.name, '/')) AS t(n)
+         )
+       )`,
+      [spotId, req.user!.username, req.user!.displayName],
     );
     if (check.rows.length === 0) {
       res.status(403).json({ error: "Not your spot" });
