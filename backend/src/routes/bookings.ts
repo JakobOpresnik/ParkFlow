@@ -11,6 +11,29 @@ const router = Router();
 // Must match the constant in spots.ts to keep booking logic consistent with map display.
 const ACEX_OWNER_NAME = 'ACEX - kdor prej pride, prej melje';
 
+// Mirror of the frontend isCurrentUserOwner check. A user counts as a co-owner
+// if either signal matches: their SSO username appears in the admin-linked
+// comma-separated owner.user_id, OR their displayName matches a name segment in
+// owner.name ("Name1 / Name2 / ..."). The displayName fallback is necessary
+// because owner.user_id is admin-populated and often incomplete for shared spots.
+function isUserCoOwner(
+  ownerUserId: string | null,
+  ownerName: string | null,
+  username: string,
+  displayName: string,
+): boolean {
+  const usernameMatch =
+    !!ownerUserId &&
+    ownerUserId.split(',').map((u) => u.trim()).includes(username);
+  const displayNameMatch =
+    !!ownerName &&
+    ownerName
+      .split('/')
+      .map((n) => n.trim().toLowerCase())
+      .includes(displayName.toLowerCase());
+  return usernameMatch || displayNameMatch;
+}
+
 export async function freeOrphanedReservedSpots(): Promise<void> {
   const result = await pool.query(`
     UPDATE spots
@@ -112,7 +135,8 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
 
       // Lock the target spot row to prevent concurrent bookings
       const spotResult = await client.query(
-        `SELECT s.id, s.status, s.number, s.label, s.floor, o.name AS owner_name
+        `SELECT s.id, s.status, s.number, s.label, s.floor,
+                o.name AS owner_name, o.user_id AS owner_user_id
          FROM spots s
          LEFT JOIN owners o ON s.owner_id = o.id
          WHERE s.id = $1
@@ -132,7 +156,18 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
         label: string | null;
         floor: number;
         owner_name: string | null;
+        owner_user_id: string | null;
       };
+
+      // Co-owner status drives both the bookability gate (owners can book their
+      // own spot regardless of presence) and the booked_by_owner flag (used to
+      // prevent other co-owners from cancelling this booking).
+      const bookedByOwner = isUserCoOwner(
+        spotRow.owner_user_id,
+        spotRow.owner_name,
+        req.user!.username,
+        req.user!.displayName,
+      );
 
       // Auto-cancel existing active booking for this user on the same day
       const existing = await client.query(
@@ -189,19 +224,26 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
         // regardless of their db status, booking logic must stay consistent).
         isBookable = true;
       } else if (spotRow.status === 'occupied' && spotRow.owner_name) {
-        // No override — fall back to presence/timesheet.
-        // Support shared spots: owner_name may be "Name1 / Name2 / Name3".
-        // Bookable only when ALL co-owners are absent (same logic as the frontend).
-        const ownerNames = spotRow.owner_name
-          .split('/')
-          .map((n: string) => n.trim())
-          .filter(Boolean);
-        isBookable =
-          presenceData !== null &&
-          ownerNames.length > 0 &&
-          ownerNames.every((name: string) =>
-            isOwnerAbsent(presenceData, name, targetDate),
-          );
+        // Co-owners can always book their own spot, regardless of presence —
+        // clicking Reserve on an unconfirmed shared spot resolves the ambiguity
+        // into a concrete booking under this co-owner's name.
+        if (bookedByOwner) {
+          isBookable = true;
+        } else {
+          // Non-owner trying to book a shared spot — fall back to presence.
+          // Support shared spots: owner_name may be "Name1 / Name2 / Name3".
+          // Bookable only when ALL co-owners are absent (same logic as the frontend).
+          const ownerNames = spotRow.owner_name
+            .split('/')
+            .map((n: string) => n.trim())
+            .filter(Boolean);
+          isBookable =
+            presenceData !== null &&
+            ownerNames.length > 0 &&
+            ownerNames.every((name: string) =>
+              isOwnerAbsent(presenceData, name, targetDate),
+            );
+        }
       } else {
         // No override — use spot's base status.
         // 'reserved' with no active-booking conflict (already checked above) is bookable.
@@ -216,16 +258,6 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
         res.status(409).json({ error: 'Spot is not available for booking' });
         return;
       }
-
-      // Check if the booking is made by an owner (or co-owner) of the spot.
-      // Used later to prevent other co-owners from cancelling this booking.
-      const ownerCheck = await client.query(
-        `SELECT 1 FROM owners o
-         JOIN spots s ON s.owner_id = o.id
-         WHERE s.id = $1 AND $2 = ANY(string_to_array(o.user_id, ','))`,
-        [spot_id, req.user!.username],
-      );
-      const bookedByOwner = ownerCheck.rows.length > 0;
 
       // Create booking + reserve spot
       await client.query(`UPDATE spots SET status = 'reserved' WHERE id = $1`, [
@@ -361,7 +393,8 @@ router.patch('/:id/cancel', requireAuth, requireNonGuest, async (req, res, next)
       // Lock the booking row to prevent concurrent cancel/modify
       const bookingResult = await client.query(
         `SELECT b.id, b.user_id, b.spot_id, b.status, b.booked_by_owner,
-                o.user_id AS spot_owner_username
+                o.user_id AS spot_owner_username,
+                o.name    AS spot_owner_name
          FROM bookings b
          JOIN spots s ON s.id = b.spot_id
          LEFT JOIN owners o ON o.id = s.owner_id
@@ -378,11 +411,14 @@ router.patch('/:id/cancel', requireAuth, requireNonGuest, async (req, res, next)
 
       const isBookingOwner = booking.user_id === req.user!.userId;
       const isAdmin = req.user!.role === 'admin';
-      const spotOwnerUsernames =
-        (booking.spot_owner_username as string | null)
-          ?.split(',')
-          .map((u: string) => u.trim()) ?? [];
-      const isSpotOwner = spotOwnerUsernames.includes(req.user!.username);
+      // Match the booking-creation co-owner check: accept either user_id
+      // linkage or a displayName match against owner.name segments.
+      const isSpotOwner = isUserCoOwner(
+        booking.spot_owner_username as string | null,
+        booking.spot_owner_name as string | null,
+        req.user!.username,
+        req.user!.displayName,
+      );
 
       // Spot owners may cancel squatter bookings, but never another co-owner's booking.
       const canCancel =
