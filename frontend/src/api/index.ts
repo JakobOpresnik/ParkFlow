@@ -167,6 +167,15 @@ export const api = {
       body: JSON.stringify({ coordinates }),
     }),
 
+  // Spotted reports (user-reported "spot is taken")
+  reportSpotted: (id: string) =>
+    request<{ id: string; reported_at: string; expires_at: string }>(
+      `/api/spots/${id}/spotted`,
+      { method: 'POST' },
+    ),
+  clearSpotted: (id: string) =>
+    request<{ ok: boolean }>(`/api/spots/${id}/spotted`, { method: 'DELETE' }),
+
   // Per-day overrides (public, all spots)
   getSpotDayOverrides: (date: string) =>
     request<SpotDayOverride[]>(

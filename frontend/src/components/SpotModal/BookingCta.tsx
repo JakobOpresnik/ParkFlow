@@ -1,7 +1,9 @@
 import { Tooltip } from '@mantine/core'
 import {
+  AlertTriangle,
   ArrowRightLeft,
   CalendarCheck,
+  CheckCircle2,
   Clock,
   Lock,
   Pencil,
@@ -68,6 +70,12 @@ export function BookingCta({
     handleCancelBooking,
     ownerWarningOpen,
     setOwnerWarningOpen,
+    spottedConfirmOpen,
+    setSpottedConfirmOpen,
+    handleReportSpotted,
+    handleClearSpotted,
+    reportSpottedPending,
+    clearSpottedPending,
   } = useBookingCta(spot, {
     selectedDate,
     arrivalTime,
@@ -93,8 +101,9 @@ export function BookingCta({
   // co-owners with PP=true — which converts the ambiguous state into a
   // concrete reservation. Once the spot is 'occupied' (single PP=false owner),
   // no co-owner can reserve it anymore.
+  const isSpotted = spot.status === 'spotted'
   const isReservableForUser =
-    spot.status === 'free' || isCurrentUserCoOwnerOnUnconfirmed
+    spot.status === 'free' || isSpotted || isCurrentUserCoOwnerOnUnconfirmed
   const canReserveNow =
     isReservableForUser &&
     !!user &&
@@ -107,13 +116,18 @@ export function BookingCta({
     !isGuest &&
     isBookableDate &&
     arrivalWindowPassed
-  const guestCannotReserve = spot.status === 'free' && isGuest && isBookableDate
+  const guestCannotReserve =
+    (spot.status === 'free' || isSpotted) && isGuest && isBookableDate
   const freeButUnavailable =
     isReservableForUser && !guestCannotReserve && (!user || !isBookableDate)
   const isUnavailableSpot =
     spot.status === 'occupied' ||
     (spot.status === 'unconfirmed' && !isCurrentUserCoOwnerOnUnconfirmed) ||
     (spot.status === 'reserved' && !canCancelThisBooking)
+  // Anyone authenticated (not guest) may report or clear on a free/spotted spot.
+  const canReportSpotted =
+    spot.status === 'free' && !!user && !isGuest && isBookableDate
+  const canClearSpotted = isSpotted && !!user && !isGuest
 
   return (
     <>
@@ -126,7 +140,34 @@ export function BookingCta({
             arrivalTime={arrivalTime}
             expiryStr={computedExpiryStr}
           />
-          {ownerWarningOpen ? (
+          {spottedConfirmOpen ? (
+            <div className="space-y-3 rounded-lg border border-orange-500/30 bg-orange-500/10 px-4 py-3">
+              <p className="flex items-center gap-2 text-sm font-semibold text-orange-600 dark:text-orange-400">
+                <AlertTriangle className="size-4 shrink-0" />
+                {t('spotModal.spottedConfirmTitle')}
+              </p>
+              <p className="text-muted-foreground text-xs">
+                {t('spotModal.spottedConfirmDesc')}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  className="h-9 flex-1 gap-2 text-sm font-semibold"
+                  disabled={bookingPending}
+                  onClick={handleBook}
+                >
+                  <CalendarCheck className="size-4" />
+                  {t('spotModal.spottedConfirmReserveAnyway')}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="h-9 px-3 text-sm"
+                  onClick={() => setSpottedConfirmOpen(false)}
+                >
+                  {t('spotModal.cancelButton')}
+                </Button>
+              </div>
+            </div>
+          ) : ownerWarningOpen ? (
             <div className="space-y-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
               <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
                 {t('spotModal.ownerWarningTitle', {
@@ -179,7 +220,7 @@ export function BookingCta({
               )}
             </Button>
           )}
-          {!ownerWarningOpen && myReservedElsewhere && (
+          {!ownerWarningOpen && !spottedConfirmOpen && myReservedElsewhere && (
             <p className="text-muted-foreground text-center text-xs">
               {t('spotModal.spotReservationWillBeCancelled', {
                 label:
@@ -188,6 +229,32 @@ export function BookingCta({
             </p>
           )}
         </div>
+      )}
+
+      {/* Free spot: secondary action — report a car parked here */}
+      {canReportSpotted && !ownerWarningOpen && (
+        <Button
+          variant="ghost"
+          className="text-muted-foreground h-9 w-full gap-2 text-xs font-medium hover:text-orange-600 dark:hover:text-orange-400"
+          disabled={reportSpottedPending}
+          onClick={handleReportSpotted}
+        >
+          <AlertTriangle className="size-3.5" />
+          {t('spotModal.reportSpotted')}
+        </Button>
+      )}
+
+      {/* Spotted spot: secondary action — clear the report */}
+      {canClearSpotted && !spottedConfirmOpen && (
+        <Button
+          variant="ghost"
+          className="text-muted-foreground h-9 w-full gap-2 text-xs font-medium hover:text-emerald-600 dark:hover:text-emerald-400"
+          disabled={clearSpottedPending}
+          onClick={handleClearSpotted}
+        >
+          <CheckCircle2 className="size-3.5" />
+          {t('spotModal.clearSpotted')}
+        </Button>
       )}
 
       {/* Guest: show disabled reserve button + tooltip prompting sign-in */}

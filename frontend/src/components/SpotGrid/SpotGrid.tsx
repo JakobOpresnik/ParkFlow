@@ -42,6 +42,7 @@ const STATUS_LABEL_KEYS: Record<SpotStatus, string> = {
   occupied: 'map.occupied',
   reserved: 'map.reserved',
   unconfirmed: 'map.unconfirmed',
+  spotted: 'map.spotted',
 }
 
 const STATUS_CONFIG: Record<SpotStatus, StatusConfigDetails> = {
@@ -64,6 +65,11 @@ const STATUS_CONFIG: Record<SpotStatus, StatusConfigDetails> = {
     accent: 'bg-spot-unconfirmed',
     badgeText: 'text-spot-unconfirmed',
     badgeBg: 'bg-spot-unconfirmed/15',
+  },
+  spotted: {
+    accent: 'bg-spot-spotted',
+    badgeText: 'text-spot-spotted',
+    badgeBg: 'bg-spot-spotted/15',
   },
 }
 

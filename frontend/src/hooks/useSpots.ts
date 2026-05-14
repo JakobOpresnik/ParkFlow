@@ -85,3 +85,17 @@ export function usePatchCoordinates() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['spots'] }),
   })
 }
+
+export function useReportSpotted() {
+  return useMutation({
+    mutationFn: (spotId: string) => api.reportSpotted(spotId),
+    onSuccess: invalidateAllSpotQueries,
+  })
+}
+
+export function useClearSpotted() {
+  return useMutation({
+    mutationFn: (spotId: string) => api.clearSpotted(spotId),
+    onSuccess: invalidateAllSpotQueries,
+  })
+}

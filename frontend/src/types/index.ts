@@ -1,4 +1,9 @@
-export type SpotStatus = 'free' | 'occupied' | 'reserved' | 'unconfirmed'
+export type SpotStatus =
+  | 'free'
+  | 'occupied'
+  | 'reserved'
+  | 'unconfirmed'
+  | 'spotted'
 export type SpotType = 'standard' | 'ev' | 'handicap' | 'compact'
 
 export interface StatsHeatmapCell {
@@ -92,6 +97,9 @@ export interface Spot {
   active_booking_starts_at: string | null
   active_booking_expires_at: string | null
   active_booking_booked_by_owner: boolean | null
+  // active user "this spot is taken" report (if any) — reporter name is not exposed
+  spotted_reported_at: string | null
+  spotted_expires_at: string | null
 }
 
 export type SpotChangeType =

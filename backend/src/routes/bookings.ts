@@ -259,6 +259,14 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
         return;
       }
 
+      // Booking on a spot supersedes any user-reported "spotted" flag — clear it.
+      await client.query(
+        `UPDATE spot_spotted_reports
+         SET cleared_at = now(), cleared_by = $2
+         WHERE spot_id = $1 AND cleared_at IS NULL`,
+        [spot_id, req.user!.username],
+      );
+
       // Create booking + reserve spot
       await client.query(`UPDATE spots SET status = 'reserved' WHERE id = $1`, [
         spot_id,

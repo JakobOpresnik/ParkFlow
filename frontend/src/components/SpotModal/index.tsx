@@ -17,6 +17,15 @@ import { StatusBanner } from './StatusBanner'
 
 type TFunc = (key: string, opts?: Record<string, unknown>) => string
 
+function formatRelativeMinutes(iso: string, t: TFunc): string {
+  const diffMs = Date.now() - new Date(iso).getTime()
+  const minutes = Math.max(0, Math.floor(diffMs / 60_000))
+  if (minutes < 1) return t('spotModal.justNow')
+  if (minutes < 60) return t('spotModal.minutesAgo', { count: minutes })
+  const hours = Math.floor(minutes / 60)
+  return t('spotModal.hoursAgo', { count: hours })
+}
+
 function buildBannerSubtext(
   spot: Spot,
   myReservedElsewhere: Spot | undefined,
@@ -44,6 +53,13 @@ function buildBannerSubtext(
     return names
       ? t('spotModal.bannerUnconfirmedNamed', { names })
       : t('spotModal.bannerUnconfirmed')
+  }
+  if (spot.status === 'spotted') {
+    return spot.spotted_reported_at
+      ? t('spotModal.bannerSpottedRelative', {
+          when: formatRelativeMinutes(spot.spotted_reported_at, t),
+        })
+      : t('spotModal.bannerSpotted')
   }
   if (isCurrentUserOwner && spot.status === 'occupied') {
     if (isSharedSpot)

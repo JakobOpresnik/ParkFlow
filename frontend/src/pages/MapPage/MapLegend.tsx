@@ -20,6 +20,16 @@ export function MapLegend() {
         <span className="bg-spot-unconfirmed size-2.5 rounded-sm" />
         {t('map.unconfirmed')}
       </span>
+      <span className="flex items-center gap-1.5">
+        <span
+          className="size-2.5 rounded-sm"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(45deg, var(--color-spot-spotted) 0 3px, var(--color-spot-spotted-stripe) 3px 6px)',
+          }}
+        />
+        {t('map.spotted')}
+      </span>
     </div>
   )
 }

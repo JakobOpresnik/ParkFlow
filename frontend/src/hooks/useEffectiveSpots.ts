@@ -74,10 +74,16 @@ export function useEffectiveSpots(date: string) {
       // 2. Manual override → authoritative.
       // Treat 'occupied' overrides as 'reserved' so owner self-occupation
       // registers as a reservation in Stats/Dashboard counts.
+      // Exception: a 'free' override still yields 'spotted' if the API derived
+      // it — owner waiving the spot doesn't disprove a user's "car here" report.
       const override = overrideBySpot.get(spot.id)
       if (override) {
         const status: SpotStatus =
-          override === 'occupied' ? 'reserved' : override
+          override === 'occupied'
+            ? 'reserved'
+            : spot.status === 'spotted'
+              ? 'spotted'
+              : override
         return { ...spot, status }
       }
 
@@ -114,12 +120,19 @@ export function useEffectiveSpots(date: string) {
         }
       }
 
+      // Preserve a server-derived 'spotted' status when presence shows no
+      // in-office owner — i.e. nothing else is claiming the spot, so the
+      // user's report remains the only signal.
+      const fallbackStatus: SpotStatus =
+        inOfficeOwners.length === 1
+          ? 'occupied'
+          : spot.status === 'spotted'
+            ? 'spotted'
+            : 'free'
+
       return {
         ...spot,
-        status:
-          inOfficeOwners.length === 1
-            ? ('occupied' as const)
-            : ('free' as const),
+        status: fallbackStatus,
         in_office_owner: inOfficeOwners[0] ?? null,
         possible_occupiers: null,
       }
