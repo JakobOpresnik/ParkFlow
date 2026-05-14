@@ -86,7 +86,7 @@ export function OwnerParkingPage() {
     handleCancelBooking,
     isToggling,
     isCancelling,
-  } = useOwnerParkingActions(selectedDate, myBookingElsewhere)
+  } = useOwnerParkingActions(selectedDate)
 
   function getStatus(spot: OwnerSpot) {
     return computeDayStatus(
