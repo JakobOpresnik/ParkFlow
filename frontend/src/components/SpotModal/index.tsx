@@ -81,13 +81,24 @@ export function SpotModal() {
 
   if (!spot) return null
 
+  // A user counts as a co-owner if EITHER signal matches:
+  //   - owner_user_id (admin-linked SSO usernames, comma-separated) contains user.username
+  //   - owner_name (canonical "Name1 / Name2 / ...") contains user.displayName
+  // The displayName fallback is required because owner_user_id is admin-populated
+  // and often incomplete for shared spots — without it, co-owners whose username
+  // wasn't linked lose access to PP / unconfirmed reservation flows.
   const isCurrentUserOwner =
     !!user &&
-    !!spot?.owner_user_id &&
-    spot.owner_user_id
-      .split(',')
-      .map((u) => u.trim())
-      .includes(user.username)
+    ((!!spot?.owner_user_id &&
+      spot.owner_user_id
+        .split(',')
+        .map((u) => u.trim())
+        .includes(user.username)) ||
+      (!!spot?.owner_name &&
+        spot.owner_name
+          .split('/')
+          .map((n) => n.trim().toLowerCase())
+          .includes(user.displayName.toLowerCase())))
 
   const isSharedSpot =
     (spot.owner_name?.includes('/') ?? false) ||
