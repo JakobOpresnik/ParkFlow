@@ -231,15 +231,17 @@ export function BookingCta({
 
       {/* Free spot: secondary action — report a car parked here */}
       {canReportSpotted && !ownerWarningOpen && (
-        <Button
-          variant="ghost"
-          className="text-muted-foreground border-border relative h-9 w-full gap-2 border text-xs font-medium hover:text-orange-600 dark:hover:text-orange-400"
-          style={STRETCH_BUTTON_STYLE}
-          disabled={reportSpottedPending}
-          onClick={handleReportSpotted}
-        >
-          <AlertTriangle className="size-3.5" />
-          {t('spotModal.reportSpotted')}
+        <div className="relative">
+          <Button
+            variant="ghost"
+            className="text-muted-foreground border-border h-9 w-full gap-2 border text-xs font-medium hover:text-orange-600 dark:hover:text-orange-400"
+            style={STRETCH_BUTTON_STYLE}
+            disabled={reportSpottedPending}
+            onClick={handleReportSpotted}
+          >
+            <AlertTriangle className="size-3.5" />
+            {t('spotModal.reportSpotted')}
+          </Button>
           <Tooltip
             label={t('spotModal.reportSpottedInfo')}
             position="top"
@@ -248,16 +250,15 @@ export function BookingCta({
             w={280}
             events={{ hover: true, focus: true, touch: true }}
           >
-            <span
-              role="img"
+            <button
+              type="button"
               aria-label={t('spotModal.reportSpottedInfo')}
-              onClick={(e) => e.stopPropagation()}
-              className="absolute top-1/2 right-2.5 inline-flex -translate-y-1/2 cursor-help items-center"
+              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2.5 inline-flex -translate-y-1/2 cursor-help items-center"
             >
               <Info className="size-3.5" />
-            </span>
+            </button>
           </Tooltip>
-        </Button>
+        </div>
       )}
 
       {/* Guest: show disabled reserve button + tooltip prompting sign-in */}
