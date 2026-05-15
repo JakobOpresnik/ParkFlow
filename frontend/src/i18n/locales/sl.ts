@@ -194,7 +194,7 @@ const sl = {
       'Več solastnikov ima označeno, da bodo prišli ({{names}}) — ne moremo ugotoviti, kateri od njih danes uporablja mesto.',
     bannerSpotted:
       'Nekdo je prijavil, da je tukaj parkiran avto, čeprav je mesto označeno kot prosto.',
-    bannerSpottedRelative: 'Prijavljeno zasedeno · {{when}}',
+    bannerSpottedRelative: '{{when}}',
     justNow: 'pravkar',
     minutesAgo: 'pred {{count}} min',
     hoursAgo: 'pred {{count}} h',
@@ -203,11 +203,13 @@ const sl = {
       'Nekdo je prijavil, da je tukaj že parkiran avto. Vseeno rezerviraj, če si preveril/a in je dejansko prosto.',
     spottedConfirmReserveAnyway: 'Vseeno rezerviraj',
     reportSpotted: 'Prijavi parkiran avto',
-    clearSpotted: 'Označi kot prosto',
+    reportSpottedInfo:
+      'Uporabi, kadar je mesto v aplikaciji prikazano kot prosto, v resnici pa tam že stoji avto. Prijava je zgolj informativna — ne prepreči, da bi kdo drug mesto rezerviral, dokler je tako označeno.',
+    clearSpotted: 'Počisti prijavo',
     toastSpottedReported:
       'Mesto {{label}} prijavljeno kot zasedeno — drugi bodo to videli na karti.',
     toastSpottedReportFailed: 'Prijave ni bilo mogoče oddati',
-    toastSpottedCleared: 'Mesto {{label}} ponovno označeno kot prosto.',
+    toastSpottedCleared: 'Prijava na mestu {{label}} počiščena.',
     toastSpottedClearFailed: 'Prijave ni bilo mogoče počistiti',
     reserveParkingSpot: 'Rezerviraj parkirno mesto',
     moveToThisSpot: 'Premakni sem',

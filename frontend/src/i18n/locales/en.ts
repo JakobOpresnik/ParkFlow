@@ -193,7 +193,7 @@ const en = {
       "Multiple co-owners are flagged as coming in ({{names}}) — we can't tell which one is using the spot today.",
     bannerSpotted:
       'Someone reported that a car is parked here even though the spot is marked free.',
-    bannerSpottedRelative: 'Reported as taken · {{when}}',
+    bannerSpottedRelative: '{{when}}',
     justNow: 'just now',
     minutesAgo: '{{count}} min ago',
     hoursAgo: '{{count}}h ago',
@@ -202,11 +202,13 @@ const en = {
       "Someone reported that a car is already parked here. Reserve anyway if you've checked and it's actually free.",
     spottedConfirmReserveAnyway: 'Reserve anyway',
     reportSpotted: 'Report a car parked here',
-    clearSpotted: 'Mark available again',
+    reportSpottedInfo:
+      "Use this when the spot is shown as available in the app but you've found a car parked there in real life. The report is purely informative — it doesn't prevent anyone from reserving the spot while it's marked.",
+    clearSpotted: 'Clear report',
     toastSpottedReported:
       'Spot {{label}} reported as taken — others will see it on the map.',
     toastSpottedReportFailed: 'Could not submit report',
-    toastSpottedCleared: 'Spot {{label}} marked available again.',
+    toastSpottedCleared: 'Report cleared on spot {{label}}.',
     toastSpottedClearFailed: 'Could not clear the report',
     reserveParkingSpot: 'Reserve Parking Spot',
     moveToThisSpot: 'Move to This Spot',
