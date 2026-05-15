@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import { pool } from '../db/pool.js';
 import { broadcast } from '../lib/broadcast.js';
+import { fetchWeekPresence, isOwnerAbsent } from '../lib/presence.js';
 import {
   optionalAuth,
   requireAdmin,
@@ -74,6 +75,10 @@ function scrubSpotForGuest<T extends Record<string, unknown>>(row: T): T {
 
 // POST /api/spots/:id/spotted — user reports that a free spot is actually taken.
 // Returns 412 if the spot is not currently free (already reserved/occupied/spotted/etc).
+// Eligibility mirrors the booking route's "is bookable today" logic so that
+// owned spots that resolve to 'free' for today (via day override or owner
+// absence) are also reportable. Spots in 'occupied' or 'unconfirmed' state
+// today remain ineligible.
 router.post(
   '/:id/spotted',
   requireAuth,
@@ -81,6 +86,18 @@ router.post(
   async (req, res, next) => {
     try {
       const { id } = req.params;
+
+      const targetDate = new Date().toISOString().slice(0, 10);
+
+      // Pre-fetch presence outside the transaction — external HTTP call.
+      let presenceData: Awaited<ReturnType<typeof fetchWeekPresence>> | null =
+        null;
+      try {
+        presenceData = await fetchWeekPresence(targetDate);
+      } catch {
+        // Presence API failure: treat as no presence data; owned spots will
+        // fall back to their stored status (likely 'occupied' → ineligible).
+      }
 
       const client = await pool.connect();
       try {
@@ -105,11 +122,44 @@ router.post(
           owner_name: string | null;
         };
 
-        // Map's effective base status: ACEX-owned spots always read as 'free'.
-        const baseStatus =
-          spotRow.owner_name === ACEX_OWNER_NAME ? 'free' : spotRow.status;
-        if (baseStatus !== 'free') {
+        // Determine whether the spot is effectively free for today. Priority:
+        //   1. Day override (spot_day_status) is authoritative.
+        //   2. ACEX-owned spots are always free (company pool).
+        //   3. Any other owned spot: presence is authoritative — free only
+        //      when *every* co-owner is absent today. If any co-owner is
+        //      in-office the spot is 'occupied' or 'unconfirmed' (shared with
+        //      multiple PPs), neither of which is reportable.
+        //   4. Orphan / unowned spot: fall back to stored s.status.
+        const overrideResult = await client.query(
+          `SELECT status FROM spot_day_status WHERE spot_id = $1 AND date = $2::date`,
+          [id, targetDate],
+        );
+        let isEffectivelyFree: boolean;
+        if (overrideResult.rows.length > 0) {
+          isEffectivelyFree = overrideResult.rows[0].status === 'free';
+        } else if (spotRow.owner_name === ACEX_OWNER_NAME) {
+          isEffectivelyFree = true;
+        } else if (spotRow.owner_name) {
+          const ownerNames = spotRow.owner_name
+            .split('/')
+            .map((n: string) => n.trim())
+            .filter(Boolean);
+          if (presenceData !== null && ownerNames.length > 0) {
+            isEffectivelyFree = ownerNames.every((name: string) =>
+              isOwnerAbsent(presenceData!, name, targetDate),
+            );
+          } else {
+            isEffectivelyFree = spotRow.status === 'free';
+          }
+        } else {
+          isEffectivelyFree = spotRow.status === 'free';
+        }
+
+        if (!isEffectivelyFree) {
           await client.query('ROLLBACK');
+          console.log(
+            `[spotted] 412 NOT FREE: spot=${id}, status=${spotRow.status}, owner=${spotRow.owner_name}, presence=${presenceData ? 'loaded' : 'null'}`,
+          );
           res
             .status(412)
             .json({ error: 'Only free spots can be reported as taken' });

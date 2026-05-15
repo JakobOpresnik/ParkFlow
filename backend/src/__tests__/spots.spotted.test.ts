@@ -39,6 +39,14 @@ vi.mock('../middleware/auth.js', () => ({
 
 vi.mock('../lib/broadcast.js', () => ({ broadcast: vi.fn() }))
 
+vi.mock('../lib/presence.js', () => ({
+  fetchWeekPresence: vi.fn().mockResolvedValue({
+    employees: [],
+    work_free_days: [],
+  }),
+  isOwnerAbsent: vi.fn().mockReturnValue(false),
+}))
+
 const { pool } = await import('../db/pool.js')
 const mockQuery = pool.query as ReturnType<typeof vi.fn>
 const mockConnect = pool.connect as ReturnType<typeof vi.fn>
@@ -67,6 +75,8 @@ describe('POST /api/spots/:id/spotted', () => {
       .mockResolvedValueOnce({
         rows: [{ id: 'spot-1', status: 'free', owner_name: null }],
       })
+      // spot_day_status override check
+      .mockResolvedValueOnce({ rows: [] })
       // booking conflict check
       .mockResolvedValueOnce({ rows: [] })
       // existing active report check
@@ -100,6 +110,8 @@ describe('POST /api/spots/:id/spotted', () => {
       .mockResolvedValueOnce({
         rows: [{ id: 'spot-1', status: 'free', owner_name: null }],
       })
+      // spot_day_status override check
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({
         rows: [
@@ -126,6 +138,8 @@ describe('POST /api/spots/:id/spotted', () => {
       .mockResolvedValueOnce({
         rows: [{ id: 'spot-1', status: 'reserved', owner_name: null }],
       })
+      // spot_day_status override check
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
 
     const res = await request(app).post('/api/spots/spot-1/spotted')
@@ -142,6 +156,8 @@ describe('POST /api/spots/:id/spotted', () => {
       .mockResolvedValueOnce({
         rows: [{ id: 'spot-1', status: 'free', owner_name: null }],
       })
+      // spot_day_status override check
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ '?column?': 1 }] })
       .mockResolvedValueOnce({ rows: [] })
 
@@ -177,6 +193,8 @@ describe('POST /api/spots/:id/spotted', () => {
           },
         ],
       })
+      // spot_day_status override check
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
@@ -194,6 +212,131 @@ describe('POST /api/spots/:id/spotted', () => {
     const res = await request(app).post('/api/spots/spot-1/spotted')
 
     expect(res.status).toBe(201)
+  })
+
+  it('allows reporting an owned spot whose owner is absent today', async () => {
+    const { isOwnerAbsent } = await import('../lib/presence.js')
+    ;(isOwnerAbsent as ReturnType<typeof vi.fn>).mockReturnValueOnce(true)
+
+    const client = makeClient()
+    mockConnect.mockResolvedValueOnce(client)
+    client.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 'spot-1',
+            status: 'occupied',
+            owner_name: 'Bernard Sovdat',
+          },
+        ],
+      })
+      // spot_day_status override check
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 'report-1',
+            reported_at: '2026-05-14T10:00:00Z',
+            expires_at: '2026-05-14T14:00:00Z',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [] })
+
+    const res = await request(app).post('/api/spots/spot-1/spotted')
+
+    expect(res.status).toBe(201)
+  })
+
+  it('rejects reporting an owned spot whose owner is in office today', async () => {
+    const { isOwnerAbsent } = await import('../lib/presence.js')
+    ;(isOwnerAbsent as ReturnType<typeof vi.fn>).mockReturnValueOnce(false)
+
+    const client = makeClient()
+    mockConnect.mockResolvedValueOnce(client)
+    client.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 'spot-1',
+            status: 'occupied',
+            owner_name: 'Bernard Sovdat',
+          },
+        ],
+      })
+      // spot_day_status override check
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+
+    const res = await request(app).post('/api/spots/spot-1/spotted')
+
+    expect(res.status).toBe(412)
+  })
+
+  it('honors day-override status: free → reportable', async () => {
+    const client = makeClient()
+    mockConnect.mockResolvedValueOnce(client)
+    client.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 'spot-1',
+            status: 'occupied',
+            owner_name: 'Bernard Sovdat',
+          },
+        ],
+      })
+      // spot_day_status override → free
+      .mockResolvedValueOnce({ rows: [{ status: 'free' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 'report-1',
+            reported_at: '2026-05-14T10:00:00Z',
+            expires_at: '2026-05-14T14:00:00Z',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [] })
+
+    const res = await request(app).post('/api/spots/spot-1/spotted')
+
+    expect(res.status).toBe(201)
+  })
+
+  it('honors day-override status: occupied → rejected even if owner absent', async () => {
+    const { isOwnerAbsent } = await import('../lib/presence.js')
+    ;(isOwnerAbsent as ReturnType<typeof vi.fn>).mockReturnValueOnce(true)
+
+    const client = makeClient()
+    mockConnect.mockResolvedValueOnce(client)
+    client.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 'spot-1',
+            status: 'occupied',
+            owner_name: 'Bernard Sovdat',
+          },
+        ],
+      })
+      // spot_day_status override → occupied
+      .mockResolvedValueOnce({ rows: [{ status: 'occupied' }] })
+      .mockResolvedValueOnce({ rows: [] })
+
+    const res = await request(app).post('/api/spots/spot-1/spotted')
+
+    expect(res.status).toBe(412)
   })
 })
 
