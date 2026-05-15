@@ -7,6 +7,7 @@ export const StatusDotClass: Record<SpotStatus, string> = {
   occupied: 'bg-spot-occupied',
   reserved: 'bg-spot-reserved',
   unconfirmed: 'bg-spot-unconfirmed',
+  spotted: 'bg-spot-spotted',
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────

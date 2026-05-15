@@ -129,6 +129,7 @@ const en = {
     occupied: 'Occupied',
     reserved: 'Reserved',
     unconfirmed: 'Unconfirmed',
+    spotted: 'Reported taken',
     mapView: 'Map',
     gridView: 'Grid',
     historical: 'Historical · based on recorded attendance',
@@ -161,6 +162,7 @@ const en = {
     occupied: 'Occupied',
     reservedStatus: 'Reserved',
     unconfirmedStatus: 'Unconfirmed',
+    spottedStatus: 'Reported as taken',
     floor: 'Floor',
     type: 'Type',
     owner: 'Owner',
@@ -189,6 +191,25 @@ const en = {
       "Multiple co-owners are flagged as coming in — we can't tell which one is using the spot today.",
     bannerUnconfirmedNamed:
       "Multiple co-owners are flagged as coming in ({{names}}) — we can't tell which one is using the spot today.",
+    bannerSpotted:
+      'Someone reported that a car is parked here even though the spot is marked free.',
+    bannerSpottedRelative: '{{when}}',
+    justNow: 'just now',
+    minutesAgo: '{{count}} min ago',
+    hoursAgo: '{{count}}h ago',
+    spottedConfirmTitle: 'This spot was reported as taken',
+    spottedConfirmDesc:
+      "Someone reported that a car is already parked here. Reserve anyway if you've checked and it's actually free.",
+    spottedConfirmReserveAnyway: 'Reserve anyway',
+    reportSpotted: 'Report a car parked here',
+    reportSpottedInfo:
+      "Use this when the spot is shown as available in the app but you've found a car parked there in real life. The report is purely informative — it doesn't prevent anyone from reserving the spot while it's marked.",
+    clearSpotted: 'Clear report',
+    toastSpottedReported:
+      'Spot {{label}} reported as taken — others will see it on the map.',
+    toastSpottedReportFailed: 'Could not submit report',
+    toastSpottedCleared: 'Report cleared on spot {{label}}.',
+    toastSpottedClearFailed: 'Could not clear the report',
     reserveParkingSpot: 'Reserve Parking Spot',
     moveToThisSpot: 'Move to This Spot',
     cancelReservation: 'Cancel Reservation',

@@ -4,6 +4,15 @@ import { usePresence } from '@/hooks/usePresence'
 import { useSpotDayOverrides, useSpots } from '@/hooks/useSpots'
 import type { Spot, SpotStatus } from '@/types'
 
+// An owned spot whose effective status would otherwise resolve to 'free' must
+// upgrade to 'spotted' when the API returned an active, non-expired user report
+// for it. The backend SQL only layers 'spotted' onto s.status='free' rows, so
+// owned spots (raw DB status 'occupied') need this layered in the client.
+function hasActiveSpottedReport(spot: Spot): boolean {
+  if (!spot.spotted_reported_at || !spot.spotted_expires_at) return false
+  return new Date(spot.spotted_expires_at).getTime() > Date.now()
+}
+
 /**
  * Returns all spots with effective status for a given date.
  * Priority (matches backend booking logic):
@@ -74,10 +83,17 @@ export function useEffectiveSpots(date: string) {
       // 2. Manual override → authoritative.
       // Treat 'occupied' overrides as 'reserved' so owner self-occupation
       // registers as a reservation in Stats/Dashboard counts.
+      // Exception: a 'free' override still yields 'spotted' if there's an
+      // active user report — owner waiving the spot doesn't disprove a
+      // user's "car here" report.
       const override = overrideBySpot.get(spot.id)
       if (override) {
         const status: SpotStatus =
-          override === 'occupied' ? 'reserved' : override
+          override === 'occupied'
+            ? 'reserved'
+            : hasActiveSpottedReport(spot)
+              ? 'spotted'
+              : override
         return { ...spot, status }
       }
 
@@ -114,12 +130,21 @@ export function useEffectiveSpots(date: string) {
         }
       }
 
+      // Layer 'spotted' on top of a presence-derived 'free' when there's an
+      // active user report — i.e. nothing else is claiming the spot, so the
+      // user's report remains the only signal. This must run for owned spots
+      // too: the API leaves their raw status as 'occupied' regardless of
+      // presence, so we can't rely on spot.status === 'spotted' alone.
+      const fallbackStatus: SpotStatus =
+        inOfficeOwners.length === 1
+          ? 'occupied'
+          : hasActiveSpottedReport(spot)
+            ? 'spotted'
+            : 'free'
+
       return {
         ...spot,
-        status:
-          inOfficeOwners.length === 1
-            ? ('occupied' as const)
-            : ('free' as const),
+        status: fallbackStatus,
         in_office_owner: inOfficeOwners[0] ?? null,
         possible_occupiers: null,
       }

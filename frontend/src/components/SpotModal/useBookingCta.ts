@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import { useCancelBooking, useCreateBooking } from '@/hooks/useBookings'
 import { useSetSpotDayStatus } from '@/hooks/useOwnerParking'
+import { useReportSpotted } from '@/hooks/useSpots'
 import type { Spot } from '@/types'
 
 import { fmtTime } from './utils'
@@ -45,11 +46,13 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
 
   const [bookingDuration, setBookingDuration] = useState(reservationDuration)
   const [ownerWarningOpen, setOwnerWarningOpen] = useState(false)
+  const [spottedConfirmOpen, setSpottedConfirmOpen] = useState(false)
   const bookingInFlight = useRef(false)
 
   const createBooking = useCreateBooking()
   const cancelBooking = useCancelBooking()
   const setSpotDayStatus = useSetSpotDayStatus()
+  const reportSpotted = useReportSpotted()
 
   const today = new Date().toISOString().slice(0, 10)
   const isBookableDate = selectedDate >= today
@@ -73,12 +76,20 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
   async function handleBook() {
     if (bookingInFlight.current) return
 
+    // Spotted spots need an "are you sure?" confirm first — the reservation
+    // will succeed and the report will clear server-side in the same tx.
+    if (spot.status === 'spotted' && !spottedConfirmOpen) {
+      setSpottedConfirmOpen(true)
+      return
+    }
+
     if (myOwnedSpot && !ownerWarningOpen) {
       setOwnerWarningOpen(true)
       return
     }
 
     setOwnerWarningOpen(false)
+    setSpottedConfirmOpen(false)
     bookingInFlight.current = true
 
     const expiresAt = computeExpiresAt(
@@ -140,6 +151,26 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
     }
   }
 
+  async function handleReportSpotted() {
+    try {
+      await reportSpotted.mutateAsync(spot.id)
+      notifications.show({
+        message: t('spotModal.toastSpottedReported', {
+          label: spot.label ?? `#${spot.number}`,
+        }),
+        color: 'orange',
+      })
+    } catch (err) {
+      notifications.show({
+        message:
+          err instanceof Error
+            ? err.message
+            : t('spotModal.toastSpottedReportFailed'),
+        color: 'red',
+      })
+    }
+  }
+
   function handleCancelBooking() {
     if (!spot.active_booking_id) return
     cancelBooking.mutate(spot.active_booking_id, {
@@ -173,5 +204,9 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
     handleCancelBooking,
     ownerWarningOpen,
     setOwnerWarningOpen,
+    spottedConfirmOpen,
+    setSpottedConfirmOpen,
+    handleReportSpotted,
+    reportSpottedPending: reportSpotted.isPending,
   }
 }

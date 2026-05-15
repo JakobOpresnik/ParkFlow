@@ -1,4 +1,10 @@
-import { CheckCircle2, Clock, HelpCircle, XCircle } from 'lucide-react'
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  HelpCircle,
+  XCircle,
+} from 'lucide-react'
 
 import type { SpotStatus } from '@/types'
 
@@ -31,9 +37,9 @@ export const STATUS_CONFIG: Record<SpotStatus, StatusConfigDetails> = {
   },
   reserved: {
     label: 'Reserved',
-    color: 'yellow',
-    bg: 'bg-amber-500/10 border-amber-500/20',
-    text: 'text-amber-600 dark:text-amber-400',
+    color: 'blue',
+    bg: 'bg-blue-500/10 border-blue-500/20',
+    text: 'text-blue-600 dark:text-blue-400',
     icon: <Clock className="size-4 shrink-0" />,
   },
   unconfirmed: {
@@ -43,7 +49,14 @@ export const STATUS_CONFIG: Record<SpotStatus, StatusConfigDetails> = {
     text: 'text-violet-600 dark:text-violet-400',
     icon: <HelpCircle className="size-4 shrink-0" />,
   },
+  spotted: {
+    label: 'Reported as taken',
+    color: 'orange',
+    bg: 'bg-orange-500/10 border-orange-500/30',
+    text: 'text-orange-600 dark:text-orange-400',
+    icon: <AlertTriangle className="size-4 shrink-0" />,
+  },
 }
 
-// Admins manually set only these statuses; 'unconfirmed' is derived, not editable.
+// Admins manually set only these statuses; 'unconfirmed' and 'spotted' are derived.
 export const ALL_STATUSES: SpotStatus[] = ['free', 'occupied', 'reserved']

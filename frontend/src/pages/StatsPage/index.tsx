@@ -19,6 +19,7 @@ const StatusColorVar: Record<SpotStatus, string> = {
   occupied: '--color-spot-occupied',
   reserved: '--color-spot-occupied',
   unconfirmed: '--color-spot-occupied',
+  spotted: '--color-spot-spotted',
 }
 
 const STATUS_LABEL_KEYS: Record<SpotStatus, string> = {
@@ -26,6 +27,7 @@ const STATUS_LABEL_KEYS: Record<SpotStatus, string> = {
   occupied: 'stats.occupied',
   reserved: 'stats.occupied',
   unconfirmed: 'stats.occupied',
+  spotted: 'map.spotted',
 }
 
 interface StatusProgressRowProps {
@@ -103,14 +105,28 @@ export function StatsPage() {
     occupied: spots.filter((s) => s.status === 'occupied').length,
     reserved: spots.filter((s) => s.status === 'reserved').length,
     unconfirmed: spots.filter((s) => s.status === 'unconfirmed').length,
+    spotted: spots.filter((s) => s.status === 'spotted').length,
   }
-  // Unconfirmed grouped with occupied — the spot is not freely bookable either way.
+  // 'occupied' bucket here = occupied + reserved + unconfirmed (system-owned signals).
+  // 'spotted' stays its own bucket so users can see at a glance how many spots
+  // were user-reported as taken. Overall occupancy rate (below) still sums all
+  // non-free statuses, including spotted.
   const mergedCounts = {
     free: counts.free,
     occupied: counts.occupied + counts.reserved + counts.unconfirmed,
+    spotted: counts.spotted,
   }
 
-  const segments: Segment[] = (['free', 'occupied'] as const).map((s) => ({
+  const totalOccupied = mergedCounts.occupied + mergedCounts.spotted
+
+  // Spotted gets its own donut slice only when there's something to show — keeps
+  // the chart clean for the common case of zero reports.
+  const segmentKeys: ('free' | 'occupied' | 'spotted')[] =
+    mergedCounts.spotted > 0
+      ? ['free', 'occupied', 'spotted']
+      : ['free', 'occupied']
+
+  const segments: Segment[] = segmentKeys.map((s) => ({
     label: t(STATUS_LABEL_KEYS[s]),
     count: mergedCounts[s],
     pct: computePct(mergedCounts[s], total),
@@ -172,14 +188,14 @@ export function StatsPage() {
             <div className="bg-card flex flex-col gap-1 rounded-lg border p-4 shadow-sm">
               <div className="bg-primary/80 h-1 w-10 rounded-full" />
               <p className="text-2xl font-bold tabular-nums sm:text-3xl">
-                {computePct(mergedCounts.occupied, total)}%
+                {computePct(totalOccupied, total)}%
               </p>
               <p className="text-muted-foreground text-sm">
                 {t('stats.occupancyRate')}
               </p>
               <p className="text-xs font-medium">
                 {t('stats.spotsInUse', {
-                  used: mergedCounts.occupied,
+                  used: totalOccupied,
                   total,
                 })}
               </p>
@@ -227,20 +243,20 @@ export function StatsPage() {
                     {t('stats.occupancyRate')}
                   </span>
                   <span className="font-semibold">
-                    {computePct(mergedCounts.occupied, total)}%
+                    {computePct(totalOccupied, total)}%
                   </span>
                 </div>
                 <div className="bg-muted mt-2 h-2.5 w-full overflow-hidden rounded-full">
                   <div
                     className="bg-primary h-full rounded-full transition-all duration-500"
                     style={{
-                      width: `${computePct(mergedCounts.occupied, total)}%`,
+                      width: `${computePct(totalOccupied, total)}%`,
                     }}
                   />
                 </div>
                 <p className="text-muted-foreground mt-1 text-xs">
                   {t('stats.spotsInUse', {
-                    used: mergedCounts.occupied,
+                    used: totalOccupied,
                     total,
                   })}
                 </p>

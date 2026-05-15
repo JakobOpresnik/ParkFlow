@@ -119,9 +119,9 @@ export function DetailsCard({
           </div>
         ) : (
           <div className="min-w-0">
-            <span className="text-muted-foreground text-sm italic">
+            <p className="text-muted-foreground text-sm leading-snug italic">
               {t('spotModal.unassigned')}
-            </span>
+            </p>
             {spot.status === 'reserved' && spot.active_booking_reserved_by && (
               <p className="mt-1 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
                 <Clock className="size-3 shrink-0" />

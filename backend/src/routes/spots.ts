@@ -2,10 +2,12 @@ import { Router } from 'express';
 
 import { pool } from '../db/pool.js';
 import { broadcast } from '../lib/broadcast.js';
+import { fetchWeekPresence, isOwnerAbsent } from '../lib/presence.js';
 import {
   optionalAuth,
   requireAdmin,
   requireAuth,
+  requireNonGuest,
 } from '../middleware/auth.js';
 
 const router = Router();
@@ -13,6 +15,9 @@ const router = Router();
 const ACEX_OWNER_NAME = 'ACEX - kdor prej pride, prej melje';
 const validTypes = ['standard', 'ev', 'handicap', 'compact'];
 
+// Base effective status: ACEX-owned spots are masked as 'free' regardless of stored status.
+// 'spotted' is layered on top: when the base resolves to 'free' AND there's an active
+// (non-cleared, non-expired) user report, the API returns 'spotted' instead.
 const SPOT_SELECT = `
   SELECT
     s.id,
@@ -20,7 +25,12 @@ const SPOT_SELECT = `
     s.label,
     s.floor,
     s.lot_id,
-    CASE WHEN o.name = '${ACEX_OWNER_NAME}' THEN 'free' ELSE s.status END AS status,
+    CASE
+      WHEN o.name = '${ACEX_OWNER_NAME}' AND sr.id IS NOT NULL THEN 'spotted'
+      WHEN o.name = '${ACEX_OWNER_NAME}' THEN 'free'
+      WHEN s.status = 'free' AND sr.id IS NOT NULL THEN 'spotted'
+      ELSE s.status
+    END AS status,
     s.type,
     s.coordinates,
     s.created_at,
@@ -36,10 +46,14 @@ const SPOT_SELECT = `
     b.reserved_by      AS active_booking_reserved_by,
     b.starts_at        AS active_booking_starts_at,
     b.expires_at       AS active_booking_expires_at,
-    b.booked_by_owner  AS active_booking_booked_by_owner
+    b.booked_by_owner  AS active_booking_booked_by_owner,
+    sr.reported_at     AS spotted_reported_at,
+    sr.expires_at      AS spotted_expires_at
   FROM spots s
   LEFT JOIN owners o ON s.owner_id = o.id
   LEFT JOIN bookings b ON b.spot_id = s.id AND b.status = 'active'
+  LEFT JOIN spot_spotted_reports sr
+    ON sr.spot_id = s.id AND sr.cleared_at IS NULL AND sr.expires_at > now()
 `;
 
 // Strip owner contact details and booker identity from spot rows before
@@ -58,6 +72,189 @@ function scrubSpotForGuest<T extends Record<string, unknown>>(row: T): T {
     active_booking_booked_by_owner: null,
   };
 }
+
+// POST /api/spots/:id/spotted — user reports that a free spot is actually taken.
+// Returns 412 if the spot is not currently free (already reserved/occupied/spotted/etc).
+// Eligibility mirrors the booking route's "is bookable today" logic so that
+// owned spots that resolve to 'free' for today (via day override or owner
+// absence) are also reportable. Spots in 'occupied' or 'unconfirmed' state
+// today remain ineligible.
+router.post(
+  '/:id/spotted',
+  requireAuth,
+  requireNonGuest,
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+
+      const targetDate = new Date().toISOString().slice(0, 10);
+
+      // Pre-fetch presence outside the transaction — external HTTP call.
+      let presenceData: Awaited<ReturnType<typeof fetchWeekPresence>> | null =
+        null;
+      try {
+        presenceData = await fetchWeekPresence(targetDate);
+      } catch {
+        // Presence API failure: treat as no presence data; owned spots will
+        // fall back to their stored status (likely 'occupied' → ineligible).
+      }
+
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+
+        const spotResult = await client.query(
+          `SELECT s.id, s.status, o.name AS owner_name
+           FROM spots s
+           LEFT JOIN owners o ON s.owner_id = o.id
+           WHERE s.id = $1
+           FOR UPDATE OF s`,
+          [id],
+        );
+        if (spotResult.rows.length === 0) {
+          await client.query('ROLLBACK');
+          res.status(404).json({ error: 'Spot not found' });
+          return;
+        }
+        const spotRow = spotResult.rows[0] as {
+          id: string;
+          status: string;
+          owner_name: string | null;
+        };
+
+        // Determine whether the spot is effectively free for today. Priority:
+        //   1. Day override (spot_day_status) is authoritative.
+        //   2. ACEX-owned spots are always free (company pool).
+        //   3. Any other owned spot: presence is authoritative — free only
+        //      when *every* co-owner is absent today. If any co-owner is
+        //      in-office the spot is 'occupied' or 'unconfirmed' (shared with
+        //      multiple PPs), neither of which is reportable.
+        //   4. Orphan / unowned spot: fall back to stored s.status.
+        const overrideResult = await client.query(
+          `SELECT status FROM spot_day_status WHERE spot_id = $1 AND date = $2::date`,
+          [id, targetDate],
+        );
+        let isEffectivelyFree: boolean;
+        if (overrideResult.rows.length > 0) {
+          isEffectivelyFree = overrideResult.rows[0].status === 'free';
+        } else if (spotRow.owner_name === ACEX_OWNER_NAME) {
+          isEffectivelyFree = true;
+        } else if (spotRow.owner_name) {
+          const ownerNames = spotRow.owner_name
+            .split('/')
+            .map((n: string) => n.trim())
+            .filter(Boolean);
+          if (presenceData !== null && ownerNames.length > 0) {
+            isEffectivelyFree = ownerNames.every((name: string) =>
+              isOwnerAbsent(presenceData!, name, targetDate),
+            );
+          } else {
+            isEffectivelyFree = spotRow.status === 'free';
+          }
+        } else {
+          isEffectivelyFree = spotRow.status === 'free';
+        }
+
+        if (!isEffectivelyFree) {
+          await client.query('ROLLBACK');
+          console.log(
+            `[spotted] 412 NOT FREE: spot=${id}, status=${spotRow.status}, owner=${spotRow.owner_name}, presence=${presenceData ? 'loaded' : 'null'}`,
+          );
+          res
+            .status(412)
+            .json({ error: 'Only free spots can be reported as taken' });
+          return;
+        }
+
+        // An active booking on the spot today means it's actually reserved, even
+        // if status hasn't been refreshed yet — block reports in that case too.
+        const bookingCheck = await client.query(
+          `SELECT 1 FROM bookings
+           WHERE spot_id = $1 AND status = 'active'
+             AND expires_at::date = (now() AT TIME ZONE 'UTC')::date
+           LIMIT 1`,
+          [id],
+        );
+        if (bookingCheck.rows.length > 0) {
+          await client.query('ROLLBACK');
+          res
+            .status(412)
+            .json({ error: 'Only free spots can be reported as taken' });
+          return;
+        }
+
+        // Existing active report? Idempotent — return it.
+        const existing = await client.query(
+          `SELECT id, reported_at, expires_at FROM spot_spotted_reports
+           WHERE spot_id = $1 AND cleared_at IS NULL AND expires_at > now()
+           LIMIT 1`,
+          [id],
+        );
+        if (existing.rows.length > 0) {
+          await client.query('COMMIT');
+          res.json(existing.rows[0]);
+          return;
+        }
+
+        // Clear any stale (expired but not cleared) report so the unique index allows insert.
+        await client.query(
+          `UPDATE spot_spotted_reports
+           SET cleared_at = now(), cleared_by = 'system:expired'
+           WHERE spot_id = $1 AND cleared_at IS NULL`,
+          [id],
+        );
+
+        const inserted = await client.query(
+          `INSERT INTO spot_spotted_reports (spot_id, reported_by, expires_at)
+           VALUES ($1, $2, now() + interval '4 hours')
+           RETURNING id, reported_at, expires_at`,
+          [id, req.user!.username],
+        );
+
+        await client.query('COMMIT');
+        broadcast();
+        res.status(201).json(inserted.rows[0]);
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+// DELETE /api/spots/:id/spotted — clear the active report (anyone authenticated may clear).
+router.delete(
+  '/:id/spotted',
+  requireAuth,
+  requireNonGuest,
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+
+      const result = await pool.query(
+        `UPDATE spot_spotted_reports
+         SET cleared_at = now(), cleared_by = $2
+         WHERE spot_id = $1 AND cleared_at IS NULL AND expires_at > now()
+         RETURNING id`,
+        [id, req.user!.username],
+      );
+
+      if (result.rowCount === 0) {
+        res.status(404).json({ error: 'No active report to clear' });
+        return;
+      }
+
+      broadcast();
+      res.json({ ok: true });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 // GET /api/spots/day-overrides?date=YYYY-MM-DD — all per-day overrides for a date
 router.get('/day-overrides', async (req, res, next) => {

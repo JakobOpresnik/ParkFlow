@@ -130,6 +130,7 @@ const sl = {
     occupied: 'Zasedeno',
     reserved: 'Rezervirano',
     unconfirmed: 'Nepotrjeno',
+    spotted: 'Prijavljeno zasedeno',
     mapView: 'Karta',
     gridView: 'Mreža',
     historical: 'Zgodovinsko · na podlagi zabeležene prisotnosti',
@@ -162,6 +163,7 @@ const sl = {
     occupied: 'Zasedeno',
     reservedStatus: 'Rezervirano',
     unconfirmedStatus: 'Nepotrjeno',
+    spottedStatus: 'Prijavljeno zasedeno',
     floor: 'Etaža',
     type: 'Vrsta',
     owner: 'Lastnik',
@@ -190,6 +192,25 @@ const sl = {
       'Več solastnikov ima označeno, da bodo prišli — ne moremo ugotoviti, kateri od njih danes uporablja mesto.',
     bannerUnconfirmedNamed:
       'Več solastnikov ima označeno, da bodo prišli ({{names}}) — ne moremo ugotoviti, kateri od njih danes uporablja mesto.',
+    bannerSpotted:
+      'Nekdo je prijavil, da je tukaj parkiran avto, čeprav je mesto označeno kot prosto.',
+    bannerSpottedRelative: '{{when}}',
+    justNow: 'pravkar',
+    minutesAgo: 'pred {{count}} min',
+    hoursAgo: 'pred {{count}} h',
+    spottedConfirmTitle: 'Mesto je bilo prijavljeno kot zasedeno',
+    spottedConfirmDesc:
+      'Nekdo je prijavil, da je tukaj že parkiran avto. Vseeno rezerviraj, če si preveril/a in je dejansko prosto.',
+    spottedConfirmReserveAnyway: 'Vseeno rezerviraj',
+    reportSpotted: 'Prijavi parkiran avto',
+    reportSpottedInfo:
+      'Uporabi, kadar je mesto v aplikaciji prikazano kot prosto, v resnici pa tam že stoji avto. Prijava je zgolj informativna — ne prepreči, da bi kdo drug mesto rezerviral, dokler je tako označeno.',
+    clearSpotted: 'Počisti prijavo',
+    toastSpottedReported:
+      'Mesto {{label}} prijavljeno kot zasedeno — drugi bodo to videli na karti.',
+    toastSpottedReportFailed: 'Prijave ni bilo mogoče oddati',
+    toastSpottedCleared: 'Prijava na mestu {{label}} počiščena.',
+    toastSpottedClearFailed: 'Prijave ni bilo mogoče počistiti',
     reserveParkingSpot: 'Rezerviraj parkirno mesto',
     moveToThisSpot: 'Premakni sem',
     cancelReservation: 'Prekliči rezervacijo',

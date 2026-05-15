@@ -52,13 +52,19 @@ interface SpotTypeIndicatorProps {
 
 // — constants —
 
+const SPOTTED_PATTERN_ID = 'spot-spotted-pattern'
+
 const StatusConfig: Record<SpotStatus, StatusConfigDetails> = {
   free: { fill: 'rgba(34,197,94,0.45)', stroke: 'rgba(34,197,94,0.9)' },
   occupied: { fill: 'rgba(239,68,68,0.45)', stroke: 'rgba(239,68,68,0.9)' },
-  reserved: { fill: 'rgba(234,179,8,0.45)', stroke: 'rgba(234,179,8,0.9)' },
+  reserved: { fill: 'rgba(59,130,246,0.45)', stroke: 'rgba(59,130,246,0.9)' },
   unconfirmed: {
     fill: 'rgba(139,92,246,0.45)',
     stroke: 'rgba(139,92,246,0.9)',
+  },
+  spotted: {
+    fill: `url(#${SPOTTED_PATTERN_ID})`,
+    stroke: 'rgba(249,115,22,0.95)',
   },
 }
 
@@ -299,6 +305,18 @@ export const ParkingMap = forwardRef<ParkingMapHandle, ParkingMapProps>(
             aria-label={`${lot.name} parking map`}
             style={{ pointerEvents: 'none' }}
           >
+            <defs>
+              <pattern
+                id={SPOTTED_PATTERN_ID}
+                patternUnits="userSpaceOnUse"
+                width={14}
+                height={14}
+                patternTransform="rotate(45)"
+              >
+                <rect width={14} height={14} fill="rgba(249,115,22,0.55)" />
+                <rect width={7} height={14} fill="rgba(60,30,5,0.55)" />
+              </pattern>
+            </defs>
             <image
               key={imageSrc}
               href={imageSrc}
