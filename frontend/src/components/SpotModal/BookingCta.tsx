@@ -3,8 +3,8 @@ import {
   AlertTriangle,
   ArrowRightLeft,
   CalendarCheck,
-  CheckCircle2,
   Clock,
+  Info,
   Lock,
   Pencil,
   X,
@@ -73,9 +73,7 @@ export function BookingCta({
     spottedConfirmOpen,
     setSpottedConfirmOpen,
     handleReportSpotted,
-    handleClearSpotted,
     reportSpottedPending,
-    clearSpottedPending,
   } = useBookingCta(spot, {
     selectedDate,
     arrivalTime,
@@ -124,10 +122,10 @@ export function BookingCta({
     spot.status === 'occupied' ||
     (spot.status === 'unconfirmed' && !isCurrentUserCoOwnerOnUnconfirmed) ||
     (spot.status === 'reserved' && !canCancelThisBooking)
-  // Anyone authenticated (not guest) may report or clear on a free/spotted spot.
+  // Anyone authenticated (not guest) may report on a free spot. Clearing the
+  // spotted flag is handled inside the StatusBanner action slot.
   const canReportSpotted =
     spot.status === 'free' && !!user && !isGuest && isBookableDate
-  const canClearSpotted = isSpotted && !!user && !isGuest
 
   return (
     <>
@@ -235,25 +233,30 @@ export function BookingCta({
       {canReportSpotted && !ownerWarningOpen && (
         <Button
           variant="ghost"
-          className="text-muted-foreground h-9 w-full gap-2 text-xs font-medium hover:text-orange-600 dark:hover:text-orange-400"
+          className="text-muted-foreground border-border relative h-9 w-full gap-2 border text-xs font-medium hover:text-orange-600 dark:hover:text-orange-400"
+          style={STRETCH_BUTTON_STYLE}
           disabled={reportSpottedPending}
           onClick={handleReportSpotted}
         >
           <AlertTriangle className="size-3.5" />
           {t('spotModal.reportSpotted')}
-        </Button>
-      )}
-
-      {/* Spotted spot: secondary action — clear the report */}
-      {canClearSpotted && !spottedConfirmOpen && (
-        <Button
-          variant="ghost"
-          className="text-muted-foreground h-9 w-full gap-2 text-xs font-medium hover:text-emerald-600 dark:hover:text-emerald-400"
-          disabled={clearSpottedPending}
-          onClick={handleClearSpotted}
-        >
-          <CheckCircle2 className="size-3.5" />
-          {t('spotModal.clearSpotted')}
+          <Tooltip
+            label={t('spotModal.reportSpottedInfo')}
+            position="top"
+            withArrow
+            multiline
+            w={280}
+            events={{ hover: true, focus: true, touch: true }}
+          >
+            <span
+              role="img"
+              aria-label={t('spotModal.reportSpottedInfo')}
+              onClick={(e) => e.stopPropagation()}
+              className="absolute top-1/2 right-2.5 inline-flex -translate-y-1/2 cursor-help items-center"
+            >
+              <Info className="size-3.5" />
+            </span>
+          </Tooltip>
         </Button>
       )}
 

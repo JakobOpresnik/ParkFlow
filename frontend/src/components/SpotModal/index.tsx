@@ -9,6 +9,7 @@ import { useUIStore } from '@/store/uiStore'
 import type { Spot } from '@/types'
 
 import { BookingCta } from './BookingCta'
+import { ClearSpottedAction } from './ClearSpottedAction'
 import { DetailsCard } from './DetailsCard'
 import { ManagementAccordion } from './ManagementAccordion'
 import { StatusBanner } from './StatusBanner'
@@ -224,6 +225,14 @@ export function SpotModal() {
               isCurrentUserOwner && !isSharedSpot && bannerStatus === 'occupied'
                 ? t('spotModal.yourSpot')
                 : undefined
+            }
+            action={
+              bannerStatus === 'spotted' && !!user && user.role !== 'guest' ? (
+                <ClearSpottedAction
+                  spotId={spot.id}
+                  spotLabel={spot.label ?? `#${spot.number}`}
+                />
+              ) : undefined
             }
           />
           <DetailsCard spot={spot} currentUserDisplayName={user?.displayName} />

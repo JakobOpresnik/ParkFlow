@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import { useCancelBooking, useCreateBooking } from '@/hooks/useBookings'
 import { useSetSpotDayStatus } from '@/hooks/useOwnerParking'
-import { useClearSpotted, useReportSpotted } from '@/hooks/useSpots'
+import { useReportSpotted } from '@/hooks/useSpots'
 import type { Spot } from '@/types'
 
 import { fmtTime } from './utils'
@@ -53,7 +53,6 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
   const cancelBooking = useCancelBooking()
   const setSpotDayStatus = useSetSpotDayStatus()
   const reportSpotted = useReportSpotted()
-  const clearSpotted = useClearSpotted()
 
   const today = new Date().toISOString().slice(0, 10)
   const isBookableDate = selectedDate >= today
@@ -172,26 +171,6 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
     }
   }
 
-  async function handleClearSpotted() {
-    try {
-      await clearSpotted.mutateAsync(spot.id)
-      notifications.show({
-        message: t('spotModal.toastSpottedCleared', {
-          label: spot.label ?? `#${spot.number}`,
-        }),
-        color: 'green',
-      })
-    } catch (err) {
-      notifications.show({
-        message:
-          err instanceof Error
-            ? err.message
-            : t('spotModal.toastSpottedClearFailed'),
-        color: 'red',
-      })
-    }
-  }
-
   function handleCancelBooking() {
     if (!spot.active_booking_id) return
     cancelBooking.mutate(spot.active_booking_id, {
@@ -228,8 +207,6 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
     spottedConfirmOpen,
     setSpottedConfirmOpen,
     handleReportSpotted,
-    handleClearSpotted,
     reportSpottedPending: reportSpotted.isPending,
-    clearSpottedPending: clearSpotted.isPending,
   }
 }
