@@ -75,7 +75,6 @@ describe('POST /api/bookings', () => {
         .mockResolvedValueOnce({}) // UPDATE spots free old spot
         .mockResolvedValueOnce({ rows: [] }) // SELECT booking conflict
         .mockResolvedValueOnce({ rows: [] }) // SELECT spot_day_status
-        .mockResolvedValueOnce({ rows: [] }) // SELECT owner check (booked_by_owner)
         .mockResolvedValueOnce({}) // UPDATE clear spotted reports
         .mockResolvedValueOnce({}) // UPDATE spots reserved
         .mockResolvedValueOnce({
@@ -163,7 +162,6 @@ describe('POST /api/bookings', () => {
         .mockResolvedValueOnce({ rows: [] }) // SELECT existing booking
         .mockResolvedValueOnce({ rows: [] }) // SELECT booking conflict
         .mockResolvedValueOnce({ rows: [] }) // SELECT spot_day_status
-        .mockResolvedValueOnce({ rows: [] }) // SELECT owner check (booked_by_owner)
         .mockResolvedValueOnce({}) // UPDATE clear spotted reports
         .mockResolvedValueOnce({}) // UPDATE spots reserved
         .mockResolvedValueOnce({
