@@ -166,7 +166,7 @@ const en = {
     floor: 'Floor',
     type: 'Type',
     owner: 'Owner',
-    owners: 'Owners',
+    owners: 'Co-owners',
     unassigned: 'Unassigned',
     you: 'You',
     inOffice: 'in office',

@@ -51,7 +51,7 @@ export function DetailsCard({
     <div className="divide-y rounded-lg border">
       <div className="flex items-center gap-3 px-4 py-3">
         <MapPin className="text-muted-foreground size-4 shrink-0" />
-        <span className="text-muted-foreground width-14 w-14 shrink-0 text-sm">
+        <span className="text-muted-foreground w-20 shrink-0 text-sm">
           {t('spotModal.floor')}
         </span>
         <span className="text-sm font-medium">{spot.floor}</span>
@@ -62,7 +62,7 @@ export function DetailsCard({
           <span className="size-4 shrink-0 text-center text-sm">
             {typeInfo.icon}
           </span>
-          <span className="text-muted-foreground w-14 shrink-0 text-sm">
+          <span className="text-muted-foreground w-20 shrink-0 text-sm">
             {t('spotModal.type')}
           </span>
           <span className="text-sm font-medium">{typeInfo.label}</span>
@@ -71,69 +71,71 @@ export function DetailsCard({
 
       <div className="flex items-start gap-3 px-4 py-3">
         <User className="text-muted-foreground mt-0.5 size-4 shrink-0" />
-        <span className="text-muted-foreground w-14 shrink-0 text-sm">
+        <span className="text-muted-foreground w-20 shrink-0 text-sm whitespace-nowrap">
           {isSharedSpot ? t('spotModal.owners') : t('spotModal.owner')}
         </span>
         {spot.owner_name ? (
           <div className="min-w-0">
-            {spot.owner_name.split('/').map((name, idx) => {
-              const trimmed = name.trim()
-              const lower = trimmed.toLowerCase()
-              const isInOffice = isGuest
-                ? spot.in_office_owner_index === idx
-                : spot.in_office_owner?.toLowerCase() === lower
-              const isPossible =
-                spot.status === 'unconfirmed' &&
-                (isGuest
-                  ? (spot.possible_occupier_indices ?? []).includes(idx)
-                  : (spot.possible_occupiers ?? []).some(
-                      (n) => n.toLowerCase() === lower,
-                    ))
-              const isAway =
-                isSharedSpot &&
-                spot.status === 'unconfirmed' &&
-                !isInOffice &&
-                !isPossible &&
-                (isGuest
-                  ? (spot.away_owner_indices ?? []).includes(idx)
-                  : (spot.away_owners ?? []).some(
-                      (n) => n.toLowerCase() === lower,
-                    ))
-              const isCurrentUser =
-                !isGuest &&
-                !!currentUserDisplayName &&
-                currentUserDisplayName.toLowerCase() === lower
-              const displayName = isCurrentUser
-                ? t('spotModal.you')
-                : isGuest
-                  ? isSharedSpot
-                    ? t('spotModal.anonymizedOwnerNumbered', { n: idx + 1 })
-                    : t('spotModal.anonymizedOwner')
-                  : trimmed
-              return (
-                <p
-                  key={name}
-                  className="flex items-center gap-1.5 text-sm leading-snug font-medium"
-                >
-                  {displayName}
-                  {isInOffice && (
-                    <span className="text-spot-occupied bg-spot-occupied/10 rounded-full px-1.5 py-0.5 text-xs font-medium">
-                      {t('spotModal.inOffice')}
-                    </span>
-                  )}
-                  {isPossible && (
-                    <span className="text-spot-unconfirmed bg-spot-unconfirmed/10 rounded-full px-1.5 py-0.5 text-xs font-medium">
-                      {t('spotModal.maybeInOffice')}
-                    </span>
-                  )}
-                  {isAway && (
-                    <span className="text-destructive bg-destructive/10 rounded-full px-1.5 py-0.5 text-xs font-medium">
-                      {t('spotModal.notInOffice')}
-                    </span>
-                  )}
-                </p>
-              )
-            })}
+            <div className={isSharedSpot ? 'flex flex-col gap-1.5' : ''}>
+              {spot.owner_name.split('/').map((name, idx) => {
+                const trimmed = name.trim()
+                const lower = trimmed.toLowerCase()
+                const isInOffice = isGuest
+                  ? spot.in_office_owner_index === idx
+                  : spot.in_office_owner?.toLowerCase() === lower
+                const isPossible =
+                  spot.status === 'unconfirmed' &&
+                  (isGuest
+                    ? (spot.possible_occupier_indices ?? []).includes(idx)
+                    : (spot.possible_occupiers ?? []).some(
+                        (n) => n.toLowerCase() === lower,
+                      ))
+                const isAway =
+                  isSharedSpot &&
+                  spot.status === 'unconfirmed' &&
+                  !isInOffice &&
+                  !isPossible &&
+                  (isGuest
+                    ? (spot.away_owner_indices ?? []).includes(idx)
+                    : (spot.away_owners ?? []).some(
+                        (n) => n.toLowerCase() === lower,
+                      ))
+                const isCurrentUser =
+                  !isGuest &&
+                  !!currentUserDisplayName &&
+                  currentUserDisplayName.toLowerCase() === lower
+                const displayName = isCurrentUser
+                  ? t('spotModal.you')
+                  : isGuest
+                    ? isSharedSpot
+                      ? t('spotModal.anonymizedOwnerNumbered', { n: idx + 1 })
+                      : t('spotModal.anonymizedOwner')
+                    : trimmed
+                return (
+                  <p
+                    key={name}
+                    className="flex items-center gap-1.5 text-sm leading-snug font-medium"
+                  >
+                    {displayName}
+                    {isInOffice && (
+                      <span className="text-spot-occupied bg-spot-occupied/10 rounded-full px-1.5 py-0.5 text-xs font-medium">
+                        {t('spotModal.inOffice')}
+                      </span>
+                    )}
+                    {isPossible && (
+                      <span className="text-spot-unconfirmed bg-spot-unconfirmed/10 rounded-full px-1.5 py-0.5 text-xs font-medium">
+                        {t('spotModal.maybeInOffice')}
+                      </span>
+                    )}
+                    {isAway && (
+                      <span className="text-destructive bg-destructive/10 rounded-full px-1.5 py-0.5 text-xs font-medium">
+                        {t('spotModal.notInOffice')}
+                      </span>
+                    )}
+                  </p>
+                )
+              })}
+            </div>
             {spot.owner_vehicle_plate && !isGuest && (
               <p className="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-xs">
                 <Car className="size-3" />

@@ -167,7 +167,7 @@ const sl = {
     floor: 'Etaža',
     type: 'Vrsta',
     owner: 'Lastnik',
-    owners: 'Lastniki',
+    owners: 'Solastniki',
     unassigned: 'Nedodeljeno',
     you: 'Vi',
     inOffice: 'v pisarni',
