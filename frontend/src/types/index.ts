@@ -90,6 +90,17 @@ export interface Spot {
   // set by useEffectiveSpots for shared spots where 2+ co-owners are flagged as
   // coming (PP signal ambiguous) — lists all candidates so the UI can show them.
   possible_occupiers?: string[] | null
+  // set by useEffectiveSpots: co-owners whose presence resolves to 'absent' for
+  // the selected date — UI flags them with a "not in office" badge so users can
+  // see which co-owners are confirmed away on a shared spot.
+  away_owners?: string[] | null
+  // Guest-only index-based mirrors of in_office_owner / possible_occupiers /
+  // away_owners. For guest viewers, the name-based fields above are nulled and
+  // these index fields (positions into owner_name.split('/')) are populated
+  // instead — so React state and DevTools never expose real co-owner names.
+  in_office_owner_index?: number | null
+  possible_occupier_indices?: number[] | null
+  away_owner_indices?: number[] | null
   // joined from bookings table (active booking for this spot, if any)
   active_booking_id: string | null
   active_booking_user_id: string | null

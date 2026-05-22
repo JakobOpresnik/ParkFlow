@@ -171,6 +171,13 @@ const en = {
     you: 'You',
     inOffice: 'in office',
     maybeInOffice: 'may be in office',
+    notInOffice: 'not in office',
+    anonymizedOwner: 'Owner',
+    anonymizedOwnerNumbered: 'Owner {{n}}',
+    anonymizedReserver: 'Someone',
+    guestViewHint: 'Visitor view',
+    guestViewHintTooltip:
+      'Owner and reservation names are hidden in visitor mode.',
     reservedBy: 'Reserved by {{name}}',
     evCharging: 'EV Charging',
     handicapAccessible: 'Handicap Accessible',

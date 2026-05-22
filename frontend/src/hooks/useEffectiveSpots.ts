@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 
 import { usePresence } from '@/hooks/usePresence'
 import { useSpotDayOverrides, useSpots } from '@/hooks/useSpots'
+import { useAuthStore } from '@/store/authStore'
 import type { Spot, SpotStatus } from '@/types'
 
 // An owned spot whose effective status would otherwise resolve to 'free' must
@@ -25,6 +26,7 @@ export function useEffectiveSpots(date: string) {
   const spotsQuery = useSpots()
   const presenceQuery = usePresence(date)
   const overridesQuery = useSpotDayOverrides(date)
+  const isGuest = useAuthStore((s) => s.user?.role === 'guest')
 
   const isWorkFreeDay = useMemo(() => {
     return presenceQuery.data?.work_free_days.includes(date) ?? false
@@ -103,12 +105,17 @@ export function useEffectiveSpots(date: string) {
         .map((n) => n.trim())
         .filter(Boolean)
 
-      const inOfficeOwners = ownerNames.filter(
-        (n) => presenceByName.get(n.toLowerCase()) === 'in_office',
-      )
-      const anyPresenceData = ownerNames.some(
-        (n) => presenceByName.get(n.toLowerCase()) !== undefined,
-      )
+      const inOfficeIndices: number[] = []
+      const awayIndices: number[] = []
+      let anyPresenceData = false
+      for (let i = 0; i < ownerNames.length; i++) {
+        const presence = presenceByName.get(ownerNames[i]!.toLowerCase())
+        if (presence !== undefined) anyPresenceData = true
+        if (presence === 'in_office') inOfficeIndices.push(i)
+        else if (presence === 'absent') awayIndices.push(i)
+      }
+      const inOfficeOwners = inOfficeIndices.map((i) => ownerNames[i]!)
+      const awayOwners = awayIndices.map((i) => ownerNames[i]!)
 
       // No presence data for any owner → reset non-today reservations to free.
       if (!anyPresenceData) {
@@ -117,16 +124,32 @@ export function useEffectiveSpots(date: string) {
           : spot
       }
 
+      // For guests, strip name-based presence fields and emit positional
+      // indices instead — keeps real co-owner names out of React state.
+      const guestFields = isGuest
+        ? {
+            in_office_owner: null,
+            possible_occupiers: null,
+            away_owners: null,
+          }
+        : null
+
       // Shared-spot ambiguity rule:
       //   0 in-office co-owners → spot is free
       //   1 in-office co-owner  → confirmed, that's the occupier
       //  2+ in-office co-owners → unconfirmed (PP signal can't pick one)
-      if (inOfficeOwners.length >= 2) {
+      if (inOfficeIndices.length >= 2) {
         return {
           ...spot,
           status: 'unconfirmed' as const,
-          in_office_owner: null,
-          possible_occupiers: inOfficeOwners,
+          ...(guestFields ?? {
+            in_office_owner: null,
+            possible_occupiers: inOfficeOwners,
+            away_owners: awayOwners,
+          }),
+          in_office_owner_index: null,
+          possible_occupier_indices: isGuest ? inOfficeIndices : null,
+          away_owner_indices: isGuest ? awayIndices : null,
         }
       }
 
@@ -136,7 +159,7 @@ export function useEffectiveSpots(date: string) {
       // too: the API leaves their raw status as 'occupied' regardless of
       // presence, so we can't rely on spot.status === 'spotted' alone.
       const fallbackStatus: SpotStatus =
-        inOfficeOwners.length === 1
+        inOfficeIndices.length === 1
           ? 'occupied'
           : hasActiveSpottedReport(spot)
             ? 'spotted'
@@ -145,8 +168,14 @@ export function useEffectiveSpots(date: string) {
       return {
         ...spot,
         status: fallbackStatus,
-        in_office_owner: inOfficeOwners[0] ?? null,
-        possible_occupiers: null,
+        ...(guestFields ?? {
+          in_office_owner: inOfficeOwners[0] ?? null,
+          possible_occupiers: null,
+          away_owners: awayOwners,
+        }),
+        in_office_owner_index: isGuest ? (inOfficeIndices[0] ?? null) : null,
+        possible_occupier_indices: null,
+        away_owner_indices: isGuest ? awayIndices : null,
       }
     })
 
@@ -173,7 +202,7 @@ export function useEffectiveSpots(date: string) {
       }
     }
     return Array.from(byId.values())
-  }, [spotsQuery.data, presenceQuery.data, overridesQuery.data, date])
+  }, [spotsQuery.data, presenceQuery.data, overridesQuery.data, date, isGuest])
 
   return {
     ...spotsQuery,

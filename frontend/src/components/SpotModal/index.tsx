@@ -1,3 +1,4 @@
+import { EyeOff } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Dialog, DialogContent } from '@/components/ui/dialog'
@@ -35,6 +36,7 @@ function buildBannerSubtext(
   isCoOwnerBooking: boolean,
   isSharedSpot: boolean,
   isCurrentUserInOffice: boolean,
+  isGuest: boolean,
   t: TFunc,
 ): string {
   if (spot.status === 'free') {
@@ -50,6 +52,7 @@ function buildBannerSubtext(
     return t('spotModal.bannerReservedOther')
   }
   if (spot.status === 'unconfirmed') {
+    if (isGuest) return t('spotModal.bannerUnconfirmed')
     const names = (spot.possible_occupiers ?? []).join(', ')
     return names
       ? t('spotModal.bannerUnconfirmedNamed', { names })
@@ -183,6 +186,8 @@ export function SpotModal() {
   const isCurrentUserCoOwnerOnUnconfirmed =
     isCurrentUserOwner && spot.status === 'unconfirmed'
 
+  const isGuest = user?.role === 'guest'
+
   const bannerSubtext = buildBannerSubtext(
     { ...spot, status: bannerStatus },
     myReservedElsewhere,
@@ -191,6 +196,7 @@ export function SpotModal() {
     isCoOwnerBooking,
     isSharedSpot,
     isCurrentUserInOffice,
+    isGuest,
     t as TFunc,
   )
 
@@ -207,10 +213,19 @@ export function SpotModal() {
           <p className="text-muted-foreground mb-2 text-xs font-medium tracking-widest uppercase">
             {t('spotModal.parkingSpot')}
           </p>
-          <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-2">
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
               {spot.label ?? `#${spot.number}`}
             </h2>
+            {isGuest && (
+              <span
+                title={t('spotModal.guestViewHintTooltip')}
+                className="text-muted-foreground bg-muted inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
+              >
+                <EyeOff className="size-3" />
+                {t('spotModal.guestViewHint')}
+              </span>
+            )}
           </div>
         </div>
 
@@ -235,7 +250,11 @@ export function SpotModal() {
               ) : undefined
             }
           />
-          <DetailsCard spot={spot} currentUserDisplayName={user?.displayName} />
+          <DetailsCard
+            spot={spot}
+            currentUserDisplayName={user?.displayName}
+            isGuest={isGuest}
+          />
 
           {/* Management accordion (admins only) */}
           {user?.role === 'admin' && <ManagementAccordion spot={spot} />}
