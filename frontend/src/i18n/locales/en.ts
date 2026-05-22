@@ -172,6 +172,10 @@ const en = {
     inOffice: 'in office',
     maybeInOffice: 'may be in office',
     notInOffice: 'not in office',
+    inOfficeTooltip: 'Confirmed in office via the company timesheet',
+    maybeInOfficeTooltip:
+      'Flagged as coming in — presence not yet confirmed for today',
+    notInOfficeTooltip: 'Confirmed absent via the company timesheet',
     anonymizedOwner: 'Owner',
     anonymizedOwnerNumbered: 'Owner {{n}}',
     anonymizedReserver: 'Someone',

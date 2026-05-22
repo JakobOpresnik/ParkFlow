@@ -114,57 +114,71 @@ function OwnerNameRows({
 
   return (
     <>
-      {spot.owner_name.split('/').map((name: string, idx: number) => {
-        const trimmed = name.trim()
-        const lower = trimmed.toLowerCase()
-        const isInOffice = isGuest
-          ? spot.in_office_owner_index === idx
-          : spot.in_office_owner?.toLowerCase() === lower
-        const isPossible =
-          isUnconfirmed &&
-          (isGuest ? possibleIndexSet.has(idx) : possibleSet.has(lower))
-        const isAway =
-          isSharedSpot &&
-          spot.status === 'unconfirmed' &&
-          !isInOffice &&
-          !isPossible &&
-          (isGuest ? awayIndexSet.has(idx) : awaySet.has(lower))
+      {spot.owner_name
+        .split('/')
+        .map((name: string, idx: number) => {
+          const trimmed = name.trim()
+          const lower = trimmed.toLowerCase()
+          const isInOffice = isGuest
+            ? spot.in_office_owner_index === idx
+            : spot.in_office_owner?.toLowerCase() === lower
+          const isPossible =
+            isUnconfirmed &&
+            (isGuest ? possibleIndexSet.has(idx) : possibleSet.has(lower))
+          const isAway =
+            isSharedSpot &&
+            spot.status === 'unconfirmed' &&
+            !isInOffice &&
+            !isPossible &&
+            (isGuest ? awayIndexSet.has(idx) : awaySet.has(lower))
 
-        const textClass = isInOffice
-          ? 'text-spot-occupied font-medium'
-          : isPossible
-            ? 'text-spot-unconfirmed font-medium'
-            : isAway
-              ? 'text-destructive font-medium'
-              : 'text-muted-foreground'
+          const textClass = isInOffice
+            ? 'text-spot-occupied font-medium'
+            : isPossible
+              ? 'text-spot-unconfirmed font-medium'
+              : isAway
+                ? 'text-destructive font-medium'
+                : 'text-muted-foreground'
 
-        const displayName = isGuest
-          ? isSharedSpot
-            ? t('spotModal.anonymizedOwnerNumbered', { n: idx + 1 })
-            : t('spotModal.anonymizedOwner')
-          : trimmed
+          const displayName = isGuest
+            ? isSharedSpot
+              ? t('spotModal.anonymizedOwnerNumbered', { n: idx + 1 })
+              : t('spotModal.anonymizedOwner')
+            : trimmed
+          // Sort priority: in_office (0) → possible (1) → away (2) → no data (3).
+          const sortKey = isInOffice ? 0 : isPossible ? 1 : isAway ? 2 : 3
 
-        return (
-          <p key={name} className={`text-xs ${textClass}`}>
-            {displayName}
-            {isInOffice && (
+          return {
+            name,
+            displayName,
+            textClass,
+            isInOffice,
+            isPossible,
+            isAway,
+            sortKey,
+          }
+        })
+        .sort((a, b) => a.sortKey - b.sortKey)
+        .map((entry) => (
+          <p key={entry.name} className={`text-xs ${entry.textClass}`}>
+            {entry.displayName}
+            {entry.isInOffice && (
               <span className="ml-1 opacity-70">
                 · {t('spotModal.inOffice')}
               </span>
             )}
-            {isPossible && (
+            {entry.isPossible && (
               <span className="ml-1 opacity-70">
                 · {t('spotModal.maybeInOffice')}
               </span>
             )}
-            {isAway && (
+            {entry.isAway && (
               <span className="ml-1 opacity-70">
                 · {t('spotModal.notInOffice')}
               </span>
             )}
           </p>
-        )
-      })}
+        ))}
     </>
   )
 }

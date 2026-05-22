@@ -173,6 +173,10 @@ const sl = {
     inOffice: 'v pisarni',
     maybeInOffice: 'morda v pisarni',
     notInOffice: 'ni v pisarni',
+    inOfficeTooltip: 'Potrjeno v pisarni prek evidence prisotnosti',
+    maybeInOfficeTooltip:
+      'Označen kot prihaja — prisotnost še ni potrjena za danes',
+    notInOfficeTooltip: 'Potrjeno odsoten prek evidence prisotnosti',
     anonymizedOwner: 'Lastnik',
     anonymizedOwnerNumbered: 'Lastnik {{n}}',
     anonymizedReserver: 'Nekdo',
