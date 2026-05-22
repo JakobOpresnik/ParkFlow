@@ -24,6 +24,7 @@ interface OwnerListProps {
   readonly spot: Spot
   readonly isMySpot: boolean
   readonly ownerVehiclePlate: string | null
+  readonly isGuest: boolean
 }
 
 interface SpotCardProps {
@@ -84,7 +85,13 @@ function ClockRow({ children, className }: ClockRowProps) {
   )
 }
 
-function OwnerNameRows({ spot }: { readonly spot: Spot }) {
+function OwnerNameRows({
+  spot,
+  isGuest,
+}: {
+  readonly spot: Spot
+  readonly isGuest: boolean
+}) {
   const { t } = useTranslation()
   if (!spot.owner_name) {
     return (
@@ -97,25 +104,49 @@ function OwnerNameRows({ spot }: { readonly spot: Spot }) {
   const possibleSet = new Set(
     (spot.possible_occupiers ?? []).map((n) => n.toLowerCase()),
   )
-  const isUnconfirmed = spot.status === 'unconfirmed' && possibleSet.size > 0
+  const awaySet = new Set((spot.away_owners ?? []).map((n) => n.toLowerCase()))
+  const possibleIndexSet = new Set(spot.possible_occupier_indices ?? [])
+  const awayIndexSet = new Set(spot.away_owner_indices ?? [])
+  const isUnconfirmed =
+    spot.status === 'unconfirmed' &&
+    (isGuest ? possibleIndexSet.size > 0 : possibleSet.size > 0)
+  const isSharedSpot = spot.owner_name.includes('/')
 
   return (
     <>
-      {spot.owner_name.split('/').map((name: string) => {
+      {spot.owner_name.split('/').map((name: string, idx: number) => {
         const trimmed = name.trim()
         const lower = trimmed.toLowerCase()
-        const isInOffice = spot.in_office_owner?.toLowerCase() === lower
-        const isPossible = isUnconfirmed && possibleSet.has(lower)
+        const isInOffice = isGuest
+          ? spot.in_office_owner_index === idx
+          : spot.in_office_owner?.toLowerCase() === lower
+        const isPossible =
+          isUnconfirmed &&
+          (isGuest ? possibleIndexSet.has(idx) : possibleSet.has(lower))
+        const isAway =
+          isSharedSpot &&
+          spot.status === 'unconfirmed' &&
+          !isInOffice &&
+          !isPossible &&
+          (isGuest ? awayIndexSet.has(idx) : awaySet.has(lower))
 
         const textClass = isInOffice
           ? 'text-spot-occupied font-medium'
           : isPossible
             ? 'text-spot-unconfirmed font-medium'
-            : 'text-muted-foreground'
+            : isAway
+              ? 'text-destructive font-medium'
+              : 'text-muted-foreground'
+
+        const displayName = isGuest
+          ? isSharedSpot
+            ? t('spotModal.anonymizedOwnerNumbered', { n: idx + 1 })
+            : t('spotModal.anonymizedOwner')
+          : trimmed
 
         return (
           <p key={name} className={`text-xs ${textClass}`}>
-            {trimmed}
+            {displayName}
             {isInOffice && (
               <span className="ml-1 opacity-70">
                 · {t('spotModal.inOffice')}
@@ -126,6 +157,11 @@ function OwnerNameRows({ spot }: { readonly spot: Spot }) {
                 · {t('spotModal.maybeInOffice')}
               </span>
             )}
+            {isAway && (
+              <span className="ml-1 opacity-70">
+                · {t('spotModal.notInOffice')}
+              </span>
+            )}
           </p>
         )
       })}
@@ -133,7 +169,12 @@ function OwnerNameRows({ spot }: { readonly spot: Spot }) {
   )
 }
 
-function OwnerList({ spot, isMySpot, ownerVehiclePlate }: OwnerListProps) {
+function OwnerList({
+  spot,
+  isMySpot,
+  ownerVehiclePlate,
+  isGuest,
+}: OwnerListProps) {
   const { t } = useTranslation()
   const isReservedByOther =
     spot.status === 'reserved' &&
@@ -150,7 +191,7 @@ function OwnerList({ spot, isMySpot, ownerVehiclePlate }: OwnerListProps) {
           <p className="text-spot-reserved text-xs font-medium">
             {t('spotModal.you')}
           </p>
-          {ownerVehiclePlate && (
+          {ownerVehiclePlate && !isGuest && (
             <p className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
               <Car className="size-3 shrink-0" />
               {ownerVehiclePlate}
@@ -158,12 +199,14 @@ function OwnerList({ spot, isMySpot, ownerVehiclePlate }: OwnerListProps) {
           )}
         </>
       ) : (
-        <OwnerNameRows spot={spot} />
+        <OwnerNameRows spot={spot} isGuest={isGuest} />
       )}
 
       {isReservedByOther && (
         <ClockRow className="text-spot-reserved">
-          {spot.active_booking_reserved_by}
+          {isGuest
+            ? t('spotModal.anonymizedReserver')
+            : spot.active_booking_reserved_by}
         </ClockRow>
       )}
 
@@ -179,6 +222,7 @@ function OwnerList({ spot, isMySpot, ownerVehiclePlate }: OwnerListProps) {
 function SpotCard({ spot, onClick }: SpotCardProps) {
   const { t } = useTranslation()
   const currentUser = useAuthStore((s) => s.user)
+  const isGuest = currentUser?.role === 'guest'
 
   const isMySpot = !!currentUser && spot.owner_user_id === currentUser.username
   const isMyBooking =
@@ -243,6 +287,7 @@ function SpotCard({ spot, onClick }: SpotCardProps) {
             spot={spot}
             isMySpot={isMySpot}
             ownerVehiclePlate={spot.owner_vehicle_plate}
+            isGuest={isGuest}
           />
         </div>
       </div>

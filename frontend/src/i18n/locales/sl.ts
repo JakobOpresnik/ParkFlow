@@ -63,7 +63,7 @@ const sl = {
   auth: {
     sessionExpired: 'Seja je potekla — preusmerjanje na ponovno prijavo…',
     logOut: 'Odjava',
-    guestMode: 'Gostovski način',
+    guestMode: 'Način za goste',
   },
   login: {
     tagline: 'Pametno parkiranje za vašo ekipo!',
@@ -172,6 +172,13 @@ const sl = {
     you: 'Vi',
     inOffice: 'v pisarni',
     maybeInOffice: 'morda v pisarni',
+    notInOffice: 'ni v pisarni',
+    anonymizedOwner: 'Lastnik',
+    anonymizedOwnerNumbered: 'Lastnik {{n}}',
+    anonymizedReserver: 'Nekdo',
+    guestViewHint: 'Pogled obiskovalca',
+    guestViewHintTooltip:
+      'Imena lastnikov in rezervacij so v obiskovalskem načinu skrita.',
     reservedBy: 'Rezerviral/a {{name}}',
     evCharging: 'EV polnjenje',
     handicapAccessible: 'Dostopno za invalide',

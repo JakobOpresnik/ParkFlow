@@ -8,6 +8,7 @@ import type { Spot, SpotType } from '@/types'
 interface DetailsCardProps {
   readonly spot: Spot
   readonly currentUserDisplayName?: string
+  readonly isGuest?: boolean
 }
 
 // — constants —
@@ -29,12 +30,18 @@ const SPOT_TYPE_LABEL_KEYS: Partial<Record<SpotType, string>> = {
 export function DetailsCard({
   spot,
   currentUserDisplayName,
+  isGuest = false,
 }: DetailsCardProps) {
   const { t } = useTranslation()
 
   const icon = spot.type ? SPOT_TYPE_ICONS[spot.type] : undefined
   const labelKey = spot.type ? SPOT_TYPE_LABEL_KEYS[spot.type] : undefined
   const typeInfo = icon && labelKey ? { icon, label: t(labelKey) } : undefined
+  const isSharedSpot = spot.owner_name?.includes('/') ?? false
+  const reservedByDisplay =
+    isGuest && spot.active_booking_reserved_by
+      ? t('spotModal.anonymizedReserver')
+      : spot.active_booking_reserved_by
   const isReservedByOther =
     spot.status === 'reserved' &&
     spot.active_booking_reserved_by &&
@@ -65,30 +72,50 @@ export function DetailsCard({
       <div className="flex items-start gap-3 px-4 py-3">
         <User className="text-muted-foreground mt-0.5 size-4 shrink-0" />
         <span className="text-muted-foreground w-14 shrink-0 text-sm">
-          {spot.owner_name?.includes('/')
-            ? t('spotModal.owners')
-            : t('spotModal.owner')}
+          {isSharedSpot ? t('spotModal.owners') : t('spotModal.owner')}
         </span>
         {spot.owner_name ? (
           <div className="min-w-0">
-            {spot.owner_name.split('/').map((name) => {
+            {spot.owner_name.split('/').map((name, idx) => {
               const trimmed = name.trim()
               const lower = trimmed.toLowerCase()
-              const isInOffice = spot.in_office_owner?.toLowerCase() === lower
+              const isInOffice = isGuest
+                ? spot.in_office_owner_index === idx
+                : spot.in_office_owner?.toLowerCase() === lower
               const isPossible =
                 spot.status === 'unconfirmed' &&
-                (spot.possible_occupiers ?? []).some(
-                  (n) => n.toLowerCase() === lower,
-                )
+                (isGuest
+                  ? (spot.possible_occupier_indices ?? []).includes(idx)
+                  : (spot.possible_occupiers ?? []).some(
+                      (n) => n.toLowerCase() === lower,
+                    ))
+              const isAway =
+                isSharedSpot &&
+                spot.status === 'unconfirmed' &&
+                !isInOffice &&
+                !isPossible &&
+                (isGuest
+                  ? (spot.away_owner_indices ?? []).includes(idx)
+                  : (spot.away_owners ?? []).some(
+                      (n) => n.toLowerCase() === lower,
+                    ))
               const isCurrentUser =
+                !isGuest &&
                 !!currentUserDisplayName &&
                 currentUserDisplayName.toLowerCase() === lower
+              const displayName = isCurrentUser
+                ? t('spotModal.you')
+                : isGuest
+                  ? isSharedSpot
+                    ? t('spotModal.anonymizedOwnerNumbered', { n: idx + 1 })
+                    : t('spotModal.anonymizedOwner')
+                  : trimmed
               return (
                 <p
                   key={name}
                   className="flex items-center gap-1.5 text-sm leading-snug font-medium"
                 >
-                  {isCurrentUser ? t('spotModal.you') : trimmed}
+                  {displayName}
                   {isInOffice && (
                     <span className="text-spot-occupied bg-spot-occupied/10 rounded-full px-1.5 py-0.5 text-xs font-medium">
                       {t('spotModal.inOffice')}
@@ -99,10 +126,15 @@ export function DetailsCard({
                       {t('spotModal.maybeInOffice')}
                     </span>
                   )}
+                  {isAway && (
+                    <span className="text-destructive bg-destructive/10 rounded-full px-1.5 py-0.5 text-xs font-medium">
+                      {t('spotModal.notInOffice')}
+                    </span>
+                  )}
                 </p>
               )
             })}
-            {spot.owner_vehicle_plate && (
+            {spot.owner_vehicle_plate && !isGuest && (
               <p className="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-xs">
                 <Car className="size-3" />
                 {spot.owner_vehicle_plate}
@@ -111,9 +143,7 @@ export function DetailsCard({
             {isReservedByOther && (
               <p className="mt-1 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
                 <Clock className="size-3 shrink-0" />
-                {t('spotModal.reservedBy', {
-                  name: spot.active_booking_reserved_by,
-                })}
+                {t('spotModal.reservedBy', { name: reservedByDisplay })}
               </p>
             )}
           </div>
@@ -125,9 +155,7 @@ export function DetailsCard({
             {spot.status === 'reserved' && spot.active_booking_reserved_by && (
               <p className="mt-1 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
                 <Clock className="size-3 shrink-0" />
-                {t('spotModal.reservedBy', {
-                  name: spot.active_booking_reserved_by,
-                })}
+                {t('spotModal.reservedBy', { name: reservedByDisplay })}
               </p>
             )}
           </div>

@@ -360,7 +360,9 @@ export function BookingCta({
         <div className="text-muted-foreground flex flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed py-3 text-sm">
           {isCoOwnerBooking && spot.active_booking_reserved_by && (
             <span className="text-foreground text-xs font-medium">
-              {spot.active_booking_reserved_by}
+              {isGuest
+                ? t('spotModal.anonymizedReserver')
+                : spot.active_booking_reserved_by}
             </span>
           )}
           {spot.active_booking_expires_at?.slice(0, 10) === selectedDate ? (
