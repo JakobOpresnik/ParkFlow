@@ -47,9 +47,9 @@ Standard Rocket.Chat outgoing-webhook JSON POST. ParkFlow reads these fields:
 ```json
 {
   "token": "<shared token>",
-  "user_name": "jan.sernec",
+  "user_name": "jsernec",
   "channel_name": "parking",
-  "text": "!park reserve A12"
+  "text": "reserve A12"
 }
 ```
 

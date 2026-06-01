@@ -126,17 +126,30 @@ export function parseCommand(text: string): {
 
 // --- Date parsing (pure) ----------------------------------------------------
 
-function isoDate(d: Date): string {
+// The local calendar date (YYYY-MM-DD) in Slovenia for a given instant.
+// Used so "today"/"tomorrow" resolve to the user's day, not the UTC day.
+export function localDate(now: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Ljubljana",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+}
+
+function addDays(date: string, n: number): string {
+  const d = new Date(`${date}T00:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
 
 // Returns YYYY-MM-DD, or null if the token is present but not a valid date.
-// Undefined token defaults to today.
+// Undefined token defaults to today (local Slovenian day).
 export function parseDate(token: string | undefined, now: Date): string | null {
-  if (!token) return isoDate(now);
+  if (!token) return localDate(now);
   const t = token.toLowerCase();
-  if (t === "today") return isoDate(now);
-  if (t === "tomorrow") return isoDate(new Date(now.getTime() + 86_400_000));
+  if (t === "today") return localDate(now);
+  if (t === "tomorrow") return addDays(localDate(now), 1);
 
   const m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(token);
   if (!m) return null;
@@ -151,7 +164,7 @@ export function parseDate(token: string | undefined, now: Date): string | null {
   ) {
     return null;
   }
-  return isoDate(d);
+  return d.toISOString().slice(0, 10);
 }
 
 // --- Building/lot aliases (pure) -------------------------------------------
@@ -574,7 +587,7 @@ router.post("/rocketchat", async (req, res, next) => {
           );
           return;
         }
-        if (date < isoDate(now)) {
+        if (date < localDate(now)) {
           reply("That date is in the past — pick today or later.");
           return;
         }
@@ -612,9 +625,12 @@ router.post("/rocketchat", async (req, res, next) => {
               await callArray<Lot>("GET", "/api/lots"),
             );
             if (lot) {
-              spot = pickRandomFree(spots.filter((s) => s.lot_id === lot.id));
+              // Only grab public spots in that building, not someone's personal one.
+              spot = pickRandomFree(
+                spots.filter((s) => s.lot_id === lot.id && isGrabbable(s)),
+              );
               if (!spot) {
-                reply(`No free spots in ${lot.name} right now.`);
+                reply(`No free spots to grab in ${lot.name} right now.`);
                 return;
               }
             }
@@ -629,7 +645,7 @@ router.post("/rocketchat", async (req, res, next) => {
         const reserveBody: { spot_id: string; expires_at?: string } = {
           spot_id: spot.id,
         };
-        if (date !== isoDate(now))
+        if (date !== localDate(now))
           reserveBody.expires_at = `${date}T18:00:00.000Z`;
         const { status, data } = await call<{ error?: string }>(
           "POST",
@@ -714,6 +730,10 @@ router.post("/rocketchat", async (req, res, next) => {
           reply(
             `I didn’t understand the date "${dateArg ?? ""}". Use today, tomorrow, or dd.mm.yyyy.`,
           );
+          return;
+        }
+        if (date < localDate(now)) {
+          reply("That date is in the past — pick today or later.");
           return;
         }
         const { status: ownStatus, data: ownedData } = await call<

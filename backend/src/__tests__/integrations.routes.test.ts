@@ -160,6 +160,13 @@ describe("parseDate", () => {
     expect(parseDate("tomorrow", NOW)).toBe("2026-06-02");
   });
 
+  it("resolves today in Slovenian local time, not UTC", () => {
+    // 23:30 UTC on 2026-06-01 is already 01:30 on 2026-06-02 in Ljubljana.
+    const late = new Date("2026-06-01T23:30:00.000Z");
+    expect(parseDate("today", late)).toBe("2026-06-02");
+    expect(parseDate("tomorrow", late)).toBe("2026-06-03");
+  });
+
   it("parses dd.mm.yyyy", () => {
     expect(parseDate("03.06.2026", NOW)).toBe("2026-06-03");
   });
