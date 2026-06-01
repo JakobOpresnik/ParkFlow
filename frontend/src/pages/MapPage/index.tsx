@@ -1,4 +1,5 @@
 import { useComputedColorScheme } from '@mantine/core'
+import { useSearch } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -32,6 +33,9 @@ interface GridContentProps {
 }
 
 // — constants —
+
+// Mirrors routeTree.gen.tsx; kept local to avoid a circular import.
+const DEEP_LINK_SPOT_KEY = 'parkflow:deepLinkSpot'
 
 const SKELETON_SPOT_IDS = [
   's0',
@@ -122,6 +126,7 @@ export function MapPage() {
   const selectedSpot = useParkingStore((s) => s.selectedSpot)
   const setSelectedSpot = useParkingStore((s) => s.setSelectedSpot)
   const highlightedSpotId = useParkingStore((s) => s.highlightedSpotId)
+  const setHighlightedSpotId = useParkingStore((s) => s.setHighlightedSpotId)
   const setSpotModalOpen = useUIStore((s) => s.setSpotModalOpen)
   const mapViewMode = useUIStore((s) => s.mapViewMode)
   const setMapViewMode = useUIStore((s) => s.setMapViewMode)
@@ -143,16 +148,34 @@ export function MapPage() {
   const { showNextWeekPrompt, handleGoToNextWeek, handleDismiss } =
     useNextWeekPrompt()
 
-  // Auto-select preferred lot (or first lot as fallback) when arriving at map
+  // Deep-link spot id from a shared link (?spot=<id>), with a sessionStorage
+  // fallback for the case where login redirected and dropped the query param.
+  const search = useSearch({ strict: false })
+  const deepLinkSpotId =
+    search.spot ?? sessionStorage.getItem(DEEP_LINK_SPOT_KEY) ?? undefined
+
+  // Auto-select preferred lot (or first lot as fallback) when arriving at map.
+  // Skipped while a deep-link is pending so it doesn't fight the spot's lot.
   useEffect(() => {
-    if (lots.length > 0 && selectedLotId === null) {
+    if (lots.length > 0 && selectedLotId === null && !deepLinkSpotId) {
       const preferred =
         preferredLotId !== null
           ? lots.find((l) => l.id === preferredLotId)
           : null
       setSelectedLotId(preferred ? preferred.id : (lots[0]?.id ?? null))
     }
-  }, [lots, selectedLotId, preferredLotId, setSelectedLotId])
+  }, [lots, selectedLotId, preferredLotId, setSelectedLotId, deepLinkSpotId])
+
+  // Apply a deep-link: switch to the spot's lot and highlight it.
+  useEffect(() => {
+    if (!deepLinkSpotId || allSpots.length === 0) return
+    const target = allSpots.find((s) => s.id === deepLinkSpotId)
+    if (target) {
+      if (target.lot_id) setSelectedLotId(target.lot_id)
+      setHighlightedSpotId(target.id)
+    }
+    sessionStorage.removeItem(DEEP_LINK_SPOT_KEY)
+  }, [deepLinkSpotId, allSpots, setSelectedLotId, setHighlightedSpotId])
 
   // Sync fullscreen state with browser API
   useEffect(() => {
