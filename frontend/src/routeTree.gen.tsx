@@ -22,10 +22,25 @@ import { ProfilePage } from '@/pages/ProfilePage'
 import { StatsPage } from '@/pages/StatsPage'
 import { authInitPromise, useAuthStore } from '@/store/authStore'
 
-async function requireAuth() {
+export const DEEP_LINK_SPOT_KEY = 'parkflow:deepLinkSpot'
+
+async function requireAuth({ location }: { location: { href: string } }) {
   await authInitPromise
   const { user } = useAuthStore.getState()
-  if (!user) throw redirect({ to: '/login' })
+  if (!user) {
+    // Preserve a ?spot= deep-link across the login redirect so the map can
+    // highlight it once the user is authenticated (works for SSO + guest).
+    try {
+      const spot = new URL(
+        location.href,
+        window.location.origin,
+      ).searchParams.get('spot')
+      if (spot) sessionStorage.setItem(DEEP_LINK_SPOT_KEY, spot)
+    } catch {
+      // ignore malformed URL
+    }
+    throw redirect({ to: '/login' })
+  }
 }
 
 async function requireNonGuest() {
@@ -79,6 +94,9 @@ const layoutRoute = createRoute({
 const mapRoute = createRoute({
   getParentRoute: () => mapLayoutRoute,
   path: '/',
+  validateSearch: (search: Record<string, unknown>): { spot?: string } => ({
+    spot: typeof search.spot === 'string' ? search.spot : undefined,
+  }),
   component: MapPage,
 })
 

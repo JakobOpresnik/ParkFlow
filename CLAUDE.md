@@ -2,15 +2,15 @@
 
 ## Repo Structure
 
-- `/jakob` — Frontend-only SPA (React 19 + Mantine 8 + Tailwind + mock data)
-- `/jan` — Full-stack app (React + shadcn/ui + Express + PostgreSQL)
-- Each folder has its own CLAUDE.md with detailed rules — always read the subfolder CLAUDE.md when working in that folder
+- `/backend` — Live full-stack API: Express + PostgreSQL (promoted from the former `/jan`)
+- `/frontend` — Live React SPA frontend
+- `/jakob`, `/jan` — **Archived prototypes, no longer worked on.** Kept for reference only; not in version control as active code.
 
 ## Strategic Decision
 
-**Use /jan as the base project going forward.** It has the production-critical pieces: real backend, PostgreSQL database with migrations, JWT authentication, admin panel, backend tests, and Docker deployment.
+**The live app lives at the repo root: `/backend` + `/frontend`.** This was promoted from the former `/jan` project — it has the production-critical pieces: real backend, PostgreSQL with migrations, authentication (Authentik SSO + JWT), admin panel, backend tests, and Docker deployment.
 
-/jakob is a polished frontend prototype with superior UI/UX but no backend. Its best features should be ported into /jan's frontend.
+`/jakob` and `/jan` are archived; the comparison and porting notes below are kept as historical context for features that originated in the Jakob prototype.
 
 ## Comparison
 
@@ -81,13 +81,12 @@
 - Package manager: **Bun** (never npm/yarn/pnpm)
 - **Always run `bun run fix` (from `/frontend/package.json`) after making any code changes to the frontend** — this runs the linter in fix mode and the formatter together
 
-### When working in /jan
+### When working in /backend
 
 - Package manager: **Bun** (never npm/yarn/pnpm)
-- Read `/jan/CLAUDE.md` for full rules
 - Run: `bun run build`, `bun run lint`, `bun run format`, `bun test`
 
-### When working in /jakob
+### When working in /jakob (archived — reference only)
 
 - Package manager: **pnpm** (never npm or yarn)
 - Read `/jakob/CLAUDE.md` for full rules

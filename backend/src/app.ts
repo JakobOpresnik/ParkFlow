@@ -8,6 +8,7 @@ import authRouter from './routes/auth.js';
 import bookingsRouter from './routes/bookings.js';
 import changesRouter from './routes/changes.js';
 import feedbackRouter from './routes/feedback.js';
+import integrationsRouter from './routes/integrations.js';
 import lotsRouter from './routes/lots.js';
 import ownersRouter from './routes/owners.js';
 import presenceRouter from './routes/presence.js';
@@ -42,6 +43,7 @@ export function createApp() {
   app.use('/api/subscribe', subscribeRouter);
   app.use('/api/feedback', feedbackRouter);
   app.use('/api/stats', statsRouter);
+  app.use('/api/integrations', integrationsRouter);
 
   app.use(errorHandler);
 
