@@ -13,8 +13,6 @@ services:
       AUTHENTIK_ADMIN_GROUP: ${AUTHENTIK_ADMIN_GROUP:-parkflow-admins}
       # Public frontend URL used for the Rocket.Chat bot's map deep-links
       PUBLIC_FRONTEND_URL: ${PUBLIC_FRONTEND_URL:-https://parkflow.matheo.si}
-      # Shared secret for the Rocket.Chat Outgoing WebHook (set in CI/CD secrets)
-      ROCKETCHAT_WEBHOOK_TOKEN: ${ROCKETCHAT_WEBHOOK_TOKEN:-}
     ports:
       - '3001:3001'
     depends_on:
