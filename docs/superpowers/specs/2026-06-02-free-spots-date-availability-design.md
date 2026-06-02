@@ -1,16 +1,16 @@
 # Design: `free spots [building] [date]` — date-aware availability
 
 **Date:** 2026-06-02
-**Status:** Approved (pending spec review)
-**Area:** RocketChat bot integration + backend availability
+**Status:** Approved (revised — reuse path)
+**Area:** RocketChat bot integration (`backend/src/routes/integrations.ts`)
 
 ## Problem
 
-The bot's `free spots` command already lists free spots across **all** lots
-(grouped by building) and accepts an optional building filter
-(`free spots klet1`). What it does **not** do is accept a date: it reports only
-the live, real-time `spot.status` (`status === 'free'`). There is no way to ask
-"which spots are free **tomorrow**?".
+The bot's `free spots` command lists free spots across **all** lots (grouped by
+building) and accepts an optional building filter (`free spots klet1`). What it
+does **not** do is accept a date: it reports only the live `spot.status`
+(`status === 'free'`). There is no way to ask "which spots are free
+**tomorrow**?".
 
 Users expect parity with the map view, where picking a day shows per-date
 availability. We want:
@@ -23,128 +23,148 @@ availability. We want:
 | `free spots klet1 tomorrow` | only klet1, tomorrow |
 | `free spots tomorrow klet1` | same (token order irrelevant) |
 
-"Free on a date" must mean **real availability** (same notion the booking flow
-enforces and the map shows), not just live status.
+"Free on a date" means **real availability** (the same notion the map shows and
+the booking flow enforces), not just live status.
 
 ## Current state (as explored)
 
-- **Bot:** `backend/src/routes/integrations.ts`. `parseCommand` maps
-  `free spots` / `free` / `spots` / `available` → `{ command: 'spots', rest }`.
-  The `spots` handler takes `rest[0]` as a building filter only; it has **no
-  date awareness** and calls `GET /api/spots` (live status).
-- **Date parsing:** `parseDate(token, now)` already supports `today`,
-  `tomorrow`, `dd.mm.yyyy`, Europe/Ljubljana local time. Reusable as-is.
-- **Date-based availability logic already exists in two places:**
-  1. `backend/src/routes/bookings.ts` (`POST /api/bookings`) — per-spot boolean
-     "is bookable on date", priority: active booking → day override → ACEX pool
-     → owner presence → fallback `status`.
-  2. `frontend/src/hooks/useEffectiveSpots.ts` — per-date effective status for
-     the whole map, richer statuses (`free`/`occupied`/`reserved`/`spotted`/
-     `unconfirmed`), priority: active booking → override → presence → fallback.
-- **The three data-source endpoints the map uses already exist:**
-  `GET /api/spots`, `GET /api/presence?date=YYYY-MM-DD`,
-  `GET /api/spots/day-overrides?date=YYYY-MM-DD`.
-- The bot is backend TypeScript and **cannot import the React hook**, so the
-  rule set must be expressed in backend code.
+The `owners` command (shipped immediately before this spec) **already built the
+date-aware availability machinery this feature needs.** There is nothing new to
+design at the logic layer — only a second consumer to wire up.
+
+- **Availability helper already exists:** `isSpotAvailableOnDate(spot, date,
+  overrideStatus, isOwnerAbsentOnDate)` in `integrations.ts:407`. It implements
+  the full priority chain:
+  1. Active booking for `date` → not free.
+  2. Per-day override (`spot_day_status`) → authoritative (`free`/`occupied`).
+  3. ACEX public pool (`ACEX_OWNER_NAME`) → free.
+  4. Owned spot → free only when **every** co-owner is absent that day; if
+     presence is unknown for any co-owner, fall back to the spot's stored
+     `status`.
+  5. Unowned spot → stored `status`.
+  Shared-spot ambiguity collapses correctly to the boolean: 0 owners in office →
+  free; 1 or 2+ in office → not free.
+- **The composition recipe already exists** in the `owners` handler
+  (`integrations.ts:750`): it fetches `/api/spots`, `/api/lots`,
+  `/api/spots/day-overrides?date=`, `/api/presence?date=` in parallel, builds
+  `overrideBySpot` and `isOwnerAbsentOnDate` (returns `null` when presence is
+  down), and applies the helper.
+- **Date parsing already exists:** `parseDate(token, now)` supports `today`,
+  `tomorrow`, `dd.mm.yyyy` (Europe/Ljubljana), returns today for `undefined`,
+  and `null` for an unrecognised token (e.g. a building name like `klet1`).
+  `resolveLot(token, lots)` resolves building aliases (`zunaj`, `klet1`, …).
+  `dayLabel(date, now)` renders `today` / `tomorrow` / `DD.MM.YYYY`.
+- **The helper is already unit-tested** across all branches in
+  `integrations.routes.test.ts:515` (owned away/present, shared, override
+  free/occupied, presence-unknown fallback).
 
 ## Decisions
 
-1. **Meaning of "free" on a date:** real availability — a spot is free when its
-   effective status for that day is `free`. Every other effective status
-   (`occupied`, `reserved`, `spotted`, `unconfirmed`) counts as not free.
-2. **Where the logic lives:** a new backend endpoint
-   `GET /api/spots/availability?date=…`, backed by a pure helper that ports the
-   `useEffectiveSpots` rules. The bot calls this single endpoint. The logic
-   lives once in the backend and can later be adopted by the frontend to remove
-   the duplication (out of scope here).
-3. **Timesheet failure handling (graceful degradation):** if the external
-   presence API fails, owner-occupied spots that depend on presence are treated
-   as **not free** (no false positives). Override / ACEX / plain-free spots are
-   still computed. The response flags `presence_ok: false` and the bot appends a
-   "list may be incomplete" note.
+1. **Reuse, don't rebuild.** No new endpoint and no new `lib/` file. The `spots`
+   handler mirrors the `owners` handler and reuses `isSpotAvailableOnDate`. This
+   was chosen over the originally-drafted `GET /api/spots/availability` +
+   `lib/availability.ts`: that logic already lives in backend code and has no
+   second (non-bot) consumer today (YAGNI). Extraction to `lib/` can happen
+   later if/when another consumer appears.
+2. **Meaning of "free" on a date:** `isSpotAvailableOnDate(...) === true`.
+3. **Today routes through the same path.** Bare `free spots` is treated as
+   `free spots today`: it now fetches presence + overrides and is presence-aware,
+   matching the map and the `owners` command. One code path, no divergence
+   between `free spots` and `free spots today`. (Trade-off: two extra parallel
+   GETs on the most common command — negligible.)
+4. **Output language: English**, matching the rest of the bot
+   (`Free spots — tomorrow (4):`), not the Slovenian originally drafted.
+5. **Presence-down handling:** owned spots fall back to stored status (usually
+   `occupied` → excluded), exactly as the shared helper already does. **Net-new:**
+   when the presence call did not return 200, append an English warning so the
+   degraded list is honest.
 
 ## Design
 
-### 1. Backend: availability helper + endpoint
+All changes land in `backend/src/routes/integrations.ts` and its tests.
 
-**`backend/src/lib/availability.ts`** — pure, side-effect-free:
+### 1. Token classification (`spots` handler, order-independent)
+
+Iterate over `rest`:
+
+- The first token for which `parseDate(token, now)` is non-null is the **date**.
+- Otherwise, the first token that `resolveLot(token, lots)` matches is the
+  **building** filter.
+- Any token that is neither a date nor a known building → reply with combined
+  guidance (accepted date formats + `zunaj, klet1, klet2`).
+- No date token → today (`parseDate(undefined)`).
+
+So `free spots klet1 tomorrow` ≡ `free spots tomorrow klet1`. Building
+classification needs the lots list, which the handler already fetches.
+
+### 2. Availability composition (mirror the `owners` handler)
+
+Fetch in parallel:
+
+- `GET /api/spots` (+ `?lot_id=<lot.id>` when a building filter is present),
+- `GET /api/lots`,
+- `GET /api/spots/day-overrides?date=<date>`,
+- `GET /api/presence?date=<date>`.
+
+Build `overrideBySpot` (spot_id → status), `isOwnerAbsentOnDate(name)` (returns
+`null` when presence is unavailable), and:
 
 ```
-computeAvailability(spots, presence, overrides, date, { presenceOk }) =>
-  Array<{ id, number, lot_id, label, available: boolean }>
+isAvailable(s) = isSpotAvailableOnDate(s, date, overrideBySpot.get(s.id), isOwnerAbsentOnDate)
 ```
 
-A faithful port of the priority logic in `useEffectiveSpots.ts`, reduced to a
-boolean `available = (effectiveStatus === 'free')`:
+### 3. Filter + format
 
-1. **Active booking** on `date` (`active_booking_expires_at` date === `date`) →
-   not free.
-2. **Day override** (`spot_day_status` for the date) → authoritative
-   (`free` → free, `occupied` → not free).
-3. **Owner presence** (timesheet for the date):
-   - Single owner: in office → not free; absent → free.
-   - Shared (`a / b`): 0 in-office → free; 1 → not free; 2+ → `unconfirmed` →
-     not free.
-   - If `presenceOk === false`, any spot that would need presence to decide →
-     not free.
-4. **Fallback** → `spot.status === 'free'`.
+`const available = spots.filter(isAvailable)`, then reuse the two existing
+output shapes:
 
-(`spotted` reports layer onto the frontend's status; for availability they make
-a spot not free — they never make it free — so we fold them into "not free".)
+- **Building filter present** → single-lot line
+  (`<lot.name> — Free spots (N): …`).
+- **No building filter** → grouped-by-building.
 
-**`GET /api/spots/availability?date=YYYY-MM-DD` (optional `&lot_id=`):**
+Repurpose `formatFreeSpots` / `formatFreeSpotsByBuilding` so they group an
+**already-filtered** list (drop their internal `status === 'free'` filter) and
+accept a `when` label for the header, rendered via `dayLabel(date, now)`:
+`Free spots — tomorrow (4):`. `dayLabel` yields `today` for today, so the
+today path renders naturally. The old direct `status === 'free'` callers are
+replaced by this path.
 
-- Validate `date` against `^\d{4}-\d{2}-\d{2}$` (400 otherwise), mirroring the
-  existing `day-overrides` endpoint.
-- Load the same three sources the map uses: spots (optionally filtered by
-  `lot_id`), `presence?date=`, `day-overrides?date=`. Presence failure is caught
-  and surfaced as `presence_ok: false` rather than failing the request.
-- Run `computeAvailability` and respond:
-  `{ spots: [{ id, number, lot_id, label, available }], presence_ok }`.
+### 4. Presence-down warning
 
-### 2. Bot: parser + handler
+When the `/api/presence` response status ≠ 200 (presence resolved to `null`),
+append after the listing:
 
-- In the `spots` handler, classify each `rest` token: try `parseDate` first; if
-  it yields a valid date, it's the date; otherwise try `resolveLot`; if neither,
-  reply with the existing friendly "unknown building" guidance.
-- Token order is irrelevant (`klet1 tomorrow` === `tomorrow klet1`).
-- No date token → today (preserves current behaviour).
-- Handler calls `GET /api/spots/availability?date=…[&lot_id=…]`, filters
-  `available === true`, and formats the result.
+```
+⚠️ List may be incomplete — I couldn't check owner spots right now.
+```
 
-### 3. Output
+### 5. Help text
 
-Reuse existing formatting (`formatFreeSpotsByBuilding`, single-lot path), adding
-the date to the header, e.g. `Prosta mesta za 3.6.2026 (4):` followed by the
-per-building grouping. Today may render without an explicit date. When
-`presence_ok === false`, append:
-`⚠️ Seznam je morda nepopoln — lastniških mest trenutno ne morem preveriti.`
+Update `HELP_TEXT` to document `free spots [building] [date]` with examples
+(`free spots tomorrow`, `free spots klet1 tomorrow`).
 
 ## Error handling
 
-- Invalid date token in chat → friendly message listing accepted formats
-  (`today`, `tomorrow`, `dd.mm.yyyy`).
-- Unknown building token → existing guidance (`zunaj, klet1, klet2`).
-- Endpoint `date` validation failure → 400.
-- Presence API failure → degrade gracefully (see decision 3), never 500 the
-  whole listing.
+- Unrecognised token (neither date nor building) → friendly combined guidance
+  listing accepted date formats (`today`, `tomorrow`, `dd.mm.yyyy`) and building
+  names (`zunaj, klet1, klet2`).
+- Presence API failure → graceful degradation per decision 5 (stored-status
+  fallback + warning line); never fail the whole listing.
 
 ## Testing
 
-- **Unit — `computeAvailability`:** all branches (booking, override free/occupied,
-  ACEX, single-owner present/absent, shared 0/1/2+), plus the `presenceOk:false`
-  degradation path.
-- **Unit — parser:** date+building in either order, date only, building only,
-  unknown token.
-- **Route — `GET /api/spots/availability`:** override / active booking / ACEX /
-  presence-failure (mocked presence), with and without `lot_id`.
-- **E2e (loopback) — bot:** `free spots tomorrow`, `free spots klet1 tomorrow`,
-  `free spots tomorrow klet1`, and an unknown token.
+- **Parser / classification (unit):** date+building in either order, date only,
+  building only, unknown token.
+- **Handler (loopback e2e):** `free spots tomorrow`, `free spots klet1 tomorrow`,
+  `free spots tomorrow klet1`, unknown token, and the presence-down warning
+  (mocked presence failure).
+- **Already covered (no new work):** `isSpotAvailableOnDate` branch coverage
+  exists in `integrations.routes.test.ts`.
 
 ## Out of scope
 
-- Migrating `frontend/src/hooks/useEffectiveSpots.ts` to consume the new
-  endpoint (a follow-up that would remove the frontend/backend duplication).
-- Refactoring `bookings.ts` to share the new helper.
-- Any change to live (`today`) behaviour beyond routing through the new
-  endpoint.
+- A `GET /api/spots/availability` endpoint and a `lib/availability.ts` extraction
+  (deferred until a non-bot consumer needs it).
+- Migrating `frontend/src/hooks/useEffectiveSpots.ts` to a shared backend source
+  (would remove frontend/backend duplication; separate follow-up).
+- Refactoring `bookings.ts` to share the helper.
