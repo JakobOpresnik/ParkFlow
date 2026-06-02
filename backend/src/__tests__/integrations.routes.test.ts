@@ -19,18 +19,20 @@ import {
   formatFreeSpots,
   formatFreeSpotsByBuilding,
   formatHistory,
+  formatOccupancy,
   formatOwners,
+  formatPeakHours,
   formatReserveResult,
   formatStatus,
   HELP_TEXT,
   isGrabbable,
-  isSpotAvailableOnDate,
   ljubljanaInstant,
   parseCommand,
   parseDate,
   pickRandomFree,
   resolveLot,
   spotLink,
+  spotStatusOnDate,
   workDayOver,
 } from "../routes/integrations.js";
 
@@ -43,8 +45,8 @@ vi.mock("../db/pool.js", () => ({
 
 // Stub the timesheet fetch so the `owners` loopback test (which hits
 // /api/presence) doesn't make a real external call. This only affects the
-// presence route; integrations.ts imports the real isOwnerAbsent straight from
-// presence.helpers.js, so the pure-function availability tests are unaffected.
+// presence route; the pure-function status tests inject their own presence
+// resolver, so they're unaffected.
 vi.mock("../lib/presence.js", () => ({
   fetchWeekPresence: vi.fn().mockResolvedValue({
     employees: [],
@@ -141,16 +143,43 @@ describe("parseCommand", () => {
     });
   });
 
-  it("maps owners (exact word only — no aliases) and keeps a date arg", () => {
+  it("maps owners (exact word only — no aliases) and keeps building/date args", () => {
     expect(parseCommand("owners")).toEqual({ command: "owners", rest: [] });
     expect(parseCommand("owners tomorrow")).toEqual({
       command: "owners",
       rest: ["tomorrow"],
     });
+    expect(parseCommand("owners klet1 tomorrow")).toEqual({
+      command: "owners",
+      rest: ["klet1", "tomorrow"],
+    });
     // Near-misses must NOT trigger the roster.
     expect(parseCommand("owner").command).toBe("unknown");
     expect(parseCommand("who").command).toBe("unknown");
     expect(parseCommand("whose").command).toBe("unknown");
+  });
+
+  it("maps stats (only — no occupancy alias) with optional args", () => {
+    expect(parseCommand("stats")).toEqual({ command: "stats", rest: [] });
+    expect(parseCommand("stats klet1")).toEqual({
+      command: "stats",
+      rest: ["klet1"],
+    });
+    expect(parseCommand("occupancy").command).toBe("unknown");
+  });
+
+  it('maps "peak hours" (only that phrase) with an optional building', () => {
+    expect(parseCommand("peak hours")).toEqual({
+      command: "peak-hours",
+      rest: [],
+    });
+    expect(parseCommand("peak hours zunaj")).toEqual({
+      command: "peak-hours",
+      rest: ["zunaj"],
+    });
+    // "peak" or "busy" alone are not commands.
+    expect(parseCommand("peak").command).toBe("unknown");
+    expect(parseCommand("busy").command).toBe("unknown");
   });
 
   it("returns unknown for unrecognised or empty input", () => {
@@ -512,17 +541,17 @@ describe("formatHistory", () => {
   });
 });
 
-describe("isSpotAvailableOnDate", () => {
+describe("spotStatusOnDate", () => {
   const DATE = "2026-06-01";
-  // Resolver stubs: away = absent (free), present = taken, unknown = no presence.
-  const away = () => true;
-  const present = () => false;
-  const unknown = () => null;
+  // Presence resolver stubs (return OwnerPresence literals).
+  const away = (): "absent" => "absent";
+  const present = (): "in_office" => "in_office";
+  const unknown = (): "unknown" => "unknown";
   // Per-name resolver for co-owner cases.
   const byName =
-    (absent: Record<string, boolean>) =>
-    (name: string): boolean | null =>
-      absent[name] ?? false;
+    (m: Record<string, "in_office" | "absent" | "unknown">) =>
+    (name: string): "in_office" | "absent" | "unknown" =>
+      m[name] ?? "unknown";
 
   const owned = (owner_name: string, extra = {}) => ({
     number: 1,
@@ -534,42 +563,58 @@ describe("isSpotAvailableOnDate", () => {
   });
 
   it("is free when the (only) owner is absent that day", () => {
-    expect(isSpotAvailableOnDate(owned("Ana"), DATE, undefined, away)).toBe(
-      true,
+    expect(spotStatusOnDate(owned("Ana"), DATE, undefined, away)).toBe("free");
+  });
+
+  it("is taken when the (single) owner is in office", () => {
+    expect(spotStatusOnDate(owned("Ana"), DATE, undefined, present)).toBe(
+      "taken",
     );
   });
 
-  it("is taken when the owner is in office", () => {
-    expect(isSpotAvailableOnDate(owned("Ana"), DATE, undefined, present)).toBe(
-      false,
+  it("is unconfirmed when 2+ co-owners may be in office (shared spot)", () => {
+    const allIn = byName({
+      Ana: "in_office",
+      Boris: "in_office",
+      Cveto: "in_office",
+    });
+    expect(
+      spotStatusOnDate(owned("Ana / Boris / Cveto"), DATE, undefined, allIn),
+    ).toBe("unconfirmed");
+  });
+
+  it("is taken (not unconfirmed) when exactly one co-owner is in office", () => {
+    const oneIn = byName({ Ana: "in_office", Boris: "absent" });
+    expect(spotStatusOnDate(owned("Ana / Boris"), DATE, undefined, oneIn)).toBe(
+      "taken",
     );
   });
 
-  it("is taken for a co-owned spot unless EVERY co-owner is absent", () => {
-    const resolve = byName({ Ana: true, Boris: false });
+  it("is free when all co-owners are absent", () => {
+    const allAway = byName({ Ana: "absent", Boris: "absent" });
     expect(
-      isSpotAvailableOnDate(owned("Ana / Boris"), DATE, undefined, resolve),
-    ).toBe(false);
-    const allAway = byName({ Ana: true, Boris: true });
+      spotStatusOnDate(owned("Ana / Boris"), DATE, undefined, allAway),
+    ).toBe("free");
+  });
+
+  it("does not count owners with unknown presence toward the in-office tally", () => {
+    // Only one known in-office co-owner (others unknown) → taken, not unconfirmed.
+    const oneKnown = byName({ Ana: "in_office" });
     expect(
-      isSpotAvailableOnDate(owned("Ana / Boris"), DATE, undefined, allAway),
-    ).toBe(true);
+      spotStatusOnDate(owned("Ana / Boris / Cveto"), DATE, undefined, oneKnown),
+    ).toBe("taken");
   });
 
   it("lets a per-day override win over presence", () => {
-    // Owner present, but the spot was explicitly freed for the day.
-    expect(isSpotAvailableOnDate(owned("Ana"), DATE, "free", present)).toBe(
-      true,
-    );
-    // Owner away, but the spot was explicitly marked occupied for the day.
-    expect(isSpotAvailableOnDate(owned("Ana"), DATE, "occupied", away)).toBe(
-      false,
+    expect(spotStatusOnDate(owned("Ana"), DATE, "free", present)).toBe("free");
+    expect(spotStatusOnDate(owned("Ana"), DATE, "occupied", away)).toBe(
+      "taken",
     );
   });
 
   it("counts an active booking for that day as taken, even with a free override", () => {
     expect(
-      isSpotAvailableOnDate(
+      spotStatusOnDate(
         owned("Ana", {
           active_booking_id: "b1",
           active_booking_expires_at: `${DATE}T15:00:00.000Z`,
@@ -578,12 +623,12 @@ describe("isSpotAvailableOnDate", () => {
         "free",
         away,
       ),
-    ).toBe(false);
+    ).toBe("taken");
   });
 
   it("ignores an active booking that is for a different day", () => {
     expect(
-      isSpotAvailableOnDate(
+      spotStatusOnDate(
         owned("Ana", {
           active_booking_id: "b1",
           active_booking_expires_at: "2026-06-02T15:00:00.000Z",
@@ -592,28 +637,29 @@ describe("isSpotAvailableOnDate", () => {
         undefined,
         away,
       ),
-    ).toBe(true);
+    ).toBe("free");
   });
 
   it("falls back to the stored status when presence is unknown", () => {
-    expect(isSpotAvailableOnDate(owned("Ana"), DATE, undefined, unknown)).toBe(
-      false,
+    expect(spotStatusOnDate(owned("Ana"), DATE, undefined, unknown)).toBe(
+      "taken",
     );
     expect(
-      isSpotAvailableOnDate(
+      spotStatusOnDate(
         owned("Ana", { status: "free" }),
         DATE,
         undefined,
         unknown,
       ),
-    ).toBe(true);
+    ).toBe("free");
   });
 });
 
 describe("formatOwners", () => {
-  // Mark a spot available iff its base status is "free" (enough to exercise the
-  // icon rendering; the availability rule itself is covered above).
-  const byStatus = (s: { status: string }): boolean => s.status === "free";
+  // Status by base status (enough to exercise icon rendering; the status rule
+  // itself is covered above). free→🟩, anything else→🟥.
+  const byStatus = (s: { status: string }): "free" | "taken" =>
+    s.status === "free" ? "free" : "taken";
 
   it("groups owned spots by owner with a per-spot availability icon", () => {
     const spots = [
@@ -644,8 +690,8 @@ describe("formatOwners", () => {
     ];
     expect(formatOwners(spots, LOTS, byStatus, "today")).toBe(
       "Parking spot owners (2) — today:\n" +
-        "• Janez Novak — A12 🔴, A13 🟢 (Zunanje parkirišče)\n" +
-        "• Mojca Kovač — K1-23 🔴 (Klet -1)",
+        "• Janez Novak — A12 🟥, A13 🟩 (Zunanje parkirišče)\n" +
+        "• Mojca Kovač — K1-23 🟥 (Klet -1)",
     );
   });
 
@@ -694,7 +740,48 @@ describe("formatOwners", () => {
       },
     ];
     expect(formatOwners(spots, LOTS, byStatus, "tomorrow")).toBe(
-      "Parking spot owners (1) — tomorrow:\n• Ana Horvat — Z-3 🔴 (Zunanje parkirišče)",
+      "Parking spot owners (1) — tomorrow:\n• Ana Horvat — Z-3 🟥 (Zunanje parkirišče)",
+    );
+  });
+
+  it("names the building in the header and drops the per-owner suffix when filtered", () => {
+    // Caller has already scoped spots to the building; we pass its name.
+    const spots = [
+      {
+        number: 23,
+        label: "K1-23",
+        status: "occupied",
+        lot_id: "l2",
+        owner_id: "o2",
+        owner_name: "Mojca Kovač",
+      },
+    ];
+    expect(formatOwners(spots, LOTS, byStatus, "today", "Klet -1")).toBe(
+      "Parking spot owners in Klet -1 (1) — today:\n• Mojca Kovač — K1-23 🟥",
+    );
+  });
+
+  it("reports an empty building scope with the building name", () => {
+    expect(formatOwners([], LOTS, byStatus, "today", "Klet -2")).toBe(
+      "No assigned parking spots in Klet -2.",
+    );
+  });
+
+  it("renders the unconfirmed icon for a shared spot", () => {
+    const spots = [
+      {
+        number: 56,
+        label: "K2-56",
+        status: "unconfirmed",
+        lot_id: "l3",
+        owner_id: "o3",
+        owner_name: "Tilen Marc / Demijan Lesjak / Timotej Vesel",
+      },
+    ];
+    const statusOf = () => "unconfirmed" as const;
+    expect(formatOwners(spots, LOTS, statusOf, "today")).toBe(
+      "Parking spot owners (1) — today:\n" +
+        "• Tilen Marc / Demijan Lesjak / Timotej Vesel — K2-56 🟪 (Klet -2)",
     );
   });
 
@@ -707,6 +794,80 @@ describe("formatOwners", () => {
         "today",
       ),
     ).toBe("No parking spots have an assigned owner.");
+  });
+});
+
+describe("formatOccupancy", () => {
+  const allFree = () => "free" as const;
+  const byStatus = (s: { status: string }): "free" | "taken" =>
+    s.status === "free" ? "free" : "taken";
+
+  it("reports overall and per-building occupancy", () => {
+    const spots = [
+      { number: 1, label: "Z-1", status: "free", lot_id: "l1" },
+      { number: 2, label: "Z-2", status: "occupied", lot_id: "l1" },
+      { number: 3, label: "K1-1", status: "occupied", lot_id: "l2" },
+      { number: 4, label: "K1-2", status: "free", lot_id: "l2" },
+    ];
+    expect(formatOccupancy(spots, LOTS, byStatus, "today")).toBe(
+      "Parking occupancy — today:\n" +
+        "• Overall: 50% full — 2 of 4 free\n" +
+        "• Zunanje parkirišče: 50% full (1/2 free)\n" +
+        "• Klet -1: 50% full (1/2 free)",
+    );
+  });
+
+  it("reports a single figure when scoped to a building", () => {
+    const spots = [
+      { number: 3, label: "K1-1", status: "occupied", lot_id: "l2" },
+      { number: 4, label: "K1-2", status: "free", lot_id: "l2" },
+    ];
+    expect(formatOccupancy(spots, LOTS, byStatus, "today", "Klet -1")).toBe(
+      "Parking occupancy in Klet -1 — today:\n• 50% full — 1 of 2 free",
+    );
+  });
+
+  it("reports empty scopes", () => {
+    expect(formatOccupancy([], LOTS, allFree, "today")).toBe(
+      "No parking spots found.",
+    );
+    expect(formatOccupancy([], LOTS, allFree, "today", "Klet -2")).toBe(
+      "No parking spots in Klet -2.",
+    );
+  });
+});
+
+describe("formatPeakHours", () => {
+  it("summarises peak bucket, busiest day and busiest hour", () => {
+    const heatmap = [
+      { weekday: 2, hour: 9, count: 40 }, // Tuesday 09:00 — the peak bucket
+      { weekday: 2, hour: 8, count: 30 },
+      { weekday: 1, hour: 9, count: 20 },
+      { weekday: 5, hour: 15, count: 5 },
+    ];
+    expect(formatPeakHours(heatmap)).toBe(
+      "Busiest parking times — last 90 days:\n" +
+        "• Peak: Tuesday around 09:00\n" +
+        "• Busiest day: Tuesday\n" +
+        "• Busiest hour: 09:00–10:00",
+    );
+  });
+
+  it("names the building when scoped", () => {
+    const heatmap = [{ weekday: 3, hour: 10, count: 7 }];
+    expect(formatPeakHours(heatmap, "Klet -1")).toBe(
+      "Busiest parking times — last 90 days · Klet -1:\n" +
+        "• Peak: Wednesday around 10:00\n" +
+        "• Busiest day: Wednesday\n" +
+        "• Busiest hour: 10:00–11:00",
+    );
+  });
+
+  it("reports when there is no history", () => {
+    expect(formatPeakHours([])).toBe("No historical parking data yet.");
+    expect(
+      formatPeakHours([{ weekday: 1, hour: 9, count: 0 }], "Klet -2"),
+    ).toBe("No historical parking data yet for Klet -2.");
   });
 });
 
@@ -867,7 +1028,7 @@ describe("POST /api/integrations/rocketchat (loopback)", () => {
     // No date supplied → defaults to today.
     expect(res.body.text).toContain("— today:");
     // Empty presence + occupied status → not free for others today.
-    expect(res.body.text).toContain("🔴");
+    expect(res.body.text).toContain("🟥");
 
     // A supplied date is reflected in the header.
     const resTomorrow = await request(app)
@@ -879,6 +1040,65 @@ describe("POST /api/integrations/rocketchat (loopback)", () => {
       });
     expect(resTomorrow.status).toBe(200);
     expect(resTomorrow.body.text).toContain("— tomorrow:");
+
+    // A building filter scopes the list and names the building in the header.
+    const resBuilding = await request(app)
+      .post("/api/integrations/rocketchat")
+      .send({
+        token: WEBHOOK_TOKEN,
+        user_name: "jsernec",
+        text: "owners zunaj",
+      });
+    expect(resBuilding.status).toBe(200);
+    expect(resBuilding.body.text).toContain("in Zunanje parkirišče");
+    expect(resBuilding.body.text).toContain("Janez Novak");
+  });
+
+  it("reports live occupancy via loopback (stats)", async () => {
+    process.env.ROCKETCHAT_WEBHOOK_TOKEN = WEBHOOK_TOKEN;
+    mockQuery.mockImplementation((sql: string) => {
+      if (sql.includes("spot_day_status")) return { rows: [] };
+      if (sql.includes("parking_lots"))
+        return { rows: [{ id: "l1", name: "Zunanje parkirišče" }] };
+      return {
+        rows: [
+          { id: "s1", number: 1, label: "Z-1", status: "free", lot_id: "l1" },
+          {
+            id: "s2",
+            number: 2,
+            label: "Z-2",
+            status: "occupied",
+            lot_id: "l1",
+          },
+        ],
+      };
+    });
+
+    const res = await request(app)
+      .post("/api/integrations/rocketchat")
+      .send({ token: WEBHOOK_TOKEN, user_name: "jsernec", text: "stats" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.text).toContain("Parking occupancy — today:");
+    expect(res.body.text).toContain("% full");
+  });
+
+  it("reports busiest times via loopback (peak hours)", async () => {
+    process.env.ROCKETCHAT_WEBHOOK_TOKEN = WEBHOOK_TOKEN;
+    mockQuery.mockImplementation((sql: string) => {
+      if (sql.includes("EXTRACT(DOW"))
+        return { rows: [{ weekday: 2, hour: 9, count: 12 }] };
+      if (sql.includes("to_char(d")) return { rows: [] };
+      return { rows: [] };
+    });
+
+    const res = await request(app)
+      .post("/api/integrations/rocketchat")
+      .send({ token: WEBHOOK_TOKEN, user_name: "jsernec", text: "peak hours" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.text).toContain("Busiest parking times");
+    expect(res.body.text).toContain("Tuesday");
   });
 
   it("tells the user when a reserved spot does not exist", async () => {
