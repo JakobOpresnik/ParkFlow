@@ -29,21 +29,21 @@ const WORK_HOURS_LABEL = `${String(WORK_START_HOUR).padStart(2, "0")}:00–${Str
 ).padStart(2, "0")}:00`;
 
 export const HELP_TEXT = [
-  "🅿️ *ParkFlow* — your parking assistant. Here's what I can do:",
+  "*ParkFlow* — your parking assistant. Here's what I can do:",
   "",
-  "📊 *status* — your current reservation and your owned spot",
-  "🟢 *free spots* `[building]` — see what's open right now",
+  "*status* — your current reservation and your owned spot",
+  "*free spots* `[building]` — see what's open right now",
   "      _building:_ `zunaj` · `klet1` · `klet2`",
-  "🚗 *reserve* `<spot|building|any> [today|tomorrow|dd.mm.yyyy]`",
+  "*reserve* `<spot|building|any> [today|tomorrow|dd.mm.yyyy]`",
   `      Holds a spot for the working day (${WORK_HOURS_LABEL}). Give a building name or \`any\` to grab a random free one.`,
   "      _e.g._ `reserve A12` · `reserve zunaj tomorrow` · `reserve any`",
-  "❌ *cancel* `[spot]` — cancel your reservation",
-  "🔓 *free spot* `[date]` — release your own spot for a day so a colleague can use it",
-  "🕔 *history* — your last 5 bookings",
-  "🗺️ *map* `[spot]` / *where* `<spot>` — get a map link (highlighting the spot)",
-  "❓ *help* — show this list",
+  "*cancel* `[spot]` — cancel your reservation",
+  "*free spot* `[date]` — release your own spot for a day so a colleague can use it",
+  "*history* — your last 5 bookings",
+  "*map* `[spot]` / *where* `<spot>` — get a map link (highlighting the spot)",
+  "*help* — show this list",
   "",
-  "💡 _Dates accept_ `today`, `tomorrow` _or_ `dd.mm.yyyy`.",
+  "_Dates accept_ `today`, `tomorrow` _or_ `dd.mm.yyyy`.",
 ].join("\n");
 
 // --- Command parsing (pure, unit-tested) -----------------------------------
