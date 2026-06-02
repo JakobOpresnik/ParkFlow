@@ -373,7 +373,7 @@ export function activeBookingOnDate(
 }
 
 // `spots` is the already-available list (the caller filters via
-// isSpotAvailableOnDate); `when` is the day label (today / tomorrow / DD.MM.YYYY).
+// spotStatusOnDate); `when` is the day label (today / tomorrow / DD.MM.YYYY).
 export function formatFreeSpots(spots: SpotLike[], when: string): string {
   if (spots.length === 0) return `No free spots for ${when}.`;
   return `Free spots (${spots.length}) — ${when}: ${spots
@@ -904,7 +904,9 @@ router.post("/rocketchat", async (req, res, next) => {
           reply(`I couldn’t find spot ${arg}. Type "free spots" to see them.`);
           return;
         }
-        reply(`📍 ${spot.label ?? `#${spot.number}`}: ${spotLink(spot.id)}`);
+        reply(
+          `📍 ${spot.label ?? `#${spot.number}`}: ${spotLink(spot.id, localDate(now))}`,
+        );
         return;
       }
 
@@ -1229,11 +1231,11 @@ router.post("/rocketchat", async (req, res, next) => {
           date,
           building,
         );
-        // Deep-link to the reserved day (omit for today to keep the URL clean).
-        const linkDate = date === localDate(now) ? undefined : date;
+        // Deep-link to the reserved day. Always include the date — even today —
+        // so the link can't reopen on a stale localStorage day in the browser.
         reply(
           status === 201
-            ? `${reserveMsg}\n📍 See it on the map: ${spotLink(spot.id, linkDate)}`
+            ? `${reserveMsg}\n📍 See it on the map: ${spotLink(spot.id, date)}`
             : reserveMsg,
         );
         return;

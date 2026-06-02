@@ -28,6 +28,7 @@ import {
   HELP_TEXT,
   isGrabbable,
   ljubljanaInstant,
+  localDate,
   parseCommand,
   parseDate,
   pickRandomFree,
@@ -1352,6 +1353,35 @@ describe("POST /api/integrations/rocketchat (loopback)", () => {
     expect(res.status).toBe(200);
     expect(res.body.text.toLowerCase()).toContain("already have");
     expect(res.body.text).toContain("Z-3");
+  });
+
+  it("includes today's date in a map deep-link so it doesn't open on a stale day", async () => {
+    process.env.ROCKETCHAT_WEBHOOK_TOKEN = WEBHOOK_TOKEN;
+    mockQuery.mockImplementation((sql: string) => {
+      if (sql.includes("parking_lots"))
+        return { rows: [{ id: "l1", name: "Zunanje parkirišče" }] };
+      return {
+        rows: [
+          {
+            id: "s1",
+            number: 51,
+            label: "Z-51",
+            status: "free",
+            lot_id: "l1",
+            owner_id: null,
+          },
+        ],
+      };
+    });
+
+    const res = await request(app)
+      .post("/api/integrations/rocketchat")
+      .send({ token: WEBHOOK_TOKEN, user_name: "jsernec", text: "map Z-51" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.text).toContain("spot=s1");
+    // The link carries the day so it can't reopen on a stale localStorage date.
+    expect(res.body.text).toContain(`date=${localDate(new Date())}`);
   });
 
   it("returns booking history using a minted token (write/read path)", async () => {
