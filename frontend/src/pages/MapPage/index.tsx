@@ -36,6 +36,7 @@ interface GridContentProps {
 
 // Mirrors routeTree.gen.tsx; kept local to avoid a circular import.
 const DEEP_LINK_SPOT_KEY = 'parkflow:deepLinkSpot'
+const DEEP_LINK_DATE_KEY = 'parkflow:deepLinkDate'
 
 const SKELETON_SPOT_IDS = [
   's0',
@@ -153,6 +154,26 @@ export function MapPage() {
   const search = useSearch({ strict: false })
   const deepLinkSpotId =
     search.spot ?? sessionStorage.getItem(DEEP_LINK_SPOT_KEY) ?? undefined
+  const deepLinkDate =
+    search.date ?? sessionStorage.getItem(DEEP_LINK_DATE_KEY) ?? undefined
+
+  // Deep-link day (?date=YYYY-MM-DD, e.g. from a "reserve … tomorrow" chat
+  // link): open the map on that day, but only if it's in the current
+  // selectable Mon–Fri week — the day picker can't represent dates outside it.
+  useEffect(() => {
+    if (!deepLinkDate) return
+    const today = new Date().toISOString().slice(0, 10)
+    if (
+      /^\d{4}-\d{2}-\d{2}$/.test(deepLinkDate) &&
+      getWeekDays(today).includes(deepLinkDate) &&
+      deepLinkDate !== selectedDate
+    ) {
+      setSelectedDate(deepLinkDate)
+    }
+    sessionStorage.removeItem(DEEP_LINK_DATE_KEY)
+    // Run once on mount with the resolved deep-link date.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLinkDate])
 
   // Auto-select preferred lot (or first lot as fallback) when arriving at map.
   // Skipped while a deep-link is pending so it doesn't fight the spot's lot.
