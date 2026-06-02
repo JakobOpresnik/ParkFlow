@@ -38,7 +38,6 @@ export const HELP_TEXT = [
   `      Holds a spot for the working day (${WORK_HOURS_LABEL}). Give a building name or \`any\` to grab a random free one.`,
   "      _e.g._ `reserve A12` · `reserve zunaj tomorrow` · `reserve any`",
   "*cancel* `[spot]` — cancel your reservation",
-  "*free spot* `[date]` — release your own spot for a day so a colleague can use it",
   "*history* — your last 5 bookings",
   "*map* `[spot]` / *where* `<spot>` — get a map link (highlighting the spot)",
   "*help* — show this list",
@@ -55,7 +54,6 @@ export type Command =
   | "spots"
   | "reserve"
   | "cancel"
-  | "free-spot"
   | "history"
   | "map"
   | "unknown";
@@ -78,8 +76,7 @@ const GREETINGS = new Set([
   "pozdravljeni",
 ]);
 
-// The command keyword must be the first word. "free" is disambiguated by the
-// next word: "free spots" → list, "free spot"/"free my spot" → release owned.
+// The command keyword must be the first word. "free spot(s)" → list free spots.
 export function parseCommand(text: string): {
   command: Command;
   rest: string[];
@@ -112,8 +109,6 @@ export function parseCommand(text: string): {
     case "map":
     case "where":
       return { command: "map", rest: after(1) };
-    case "release":
-      return { command: "free-spot", rest: after(1) };
     case "cancel": {
       const rest = after(1);
       if (rest[0]?.toLowerCase() === "reservation") rest.shift();
@@ -121,14 +116,8 @@ export function parseCommand(text: string): {
     }
     case "free": {
       const w1 = tokens[1]?.toLowerCase();
-      if (w1 === "spots") return { command: "spots", rest: after(2) };
-      if (w1 === "spot") return { command: "free-spot", rest: after(2) };
-      if (w1 === "my") {
-        // "free my spot ..." — drop "my" and an optional "spot"
-        const rest = after(2);
-        if (rest[0]?.toLowerCase() === "spot") rest.shift();
-        return { command: "free-spot", rest };
-      }
+      // "free spot"/"free spots" → list free spots; "free <building>" filters.
+      if (w1 === "spots" || w1 === "spot") return { command: "spots", rest: after(2) };
       if (w1 === undefined) return { command: "spots", rest: [] };
       // "free zunaj" → list filtered by a building
       return { command: "spots", rest: after(1) };
@@ -397,18 +386,6 @@ export function formatCancelResult(status: number, label: string): string {
   return `Could not cancel ${label}.`;
 }
 
-export function formatFreeSpotResult(
-  status: number,
-  label: string,
-  date: string,
-): string {
-  if (status === 200)
-    return `Freed ${label} for ${date} — it’s now open to others.`;
-  if (status === 403) return `${label} isn’t your spot, so you can’t free it.`;
-  if (status === 404)
-    return "You don’t own a parking spot, so there’s nothing to free.";
-  return `Could not free ${label}.`;
-}
 
 export function formatStatus(
   bookings: BookingLike[],
@@ -794,62 +771,6 @@ router.post("/rocketchat", async (req, res, next) => {
           { token },
         );
         reply(formatCancelResult(status, bookingLabel(target)));
-        return;
-      }
-
-      case "free-spot": {
-        if (!needUser()) return;
-        const token = mintUserToken(username!);
-        // Disambiguate "free spot <name>" vs "free spot <date>".
-        let spotName: string | undefined;
-        let dateArg: string | undefined;
-        if (rest[0] && parseDate(rest[0], now) !== null) {
-          dateArg = rest[0];
-        } else {
-          spotName = rest[0];
-          dateArg = rest[1];
-        }
-        const date = parseDate(dateArg, now);
-        if (date === null) {
-          reply(
-            `I didn’t understand the date "${dateArg ?? ""}". Use today, tomorrow, or dd.mm.yyyy.`,
-          );
-          return;
-        }
-        if (date < localDate(now)) {
-          reply("That date is in the past — pick today or later.");
-          return;
-        }
-        const { status: ownStatus, data: ownedData } = await call<
-          OwnedSpotLike[]
-        >("GET", "/api/owners/me/spots", { token });
-        const owned = Array.isArray(ownedData) ? ownedData : [];
-        if (ownStatus === 404 || owned.length === 0) {
-          reply("You don’t own a parking spot, so there’s nothing to free.");
-          return;
-        }
-        let spot: OwnedSpotLike | undefined;
-        if (spotName) {
-          const wanted = spotName;
-          spot = owned.find((s) => matchesLabel(s, wanted));
-          if (!spot) {
-            reply(`${spotName} isn’t your spot, so you can’t free it.`);
-            return;
-          }
-        } else if (owned.length === 1) {
-          spot = owned[0]!;
-        } else {
-          reply(
-            `You own ${owned.length} spots. Say e.g. "free spot ${spotLabel(owned[0]!)}".`,
-          );
-          return;
-        }
-        const { status } = await call(
-          "PUT",
-          `/api/owners/me/spots/${spot.id}/day-status`,
-          { token, body: { date, status: "free" } },
-        );
-        reply(formatFreeSpotResult(status, spotLabel(spot), date));
         return;
       }
 

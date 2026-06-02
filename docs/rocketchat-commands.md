@@ -40,18 +40,15 @@ the webhook delivers ordinary messages, which is what we use). Replies are in **
 | `free spots` / `spots` / `available` `[building]` | List free (unoccupied) spots — all, or one **building** | `GET /api/spots` (+ `?lot_id=`) | 🔓 |
 | `reserve <spot\|building\|any> [today\|tomorrow\|dd.mm.yyyy]` | Reserve a spot **if you can** (empty-only + all rules); date optional, default **today**. Held for the **working day 09:00–17:00** (Slovenian time). `building`/`any` → a random free spot. | `POST /api/bookings` | 👤 |
 | `cancel reservation` / `cancel [<spot>]` | Cancel **your reservation**, if you have one | `PATCH /api/bookings/:id/cancel` | 👤 |
-| `free spot` / `free my spot` / `release` `[today\|tomorrow\|dd.mm.yyyy]` | Free **your owned** parking spot (owner) for the day, if you can | `PUT /api/owners/me/spots/:id/day-status` `{status:'free'}` | 👤 |
 | `history` | Your last **5** bookings | `GET /api/bookings/my` | 👤 |
 
-### ⚠️ Command grammar — `free` is disambiguated by the next word
+> Releasing an **owned** spot for a day (per-day override) is done in the web app
+> (*My parking*), not via chat — the bot has no command for it.
 
-- `free spots` (plural) / `spots` / `available` → **list** free spots
-- `free spot` (singular) / `free my spot` / `release` → **release your owned spot**
+### ⚠️ Command grammar
+
+- `free spots` / `free spot` / `spots` / `available` → **list** free spots
 - `cancel reservation` / `cancel` → **cancel your reservation**
-
-So "reservations are *cancelled*, owned spots are *freed*". The parser keys on the
-`free spots` vs `free spot` vs `cancel …` phrase. (Singular/plural is a thin distinction —
-the extra aliases above make intent unambiguous.)
 
 ### Building names + aliases (from the DB)
 
