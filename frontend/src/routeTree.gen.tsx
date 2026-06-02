@@ -23,19 +23,21 @@ import { StatsPage } from '@/pages/StatsPage'
 import { authInitPromise, useAuthStore } from '@/store/authStore'
 
 export const DEEP_LINK_SPOT_KEY = 'parkflow:deepLinkSpot'
+export const DEEP_LINK_DATE_KEY = 'parkflow:deepLinkDate'
 
 async function requireAuth({ location }: { location: { href: string } }) {
   await authInitPromise
   const { user } = useAuthStore.getState()
   if (!user) {
-    // Preserve a ?spot= deep-link across the login redirect so the map can
-    // highlight it once the user is authenticated (works for SSO + guest).
+    // Preserve a ?spot= / ?date= deep-link across the login redirect so the map
+    // can highlight the spot and open the right day once the user is
+    // authenticated (works for SSO + guest).
     try {
-      const spot = new URL(
-        location.href,
-        window.location.origin,
-      ).searchParams.get('spot')
+      const params = new URL(location.href, window.location.origin).searchParams
+      const spot = params.get('spot')
       if (spot) sessionStorage.setItem(DEEP_LINK_SPOT_KEY, spot)
+      const date = params.get('date')
+      if (date) sessionStorage.setItem(DEEP_LINK_DATE_KEY, date)
     } catch {
       // ignore malformed URL
     }
@@ -94,8 +96,14 @@ const layoutRoute = createRoute({
 const mapRoute = createRoute({
   getParentRoute: () => mapLayoutRoute,
   path: '/',
-  validateSearch: (search: Record<string, unknown>): { spot?: string } => ({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { spot?: string; date?: string } => ({
     spot: typeof search.spot === 'string' ? search.spot : undefined,
+    date:
+      typeof search.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(search.date)
+        ? search.date
+        : undefined,
   }),
   component: MapPage,
 })
