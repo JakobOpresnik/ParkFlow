@@ -16,12 +16,36 @@ function getCurrentWeekDays(ref: Date): string[] {
   })
 }
 
+// A bot deep-link (?spot=… with no explicit ?date=) means "today": the link is
+// about the spot as it is now, not whatever day this browser last had open. So
+// when such a link opens, ignore the persisted date and start on today. An
+// explicit ?date= is honoured afterwards by MapPage's deep-link effect, so we
+// don't clobber it here.
+export function resolveInitialDate(
+  search: string,
+  stored: string | null,
+  today: string,
+  weekDays: string[],
+): string {
+  const params = new URLSearchParams(search)
+  const hasSpot = params.get('spot') !== null
+  const dateParam = params.get('date')
+  const hasValidDate =
+    dateParam !== null && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
+  if (hasSpot && !hasValidDate) return today
+  if (stored && weekDays.includes(stored)) return stored
+  return today
+}
+
 function loadSelectedDate(): string {
   const today = new Date().toISOString().slice(0, 10)
   try {
-    const stored = localStorage.getItem(SELECTED_DATE_KEY)
-    if (stored && getCurrentWeekDays(new Date()).includes(stored)) return stored
-    return today
+    return resolveInitialDate(
+      window.location.search,
+      localStorage.getItem(SELECTED_DATE_KEY),
+      today,
+      getCurrentWeekDays(new Date()),
+    )
   } catch {
     return today
   }
