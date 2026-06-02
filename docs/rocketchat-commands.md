@@ -41,7 +41,9 @@ the webhook delivers ordinary messages, which is what we use). Replies are in **
 | `reserve <spot\|building\|any> [today\|tomorrow\|dd.mm.yyyy]` | Reserve a spot **if you can** (empty-only + all rules); date optional, default **today**. Held for the **working day 09:00–17:00** (Slovenian time). `building`/`any` → a random free spot. | `POST /api/bookings` | 👤 |
 | `cancel reservation` / `cancel [<spot>]` | Cancel **your reservation**, if you have one | `PATCH /api/bookings/:id/cancel` | 👤 |
 | `history` | Your last **5** bookings | `GET /api/bookings/my` | 👤 |
-| `owners [today\|tomorrow\|dd.mm.yyyy]` | List **ACEX-employee** parking spots grouped by owner, each label tagged with an availability icon for the chosen day (🟢 free for others / 🔴 taken); **defaults to today** when no date is given. Shows the building when an owner's spots are all in one. Skips unowned spots, the ACEX public pool, placeholders/vehicles and external rentals (filtered by `NOT_ACEX_OWNERS`) | `GET /api/spots` + `/api/lots` + `/api/spots/day-overrides` + `/api/presence` | 🔓 |
+| `owners [building] [today\|tomorrow\|dd.mm.yyyy]` | List **ACEX-employee** parking spots grouped by owner, each label tagged with an availability icon for the chosen day: 🟩 free for others / 🟥 taken (a co-owner is in, or it's reserved/overridden) / 🟪 **unconfirmed** — shared spot where 2+ co-owners may be in office, so the bot can't tell who's using it (mirrors the app's *Unconfirmed* state). Optional **building filter** (`zunaj`/`klet1`/`klet2`, same aliases as `free spots`) restricts the list to owners with a spot in that building and names it in the header. Building and date may be given in **any order**; **date defaults to today**. Skips unowned spots, the ACEX public pool, placeholders/vehicles and external rentals (filtered by `NOT_ACEX_OWNERS`) | `GET /api/spots` + `/api/lots` + `/api/spots/day-overrides` + `/api/presence` | 🔓 |
+| `stats` `[building] [today\|tomorrow\|dd.mm.yyyy]` | Live occupancy snapshot: overall **% full** + free/total, plus a per-building breakdown (or a single figure when scoped to a building). Presence-aware (same effective status as `owners`). Building/date in **any order**; **date defaults to today**. Single keyword — `stats` only | `GET /api/spots` + `/api/lots` + `/api/spots/day-overrides` + `/api/presence` | 🔓 |
+| `peak hours` `[building]` | Busiest parking times from the historical occupancy heatmap (~last 90 days): peak day×hour bucket, busiest weekday, busiest hour. Optional building filter. Single trigger phrase — only `peak hours` (not `peak`/`busy` alone) | `GET /api/stats/history` (+ `?lot_id=`) | 🔓 |
 
 > Releasing an **owned** spot for a day (per-day override) is done in the web app
 > (*My parking*), not via chat — the bot has no command for it.
@@ -138,8 +140,10 @@ Example: `free spots zunaj` → free spots in *Zunanje parkirišče* only.
 **All commands in this spec are implemented and tested** in
 `backend/src/routes/integrations.ts` (`backend/src/__tests__/integrations.routes.test.ts`):
 `help`/`info`, user-centric `status`/`me`, `free spots`/`spots` with building filter,
-`reserve <spot> [date]`, `cancel [<spot>]`, `free spot`/`release [date]`, `history` (last 5),
-`owners` (who owns which spot — a public read),
+`reserve <spot> [date]`, `cancel [<spot>]`, `history` (last 5),
+`owners [building] [date]` (who owns which spot, with per-day 🟩/🟥/🟪 availability and an
+optional building filter — a public read), `stats [building] [date]` (live occupancy
+snapshot) and `peak hours [building]` (busiest times from the history heatmap),
 plus the error-handling taxonomy in §7 (unknown → help, bad args → targeted hint, rules →
 explained). Pure parser/date/alias/formatter functions are unit-tested; loopback wiring is
 covered by route-level e2e tests.

@@ -76,9 +76,10 @@ Users type plain words in the bot channel. Full, current spec lives in
 | `status` | your reservation + owned-spot situation | as the user |
 | `reserve <spot\|building\|any> [today\|tomorrow\|dd.mm.yyyy]` | reserve a spot | as the user |
 | `cancel [<spot>]` | cancel your reservation | as the user |
-| `free spot [date]` | free your owned spot for a day | as the user |
 | `history` | your last 5 bookings | as the user |
-| `owners [date]` | list ACEX employees and their assigned parking spots (grouped by owner), each tagged 🟢 free / 🔴 taken for the chosen day (defaults to today) | none |
+| `owners [building] [date]` | list ACEX employees and their assigned parking spots (grouped by owner), each tagged 🟩 free / 🟥 taken / 🟪 unconfirmed (shared, 2+ co-owners may be in) for the chosen day (defaults to today); optional building filter (`zunaj`/`klet1`/`klet2`) restricts to one building | none |
+| `stats [building] [date]` | live occupancy snapshot — overall % full + per-building breakdown (defaults to today) | none |
+| `peak hours [building]` | busiest parking times from the last ~90 days (peak day/hour) | none |
 | `map`/`where <spot>` | link to the map with the spot highlighted | none |
 
 ## Security notes
