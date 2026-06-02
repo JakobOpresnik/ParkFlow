@@ -465,6 +465,31 @@ export function spotStatusOnDate(
   return baseFallback;
 }
 
+// /api/spots returns one row per active booking, so a spot with bookings on
+// several days appears multiple times. Collapse to one row per spot id — keeping
+// the row whose active booking falls on `date` so the status reflects that day —
+// mirroring the frontend's useEffectiveSpots dedup. Rows without an id are kept
+// as-is (can't be deduped). Used by counting commands (stats, owners) so a
+// multiply-booked spot isn't tallied more than once.
+export function dedupeSpotsForDate(
+  spots: SpotLike[],
+  date: string,
+): SpotLike[] {
+  const onDate = (s: SpotLike): boolean =>
+    (s.active_booking_expires_at ?? "").slice(0, 10) === date;
+  const byId = new Map<string, SpotLike>();
+  const noId: SpotLike[] = [];
+  for (const s of spots) {
+    if (!s.id) {
+      noId.push(s);
+      continue;
+    }
+    const existing = byId.get(s.id);
+    if (!existing || (onDate(s) && !onDate(existing))) byId.set(s.id, s);
+  }
+  return [...byId.values(), ...noId];
+}
+
 // Build an owner-name → in_office / absent / unknown resolver for `date` from a
 // week of timesheet presence, mirroring useEffectiveSpots: parking_available →
 // absent, else in_office; a work-free day frees every employee; an owner not on
@@ -956,7 +981,8 @@ router.post("/rocketchat", async (req, res, next) => {
             ownerPresence,
           );
         const lot = lotFilter;
-        const scoped = lot ? spots.filter((s) => s.lot_id === lot.id) : spots;
+        const unique = dedupeSpotsForDate(spots, date);
+        const scoped = lot ? unique.filter((s) => s.lot_id === lot.id) : unique;
         reply(
           formatOwners(scoped, lots, statusOf, dayLabel(date, now), lot?.name),
         );
@@ -1009,7 +1035,8 @@ router.post("/rocketchat", async (req, res, next) => {
             ownerPresence,
           );
         const lot = lotFilter;
-        const scoped = lot ? spots.filter((s) => s.lot_id === lot.id) : spots;
+        const unique = dedupeSpotsForDate(spots, date);
+        const scoped = lot ? unique.filter((s) => s.lot_id === lot.id) : unique;
         reply(
           formatOccupancy(
             scoped,
