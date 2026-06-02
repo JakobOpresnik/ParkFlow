@@ -37,7 +37,7 @@ the webhook delivers ordinary messages, which is what we use). Replies are in **
 |---|---|---|---|
 | `help` / `info` / `?` | List available commands | — | 🔓 |
 | `status` / `me` | **Your** parking situation: your active reservation; if you're an **owner**, the state of your spot(s) incl. shared-spot logic (who's using it today) | `GET /api/bookings/my` + `GET /api/owners/me/spots` (+ presence) | 👤 |
-| `free spots` / `spots` / `available` `[building]` | List free (unoccupied) spots — all, or one **building** | `GET /api/spots` (+ `?lot_id=`) | 🔓 |
+| `free spots` / `spots` / `available` `[building] [today\|tomorrow\|dd.mm.yyyy]` | List spots that are **really free** for a day — all, or one **building**; **defaults to today**. Building and date tokens are order-independent. "Free" means effective availability (active booking → per-day override → ACEX pool → owner presence → stored status), the same rule the map and `owners` use — not just live status. When presence (timesheet) can't be reached, owner spots fall back to stored status and a "list may be incomplete" note is appended. | `GET /api/spots` (+ `?lot_id=`) + `/api/lots` + `/api/spots/day-overrides` + `/api/presence` | 🔓 |
 | `reserve <spot\|building\|any> [today\|tomorrow\|dd.mm.yyyy]` | Reserve a spot **if you can** (empty-only + all rules); date optional, default **today**. Held for the **working day 09:00–17:00** (Slovenian time). `building`/`any` → a random free spot. | `POST /api/bookings` | 👤 |
 | `cancel reservation` / `cancel [<spot>]` | Cancel **your reservation**, if you have one | `PATCH /api/bookings/:id/cancel` | 👤 |
 | `history` | Your last **5** bookings | `GET /api/bookings/my` | 👤 |
@@ -65,6 +65,8 @@ The three lots are hard-coded in the DB. The bot resolves a building alias → l
 | `Klet -2` | `-2`, `k-2`, `klet-2`, `klet2`, `basement2`, `b2` |
 
 Example: `free spots zunaj` → free spots in *Zunanje parkirišče* only.
+Example: `free spots klet1 tomorrow` (≡ `free spots tomorrow klet1`) → spots free
+in *Klet -1* tomorrow.
 
 ### Notes on the trickier ones
 
@@ -139,7 +141,8 @@ Example: `free spots zunaj` → free spots in *Zunanje parkirišče* only.
 
 **All commands in this spec are implemented and tested** in
 `backend/src/routes/integrations.ts` (`backend/src/__tests__/integrations.routes.test.ts`):
-`help`/`info`, user-centric `status`/`me`, `free spots`/`spots` with building filter,
+`help`/`info`, user-centric `status`/`me`, `free spots`/`spots` with building **and date**
+filter (order-independent, default today, presence-aware),
 `reserve <spot> [date]`, `cancel [<spot>]`, `history` (last 5),
 `owners [building] [date]` (who owns which spot, with per-day 🟩/🟥/🟪 availability and an
 optional building filter — a public read), `stats [building] [date]` (live occupancy
@@ -162,7 +165,7 @@ Rocket.Chat markdown (`*bold*`, `` `code` ``, `_italic_`):
 > 🤔 I didn't catch that. Here's what I can do:
 > 🅿️ *ParkFlow* — your parking assistant. Here's what I can do:
 > 📊 *status* — your current reservation and your owned spot
-> 🟢 *free spots* `[building]` — see what's open right now
+> 🟢 *free spots* `[building] [today|tomorrow|dd.mm.yyyy]` — what's free (default today)
 > 🚗 *reserve* `<spot|building|any> [today|tomorrow|dd.mm.yyyy]` — holds a spot 09:00–17:00
 > ❌ *cancel* `[spot]` · 🔓 *free spot* `[date]` · 🕔 *history* · 🗺️ *map* `[spot]` · ❓ *help*
 > 💡 _Dates accept_ `today`, `tomorrow` _or_ `dd.mm.yyyy`.

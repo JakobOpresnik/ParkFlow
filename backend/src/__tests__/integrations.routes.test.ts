@@ -431,38 +431,49 @@ describe("isGrabbable", () => {
 // --- formatters -------------------------------------------------------------
 
 describe("formatFreeSpots", () => {
-  it("lists only free spots by label", () => {
+  // The caller pre-filters to available spots; the formatter just lists them
+  // and stamps the day label.
+  it("lists the given spots by label with the day label", () => {
     expect(
-      formatFreeSpots([
-        { number: 12, label: "A12", status: "free" },
-        { number: 4, label: "B04", status: "occupied" },
-        { number: 9, label: "C09", status: "free" },
-      ]),
-    ).toBe("Free spots (2): A12, C09");
+      formatFreeSpots(
+        [
+          { number: 12, label: "A12", status: "free" },
+          { number: 9, label: "C09", status: "free" },
+        ],
+        "tomorrow",
+      ),
+    ).toBe("Free spots (2) — tomorrow: A12, C09");
   });
 
-  it("reports when there are no free spots", () => {
-    expect(
-      formatFreeSpots([{ number: 4, label: "B04", status: "occupied" }]),
-    ).toBe("No free spots right now.");
+  it("reports when there are no free spots for the day", () => {
+    expect(formatFreeSpots([], "today")).toBe("No free spots for today.");
   });
 });
 
 describe("formatFreeSpotsByBuilding", () => {
-  it("groups free spots under their building in lot order", () => {
+  it("groups the given spots under their building in lot order", () => {
     const spots = [
       { number: 3, label: "Z-3", status: "free", lot_id: "l1" },
-      { number: 4, label: "Z-4", status: "occupied", lot_id: "l1" },
       { number: 23, label: "K1-23", status: "free", lot_id: "l2" },
     ];
-    expect(formatFreeSpotsByBuilding(spots, LOTS)).toBe(
-      "Free spots (2):\n• Zunanje parkirišče (1): Z-3\n• Klet -1 (1): K1-23",
+    expect(formatFreeSpotsByBuilding(spots, LOTS, "tomorrow")).toBe(
+      "Free spots (2) — tomorrow:\n• Zunanje parkirišče (1): Z-3\n• Klet -1 (1): K1-23",
     );
   });
 
-  it("reports when there are no free spots", () => {
-    expect(formatFreeSpotsByBuilding([], LOTS)).toBe(
-      "No free spots right now.",
+  it("buckets spots with no matching lot under Other", () => {
+    const spots = [
+      { number: 3, label: "Z-3", status: "free", lot_id: "l1" },
+      { number: 99, label: "X-99", status: "free", lot_id: "lx" },
+    ];
+    expect(formatFreeSpotsByBuilding(spots, LOTS, "today")).toBe(
+      "Free spots (2) — today:\n• Zunanje parkirišče (1): Z-3\n• Other (1): X-99",
+    );
+  });
+
+  it("reports when there are no free spots for the day", () => {
+    expect(formatFreeSpotsByBuilding([], LOTS, "today")).toBe(
+      "No free spots for today.",
     );
   });
 });
@@ -1005,24 +1016,45 @@ describe("POST /api/integrations/rocketchat (loopback)", () => {
     delete process.env.INTERNAL_API_BASE_URL;
   });
 
-  it("lists free spots grouped by building via loopback", async () => {
+  // The `spots` command fires /api/spots, /api/lots, /api/spots/day-overrides
+  // and /api/presence concurrently (order not guaranteed), so route the mock by
+  // SQL rather than by call sequence. /api/presence is served by the stubbed
+  // fetchWeekPresence (empty roster). Return plain result objects (await unwraps
+  // them) to satisfy the lint rule against promise-returning mock callbacks.
+  const mockSpotsSources = (
+    spots: Array<Record<string, unknown>>,
+    lots: Array<{ id: string; name: string }>,
+  ): void => {
+    mockQuery.mockImplementation((sql: string) => {
+      if (sql.includes("spot_day_status")) return { rows: [] };
+      if (sql.includes("parking_lots")) return { rows: lots };
+      return { rows: spots };
+    });
+  };
+
+  it("lists free spots grouped by building (today) via loopback", async () => {
     process.env.ROCKETCHAT_WEBHOOK_TOKEN = WEBHOOK_TOKEN;
-    mockQuery
-      .mockResolvedValueOnce({
-        rows: [
-          { id: "s1", number: 12, label: "A12", status: "free", lot_id: "l1" },
-          {
-            id: "s2",
-            number: 4,
-            label: "B04",
-            status: "occupied",
-            lot_id: "l1",
-          },
-        ],
-      }) // GET /api/spots
-      .mockResolvedValueOnce({
-        rows: [{ id: "l1", name: "Zunanje parkirišče" }],
-      }); // GET /api/lots
+    mockSpotsSources(
+      [
+        {
+          id: "s1",
+          number: 12,
+          label: "A12",
+          status: "free",
+          lot_id: "l1",
+          owner_id: null,
+        },
+        {
+          id: "s2",
+          number: 4,
+          label: "B04",
+          status: "occupied",
+          lot_id: "l1",
+          owner_id: null,
+        },
+      ],
+      [{ id: "l1", name: "Zunanje parkirišče" }],
+    );
 
     const res = await request(app)
       .post("/api/integrations/rocketchat")
@@ -1031,6 +1063,125 @@ describe("POST /api/integrations/rocketchat (loopback)", () => {
     expect(res.status).toBe(200);
     expect(res.body.text).toContain("A12");
     expect(res.body.text).toContain("Zunanje parkirišče");
+    // Bare "free spots" === today; the occupied spot is excluded.
+    expect(res.body.text).toContain("— today:");
+    expect(res.body.text).not.toContain("B04");
+  });
+
+  it("lists free spots for a future date (free spots tomorrow)", async () => {
+    process.env.ROCKETCHAT_WEBHOOK_TOKEN = WEBHOOK_TOKEN;
+    mockSpotsSources(
+      [
+        {
+          id: "s1",
+          number: 12,
+          label: "A12",
+          status: "free",
+          lot_id: "l1",
+          owner_id: null,
+        },
+      ],
+      [{ id: "l1", name: "Zunanje parkirišče" }],
+    );
+
+    const res = await request(app).post("/api/integrations/rocketchat").send({
+      token: WEBHOOK_TOKEN,
+      user_name: "jsernec",
+      text: "free spots tomorrow",
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.text).toContain("— tomorrow:");
+    expect(res.body.text).toContain("A12");
+  });
+
+  it("accepts a building + date in either token order", async () => {
+    process.env.ROCKETCHAT_WEBHOOK_TOKEN = WEBHOOK_TOKEN;
+    mockSpotsSources(
+      [
+        {
+          id: "s3",
+          number: 23,
+          label: "K1-23",
+          status: "free",
+          lot_id: "l2",
+          owner_id: null,
+        },
+      ],
+      [
+        { id: "l1", name: "Zunanje parkirišče" },
+        { id: "l2", name: "Klet -1" },
+        { id: "l3", name: "Klet -2" },
+      ],
+    );
+
+    for (const text of [
+      "free spots klet1 tomorrow",
+      "free spots tomorrow klet1",
+    ]) {
+      const res = await request(app)
+        .post("/api/integrations/rocketchat")
+        .send({ token: WEBHOOK_TOKEN, user_name: "jsernec", text });
+      expect(res.status).toBe(200);
+      expect(res.body.text).toContain("Klet -1");
+      expect(res.body.text).toContain("K1-23");
+      expect(res.body.text).toContain("tomorrow");
+    }
+  });
+
+  it("rejects a token that is neither a date nor a building", async () => {
+    process.env.ROCKETCHAT_WEBHOOK_TOKEN = WEBHOOK_TOKEN;
+    mockSpotsSources(
+      [],
+      [
+        { id: "l1", name: "Zunanje parkirišče" },
+        { id: "l2", name: "Klet -1" },
+      ],
+    );
+
+    const res = await request(app).post("/api/integrations/rocketchat").send({
+      token: WEBHOOK_TOKEN,
+      user_name: "jsernec",
+      text: "free spots garage",
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.text).toContain("garage");
+    expect(res.body.text.toLowerCase()).toContain("klet1");
+  });
+
+  it("warns that the list may be incomplete when presence is unavailable", async () => {
+    process.env.ROCKETCHAT_WEBHOOK_TOKEN = WEBHOOK_TOKEN;
+    const { fetchWeekPresence } = await import("../lib/presence.js");
+    (fetchWeekPresence as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error("timesheet down"),
+    );
+    // The presence route 500s on that rejection; silence the expected log so
+    // the test output stays pristine.
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockSpotsSources(
+      [
+        {
+          id: "s1",
+          number: 12,
+          label: "A12",
+          status: "free",
+          lot_id: "l1",
+          owner_id: null,
+        },
+      ],
+      [{ id: "l1", name: "Zunanje parkirišče" }],
+    );
+
+    const res = await request(app).post("/api/integrations/rocketchat").send({
+      token: WEBHOOK_TOKEN,
+      user_name: "jsernec",
+      text: "free spots tomorrow",
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.text.toLowerCase()).toContain("may be incomplete");
+    errSpy.mockRestore();
   });
 
   it("lists spot owners with an availability icon via loopback", async () => {
