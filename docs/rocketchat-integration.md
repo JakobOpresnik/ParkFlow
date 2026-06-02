@@ -78,6 +78,7 @@ Users type plain words in the bot channel. Full, current spec lives in
 | `cancel [<spot>]` | cancel your reservation | as the user |
 | `free spot [date]` | free your owned spot for a day | as the user |
 | `history` | your last 5 bookings | as the user |
+| `owners [date]` | list ACEX employees and their assigned parking spots (grouped by owner), each tagged 🟢 free / 🔴 taken for the chosen day (defaults to today) | none |
 | `map`/`where <spot>` | link to the map with the spot highlighted | none |
 
 ## Security notes
@@ -86,7 +87,11 @@ Users type plain words in the bot channel. Full, current spec lives in
   instance can trigger actions.
 - A user can only send messages **as themselves**; `user_name` cannot be spoofed by
   another user. Writes therefore act as the authenticated sender.
-- Reads expose no personal data (the public spot list is already PII-scrubbed).
+- Most reads expose no personal data (the public spot list shown by `free spots`
+  carries no contact details). **Exception:** the `owners` command intentionally lists
+  employee names against their assigned spots. It needs no auth — like the other reads —
+  so anyone in the bot channel can see the owner roster. Restrict the bot channel's
+  membership accordingly, or drop `owners` if that exposure isn't acceptable.
 
 ## ParkFlow side (implemented)
 
