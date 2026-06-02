@@ -23,11 +23,13 @@ import {
   formatStatus,
   HELP_TEXT,
   isGrabbable,
+  ljubljanaInstant,
   parseCommand,
   parseDate,
   pickRandomFree,
   resolveLot,
   spotLink,
+  workDayOver,
 } from "../routes/integrations.js";
 
 vi.mock("../db/pool.js", () => ({
@@ -180,6 +182,44 @@ describe("parseDate", () => {
     expect(parseDate("32.13.2026", NOW)).toBeNull();
     expect(parseDate("please", NOW)).toBeNull();
     expect(parseDate("3-6-2026", NOW)).toBeNull();
+  });
+});
+
+// --- ljubljanaInstant -------------------------------------------------------
+
+describe("ljubljanaInstant", () => {
+  it("maps 09:00/17:00 local to UTC in summer (CEST = UTC+2)", () => {
+    expect(ljubljanaInstant("2026-06-01", 9)).toBe("2026-06-01T07:00:00.000Z");
+    expect(ljubljanaInstant("2026-06-01", 17)).toBe("2026-06-01T15:00:00.000Z");
+  });
+
+  it("maps 09:00/17:00 local to UTC in winter (CET = UTC+1)", () => {
+    expect(ljubljanaInstant("2026-01-15", 9)).toBe("2026-01-15T08:00:00.000Z");
+    expect(ljubljanaInstant("2026-01-15", 17)).toBe("2026-01-15T16:00:00.000Z");
+  });
+});
+
+// --- workDayOver ------------------------------------------------------------
+
+describe("workDayOver", () => {
+  it("is false during working hours today", () => {
+    // 09:00 UTC = 11:00 Ljubljana (summer) — still within the day.
+    expect(
+      workDayOver("2026-06-01", new Date("2026-06-01T09:00:00.000Z")),
+    ).toBe(false);
+  });
+
+  it("is true once today is past 17:00 local", () => {
+    // 20:00 UTC = 22:00 Ljubljana (summer) — working day is over.
+    expect(
+      workDayOver("2026-06-01", new Date("2026-06-01T20:00:00.000Z")),
+    ).toBe(true);
+  });
+
+  it("is false for a future date regardless of the current time", () => {
+    expect(
+      workDayOver("2026-06-02", new Date("2026-06-01T20:00:00.000Z")),
+    ).toBe(false);
   });
 });
 

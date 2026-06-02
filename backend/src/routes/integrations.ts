@@ -20,16 +20,30 @@ const JWT_SECRET = process.env.JWT_SECRET ?? "dev-secret-change-in-production";
 // Short-lived: the token only needs to live for the loopback call.
 const MINTED_TOKEN_TTL = "5m";
 
+// Working hours a chat reservation holds a spot for (Slovenian local time).
+export const WORK_START_HOUR = 9;
+export const WORK_END_HOUR = 17;
+// Human label like "07:00–17:00" — derived so messages never drift from the hours.
+const WORK_HOURS_LABEL = `${String(WORK_START_HOUR).padStart(2, "0")}:00–${String(
+  WORK_END_HOUR,
+).padStart(2, "0")}:00`;
+
 export const HELP_TEXT = [
-  "ParkFlow — I understand these commands:",
-  "• status — your parking situation (reservation + owned spot)",
-  "• free spots [building] — list free spots (building: zunaj / klet1 / klet2)",
-  "• reserve <spot|building|any> [today|tomorrow|dd.mm.yyyy] — reserve a spot (building/any → a random free one)",
-  "• cancel [<spot>] — cancel your reservation",
-  "• free spot [date] — free your owned spot for a day",
-  "• history — your last 5 bookings",
-  "• map [<spot>] / where <spot> — get a link to the map (highlighting the spot)",
-  "• help — show this list",
+  "🅿️ *ParkFlow* — your parking assistant. Here's what I can do:",
+  "",
+  "📊 *status* — your current reservation and your owned spot",
+  "🟢 *free spots* `[building]` — see what's open right now",
+  "      _building:_ `zunaj` · `klet1` · `klet2`",
+  "🚗 *reserve* `<spot|building|any> [today|tomorrow|dd.mm.yyyy]`",
+  `      Holds a spot for the working day (${WORK_HOURS_LABEL}). Give a building name or \`any\` to grab a random free one.`,
+  "      _e.g._ `reserve A12` · `reserve zunaj tomorrow` · `reserve any`",
+  "❌ *cancel* `[spot]` — cancel your reservation",
+  "🔓 *free spot* `[date]` — release your own spot for a day so a colleague can use it",
+  "🕔 *history* — your last 5 bookings",
+  "🗺️ *map* `[spot]` / *where* `<spot>` — get a map link (highlighting the spot)",
+  "❓ *help* — show this list",
+  "",
+  "💡 _Dates accept_ `today`, `tomorrow` _or_ `dd.mm.yyyy`.",
 ].join("\n");
 
 // --- Command parsing (pure, unit-tested) -----------------------------------
@@ -141,6 +155,53 @@ function addDays(date: string, n: number): string {
   const d = new Date(`${date}T00:00:00.000Z`);
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
+}
+
+// The Europe/Ljubljana UTC offset (minutes) at a given instant — handles CET vs
+// CEST without hardcoding a fixed offset.
+function ljubljanaOffsetMinutes(at: Date): number {
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Ljubljana",
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const p: Record<string, number> = {};
+  for (const part of fmt.formatToParts(at))
+    if (part.type !== "literal") p[part.type] = Number(part.value);
+  const hour = p.hour === 24 ? 0 : (p.hour ?? 0); // some runtimes report midnight as 24
+  const asUTC = Date.UTC(
+    p.year ?? 0,
+    (p.month ?? 1) - 1,
+    p.day ?? 1,
+    hour,
+    p.minute ?? 0,
+    p.second ?? 0,
+  );
+  return (asUTC - at.getTime()) / 60_000;
+}
+
+// Convert a wall-clock hour on a local Slovenian date (YYYY-MM-DD) to a UTC ISO
+// instant. DST switches happen overnight, so a single offset correction is safe
+// for working-hours times like 09:00/17:00.
+export function ljubljanaInstant(date: string, hour: number): string {
+  const hh = String(hour).padStart(2, "0");
+  const naive = new Date(`${date}T${hh}:00:00.000Z`);
+  const offsetMin = ljubljanaOffsetMinutes(naive);
+  return new Date(naive.getTime() - offsetMin * 60_000).toISOString();
+}
+
+// True when `date` is today (Slovenian) and the working day (ends 17:00) is
+// already over — no point holding a spot that would expire immediately.
+export function workDayOver(date: string, now: Date): boolean {
+  return (
+    date === localDate(now) &&
+    now.getTime() >= new Date(ljubljanaInstant(date, WORK_END_HOUR)).getTime()
+  );
 }
 
 // Returns YYYY-MM-DD, or null if the token is present but not a valid date.
@@ -524,7 +585,9 @@ router.post("/rocketchat", async (req, res, next) => {
         return;
 
       case "greet":
-        reply('👋 Hi! I’m ParkFlowBot. Type "help" to see what I can do.');
+        reply(
+          "👋 Hi! I’m *ParkFlowBot* — I help you find and reserve parking. Type `help` to see everything I can do.",
+        );
         return;
 
       case "map": {
@@ -591,6 +654,14 @@ router.post("/rocketchat", async (req, res, next) => {
           reply("That date is in the past — pick today or later.");
           return;
         }
+        // No working time left today (past 17:00) — refuse rather than create a
+        // reservation that would expire the moment it's made.
+        if (workDayOver(date, now)) {
+          reply(
+            `No working time left today — reservations run ${WORK_HOURS_LABEL}. Try "reserve … tomorrow".`,
+          );
+          return;
+        }
         // Warn instead of silently replacing: you can hold one spot per day.
         const reserveToken = mintUserToken(username!);
         const myBookings = await callArray<BookingLike>(
@@ -642,11 +713,18 @@ router.post("/rocketchat", async (req, res, next) => {
           );
           return;
         }
-        const reserveBody: { spot_id: string; expires_at?: string } = {
+        // Every reservation holds the spot for the working day (09:00–17:00
+        // Slovenian time), regardless of when it was created or which day it's
+        // for — so a 00:11 booking no longer expires at 08:11.
+        const reserveBody: {
+          spot_id: string;
+          starts_at: string;
+          expires_at: string;
+        } = {
           spot_id: spot.id,
+          starts_at: ljubljanaInstant(date, WORK_START_HOUR),
+          expires_at: ljubljanaInstant(date, WORK_END_HOUR),
         };
-        if (date !== localDate(now))
-          reserveBody.expires_at = `${date}T18:00:00.000Z`;
         const { status, data } = await call<{ error?: string }>(
           "POST",
           "/api/bookings",
