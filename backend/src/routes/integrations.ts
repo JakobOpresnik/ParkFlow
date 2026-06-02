@@ -1,6 +1,8 @@
 import { Router } from "express";
 import jwt from "jsonwebtoken";
 
+import { isOwnerAbsent } from "../lib/presence.helpers.js";
+import type { WeekPresenceResponse } from "../lib/presence.types.js";
 import type { AuthPayload } from "../middleware/auth.js";
 
 // Rocket.Chat integration.
@@ -31,18 +33,20 @@ const WORK_HOURS_LABEL = `${String(WORK_START_HOUR).padStart(2, "0")}:00–${Str
 export const HELP_TEXT = [
   "*ParkFlow* — your parking assistant. Here's what I can do:",
   "",
-  "*status* — your current reservation and your owned spot",
-  "*free spots* `[building]` — see what's open right now",
+  "*status* — see your current reservation and your owned spot",
+  "*free spots* `[building]` — see what's available right now",
   "      _building:_ `zunaj` · `klet1` · `klet2`",
   "*reserve* `<spot|building|any> [today|tomorrow|dd.mm.yyyy]`",
   `      Holds a spot for the working day (${WORK_HOURS_LABEL}). Give a building name or \`any\` to grab a random free one.`,
   "      _e.g._ `reserve A12` · `reserve zunaj tomorrow` · `reserve any`",
-  "*cancel* `[spot]` — cancel your reservation",
-  "*history* — your last 5 bookings",
+  "*cancel* `[spot]` — cancel your current reservation",
+  "*history* — see your last 5 bookings",
+  "*owners* `[today|tomorrow|dd.mm.yyyy]` — who owns which spot (🟢 free / 🔴 taken that day)",
   "*map* `[spot]` / *where* `<spot>` — get a map link (highlighting the spot)",
   "*help* — show this list",
   "",
   "_Dates accept_ `today`, `tomorrow` _or_ `dd.mm.yyyy`.",
+  "_Buildings are_ `zunaj`, `klet1` _or_ `klet2`.",
 ].join("\n");
 
 // --- Command parsing (pure, unit-tested) -----------------------------------
@@ -56,6 +60,7 @@ export type Command =
   | "cancel"
   | "history"
   | "map"
+  | "owners"
   | "unknown";
 
 // Greetings the bot answers in kind (Slovenian + English).
@@ -109,6 +114,8 @@ export function parseCommand(text: string): {
     case "map":
     case "where":
       return { command: "map", rest: after(1) };
+    case "owners":
+      return { command: "owners", rest: after(1) };
     case "cancel": {
       const rest = after(1);
       if (rest[0]?.toLowerCase() === "reservation") rest.shift();
@@ -251,6 +258,21 @@ export function pickRandomFree(
 // The ACEX company pool ("first come, first served") — public, not a personal spot.
 const ACEX_OWNER_NAME = "ACEX - kdor prej pride, prej melje";
 
+// Owner rows that are NOT ACEX employees — the public pool, placeholders/
+// vehicles, and external companies/rentals. The `owners` roster lists only real
+// ACEX staff, so these are filtered out. There is no DB flag for this, so the
+// list is maintained by hand: add new external/placeholder owner names here as
+// they are created (see migrations/005_real_parking_data.sql for the seed set).
+const NOT_ACEX_OWNERS = new Set<string>([
+  ACEX_OWNER_NAME,
+  "kontejner - prenova",
+  "Tesla S",
+  "Tesla X",
+  "oddano v najem: MIK",
+  "ARHEA",
+  "Reduxi",
+]);
+
 // A spot anyone can grab without taking someone's personal/shared spot:
 // free, and either unowned or part of the ACEX public pool.
 export function isGrabbable(s: SpotLike): boolean {
@@ -269,6 +291,15 @@ export interface SpotLike {
   lot_id?: string;
   owner_id?: string | null;
   owner_name?: string | null;
+  active_booking_id?: string | null;
+  active_booking_expires_at?: string | null;
+}
+
+// A per-day status override for one spot (from GET /api/spots/day-overrides).
+export interface DayOverride {
+  spot_id: string;
+  date: string;
+  status: string;
 }
 
 export interface OwnedSpotLike {
@@ -358,6 +389,108 @@ export function formatFreeSpotsByBuilding(
     lines.push(`• Other (${other.length}): ${other.map(spotLabel).join(", ")}`);
   }
   return `Free spots (${free.length}):\n${lines.join("\n")}`;
+}
+
+// Icons shown after each spot label in the `owners` list.
+const SPOT_FREE_ICON = "🟢"; // free for someone else to use that day
+const SPOT_TAKEN_ICON = "🔴"; // owner is in / spot is otherwise taken
+
+// Whether `spot` is free for someone else to use on `date` (local day). Mirrors
+// the effective-free logic in spots.ts (the "spotted" route): an active booking
+// for that day means taken; otherwise a per-day override wins; otherwise an
+// owned spot is free only when *every* co-owner is absent that day.
+//
+// `overrideStatus` is the spot's spot_day_status for `date`, if any.
+// `isOwnerAbsentOnDate(name)` returns true if that owner is away (spot free),
+// false if present, or null when presence is unknown — in which case we fall
+// back to the spot's stored status, just like spots.ts does.
+export function isSpotAvailableOnDate(
+  spot: SpotLike,
+  date: string,
+  overrideStatus: string | undefined,
+  isOwnerAbsentOnDate: (ownerName: string) => boolean | null,
+): boolean {
+  // An active booking for that day → taken, regardless of everything else.
+  if (
+    spot.active_booking_id &&
+    (spot.active_booking_expires_at ?? "").slice(0, 10) === date
+  ) {
+    return false;
+  }
+  // A per-day override is authoritative.
+  if (overrideStatus !== undefined) return overrideStatus === "free";
+  // The ACEX public pool is always free (normally filtered out of this list).
+  if (spot.owner_name === ACEX_OWNER_NAME) return true;
+  // Owned spot: free only when every co-owner is absent that day.
+  if (spot.owner_name) {
+    const ownerNames = spot.owner_name
+      .split("/")
+      .map((n) => n.trim())
+      .filter(Boolean);
+    if (ownerNames.length === 0) return spot.status === "free";
+    const verdicts = ownerNames.map((n) => isOwnerAbsentOnDate(n));
+    // Presence unknown for any co-owner → fall back to the stored status.
+    if (verdicts.some((v) => v === null)) return spot.status === "free";
+    return verdicts.every((v) => v === true);
+  }
+  // Unowned spot.
+  return spot.status === "free";
+}
+
+// A human label for a date relative to now: "today", "tomorrow", or DD.MM.YYYY.
+export function dayLabel(date: string, now: Date): string {
+  if (date === localDate(now)) return "today";
+  if (date === addDays(localDate(now), 1)) return "tomorrow";
+  const [y, m, d] = date.split("-");
+  return `${d}.${m}.${y}`;
+}
+
+// List every ACEX-employee-owned spot grouped by its owner. Skips unowned spots
+// and any non-employee owner (public pool, placeholders/vehicles, external
+// rentals — see NOT_ACEX_OWNERS). Each spot label carries an availability icon
+// for `when` (🟢 free for others / 🔴 taken), per `isAvailable`. When all of an
+// owner's spots sit in one building, that building is shown in parentheses.
+export function formatOwners(
+  spots: SpotLike[],
+  lots: Lot[],
+  isAvailable: (spot: SpotLike) => boolean,
+  when: string,
+): string {
+  const lotName = new Map(lots.map((l) => [l.id, l.name]));
+  const owned = spots.filter(
+    (s) => s.owner_id && s.owner_name && !NOT_ACEX_OWNERS.has(s.owner_name),
+  );
+  if (owned.length === 0) return "No parking spots have an assigned owner.";
+
+  const byOwner = new Map<string, SpotLike[]>();
+  for (const s of owned) {
+    const list = byOwner.get(s.owner_name!) ?? [];
+    list.push(s);
+    byOwner.set(s.owner_name!, list);
+  }
+
+  const lines = [...byOwner.keys()]
+    .sort((a, b) => a.localeCompare(b))
+    .map((name) => {
+      const ownedSpots = byOwner.get(name)!.sort((a, b) => a.number - b.number);
+      const labels = ownedSpots
+        .map(
+          (s) =>
+            `${spotLabel(s)} ${isAvailable(s) ? SPOT_FREE_ICON : SPOT_TAKEN_ICON}`,
+        )
+        .join(", ");
+      const buildings = [
+        ...new Set(
+          ownedSpots
+            .map((s) => (s.lot_id ? lotName.get(s.lot_id) : undefined))
+            .filter((n): n is string => Boolean(n)),
+        ),
+      ];
+      const where = buildings.length === 1 ? ` (${buildings[0]})` : "";
+      return `• ${name} — ${labels}${where}`;
+    });
+
+  return `Parking spot owners (${byOwner.size}) — ${when}:\n${lines.join("\n")}`;
 }
 
 export function formatReserveResult(
@@ -611,6 +744,48 @@ router.post("/rocketchat", async (req, res, next) => {
         const spots = await callArray<SpotLike>("GET", "/api/spots");
         const lots = await callArray<Lot>("GET", "/api/lots");
         reply(formatFreeSpotsByBuilding(spots, lots));
+        return;
+      }
+
+      case "owners": {
+        // Public read (no auth) — lists who owns which spot, grouped by owner,
+        // with a per-day availability icon for the requested day (default
+        // today). Pulls that day's per-day overrides and presence so the icon
+        // reflects real availability (owner away / freed), mirroring spots.ts
+        // rather than the spot's stored base status.
+        const dateArg = rest[0];
+        const date = parseDate(dateArg, now);
+        if (date === null) {
+          reply(
+            `I didn’t understand the date "${dateArg ?? ""}". Use today, tomorrow, or dd.mm.yyyy.`,
+          );
+          return;
+        }
+        const [spots, lots, overrides, presenceRes] = await Promise.all([
+          callArray<SpotLike>("GET", "/api/spots"),
+          callArray<Lot>("GET", "/api/lots"),
+          callArray<DayOverride>(
+            "GET",
+            `/api/spots/day-overrides?date=${date}`,
+          ),
+          call<WeekPresenceResponse>("GET", `/api/presence?date=${date}`),
+        ]);
+        const overrideBySpot = new Map(
+          overrides.map((o) => [o.spot_id, o.status]),
+        );
+        // If presence is unavailable (timesheet API down), the resolver returns
+        // null and isSpotAvailableOnDate falls back to the stored status.
+        const presence = presenceRes.status === 200 ? presenceRes.data : null;
+        const isOwnerAbsentOnDate = (name: string): boolean | null =>
+          presence ? isOwnerAbsent(presence, name, date) : null;
+        const isAvailable = (s: SpotLike): boolean =>
+          isSpotAvailableOnDate(
+            s,
+            date,
+            s.id ? overrideBySpot.get(s.id) : undefined,
+            isOwnerAbsentOnDate,
+          );
+        reply(formatOwners(spots, lots, isAvailable, dayLabel(date, now)));
         return;
       }
 
