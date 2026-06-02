@@ -14,14 +14,17 @@ import {
 import { createApp } from "../app.js";
 import {
   activeBookingOnDate,
+  dayLabel,
   formatCancelResult,
   formatFreeSpots,
   formatFreeSpotsByBuilding,
   formatHistory,
+  formatOwners,
   formatReserveResult,
   formatStatus,
   HELP_TEXT,
   isGrabbable,
+  isSpotAvailableOnDate,
   ljubljanaInstant,
   parseCommand,
   parseDate,
@@ -36,6 +39,18 @@ vi.mock("../db/pool.js", () => ({
     query: vi.fn(),
     connect: vi.fn(),
   },
+}));
+
+// Stub the timesheet fetch so the `owners` loopback test (which hits
+// /api/presence) doesn't make a real external call. This only affects the
+// presence route; integrations.ts imports the real isOwnerAbsent straight from
+// presence.helpers.js, so the pure-function availability tests are unaffected.
+vi.mock("../lib/presence.js", () => ({
+  fetchWeekPresence: vi.fn().mockResolvedValue({
+    employees: [],
+    work_free_days: [],
+  }),
+  isOwnerAbsent: vi.fn().mockReturnValue(false),
 }));
 
 const { pool } = await import("../db/pool.js");
@@ -126,6 +141,18 @@ describe("parseCommand", () => {
     });
   });
 
+  it("maps owners (exact word only — no aliases) and keeps a date arg", () => {
+    expect(parseCommand("owners")).toEqual({ command: "owners", rest: [] });
+    expect(parseCommand("owners tomorrow")).toEqual({
+      command: "owners",
+      rest: ["tomorrow"],
+    });
+    // Near-misses must NOT trigger the roster.
+    expect(parseCommand("owner").command).toBe("unknown");
+    expect(parseCommand("who").command).toBe("unknown");
+    expect(parseCommand("whose").command).toBe("unknown");
+  });
+
   it("returns unknown for unrecognised or empty input", () => {
     expect(parseCommand("blabla").command).toBe("unknown");
     expect(parseCommand("").command).toBe("unknown");
@@ -170,6 +197,19 @@ describe("parseDate", () => {
     expect(parseDate("32.13.2026", NOW)).toBeNull();
     expect(parseDate("please", NOW)).toBeNull();
     expect(parseDate("3-6-2026", NOW)).toBeNull();
+  });
+});
+
+// --- dayLabel ---------------------------------------------------------------
+
+describe("dayLabel", () => {
+  it("labels today and tomorrow relative to now", () => {
+    expect(dayLabel("2026-06-01", NOW)).toBe("today");
+    expect(dayLabel("2026-06-02", NOW)).toBe("tomorrow");
+  });
+
+  it("falls back to DD.MM.YYYY for any other date", () => {
+    expect(dayLabel("2026-06-05", NOW)).toBe("05.06.2026");
   });
 });
 
@@ -472,6 +512,204 @@ describe("formatHistory", () => {
   });
 });
 
+describe("isSpotAvailableOnDate", () => {
+  const DATE = "2026-06-01";
+  // Resolver stubs: away = absent (free), present = taken, unknown = no presence.
+  const away = () => true;
+  const present = () => false;
+  const unknown = () => null;
+  // Per-name resolver for co-owner cases.
+  const byName =
+    (absent: Record<string, boolean>) =>
+    (name: string): boolean | null =>
+      absent[name] ?? false;
+
+  const owned = (owner_name: string, extra = {}) => ({
+    number: 1,
+    label: "X1",
+    status: "occupied",
+    owner_id: "o",
+    owner_name,
+    ...extra,
+  });
+
+  it("is free when the (only) owner is absent that day", () => {
+    expect(isSpotAvailableOnDate(owned("Ana"), DATE, undefined, away)).toBe(
+      true,
+    );
+  });
+
+  it("is taken when the owner is in office", () => {
+    expect(isSpotAvailableOnDate(owned("Ana"), DATE, undefined, present)).toBe(
+      false,
+    );
+  });
+
+  it("is taken for a co-owned spot unless EVERY co-owner is absent", () => {
+    const resolve = byName({ Ana: true, Boris: false });
+    expect(
+      isSpotAvailableOnDate(owned("Ana / Boris"), DATE, undefined, resolve),
+    ).toBe(false);
+    const allAway = byName({ Ana: true, Boris: true });
+    expect(
+      isSpotAvailableOnDate(owned("Ana / Boris"), DATE, undefined, allAway),
+    ).toBe(true);
+  });
+
+  it("lets a per-day override win over presence", () => {
+    // Owner present, but the spot was explicitly freed for the day.
+    expect(isSpotAvailableOnDate(owned("Ana"), DATE, "free", present)).toBe(
+      true,
+    );
+    // Owner away, but the spot was explicitly marked occupied for the day.
+    expect(isSpotAvailableOnDate(owned("Ana"), DATE, "occupied", away)).toBe(
+      false,
+    );
+  });
+
+  it("counts an active booking for that day as taken, even with a free override", () => {
+    expect(
+      isSpotAvailableOnDate(
+        owned("Ana", {
+          active_booking_id: "b1",
+          active_booking_expires_at: `${DATE}T15:00:00.000Z`,
+        }),
+        DATE,
+        "free",
+        away,
+      ),
+    ).toBe(false);
+  });
+
+  it("ignores an active booking that is for a different day", () => {
+    expect(
+      isSpotAvailableOnDate(
+        owned("Ana", {
+          active_booking_id: "b1",
+          active_booking_expires_at: "2026-06-02T15:00:00.000Z",
+        }),
+        DATE,
+        undefined,
+        away,
+      ),
+    ).toBe(true);
+  });
+
+  it("falls back to the stored status when presence is unknown", () => {
+    expect(isSpotAvailableOnDate(owned("Ana"), DATE, undefined, unknown)).toBe(
+      false,
+    );
+    expect(
+      isSpotAvailableOnDate(
+        owned("Ana", { status: "free" }),
+        DATE,
+        undefined,
+        unknown,
+      ),
+    ).toBe(true);
+  });
+});
+
+describe("formatOwners", () => {
+  // Mark a spot available iff its base status is "free" (enough to exercise the
+  // icon rendering; the availability rule itself is covered above).
+  const byStatus = (s: { status: string }): boolean => s.status === "free";
+
+  it("groups owned spots by owner with a per-spot availability icon", () => {
+    const spots = [
+      {
+        number: 12,
+        label: "A12",
+        status: "occupied",
+        lot_id: "l1",
+        owner_id: "o1",
+        owner_name: "Janez Novak",
+      },
+      {
+        number: 13,
+        label: "A13",
+        status: "free",
+        lot_id: "l1",
+        owner_id: "o1",
+        owner_name: "Janez Novak",
+      },
+      {
+        number: 23,
+        label: "K1-23",
+        status: "occupied",
+        lot_id: "l2",
+        owner_id: "o2",
+        owner_name: "Mojca Kovač",
+      },
+    ];
+    expect(formatOwners(spots, LOTS, byStatus, "today")).toBe(
+      "Parking spot owners (2) — today:\n" +
+        "• Janez Novak — A12 🔴, A13 🟢 (Zunanje parkirišče)\n" +
+        "• Mojca Kovač — K1-23 🔴 (Klet -1)",
+    );
+  });
+
+  it("shows only ACEX employees — skips unowned, the public pool, placeholders and external rentals", () => {
+    const spots = [
+      { number: 1, label: "Z-1", status: "free", owner_id: null },
+      {
+        number: 2,
+        label: "Z-2",
+        status: "free",
+        lot_id: "l1",
+        owner_id: "acex",
+        owner_name: "ACEX - kdor prej pride, prej melje",
+      },
+      {
+        number: 13,
+        label: "K1-13",
+        status: "occupied",
+        lot_id: "l2",
+        owner_id: "tesla",
+        owner_name: "Tesla S",
+      },
+      {
+        number: 16,
+        label: "K1-16",
+        status: "occupied",
+        lot_id: "l2",
+        owner_id: "mik",
+        owner_name: "oddano v najem: MIK",
+      },
+      {
+        number: 43,
+        label: "K2-43",
+        status: "occupied",
+        lot_id: "l2",
+        owner_id: "rdx",
+        owner_name: "Reduxi",
+      },
+      {
+        number: 3,
+        label: "Z-3",
+        status: "occupied",
+        lot_id: "l1",
+        owner_id: "o1",
+        owner_name: "Ana Horvat",
+      },
+    ];
+    expect(formatOwners(spots, LOTS, byStatus, "tomorrow")).toBe(
+      "Parking spot owners (1) — tomorrow:\n• Ana Horvat — Z-3 🔴 (Zunanje parkirišče)",
+    );
+  });
+
+  it("reports when no spot has an assigned owner", () => {
+    expect(
+      formatOwners(
+        [{ number: 1, label: "Z-1", status: "free", owner_id: null }],
+        LOTS,
+        byStatus,
+        "today",
+      ),
+    ).toBe("No parking spots have an assigned owner.");
+  });
+});
+
 // --- Route: auth + help -----------------------------------------------------
 
 const app = createApp();
@@ -590,6 +828,57 @@ describe("POST /api/integrations/rocketchat (loopback)", () => {
     expect(res.status).toBe(200);
     expect(res.body.text).toContain("A12");
     expect(res.body.text).toContain("Zunanje parkirišče");
+  });
+
+  it("lists spot owners with an availability icon via loopback", async () => {
+    process.env.ROCKETCHAT_WEBHOOK_TOKEN = WEBHOOK_TOKEN;
+    // The route fires /api/spots, /api/lots and /api/spots/day-overrides
+    // concurrently (order not guaranteed), so route the mock by SQL rather than
+    // by call sequence. /api/presence is served by the stubbed fetchWeekPresence.
+    // Return plain result objects (await unwraps them); avoids a
+    // promise-returning mock callback, which the lint rules disallow here.
+    mockQuery.mockImplementation((sql: string) => {
+      if (sql.includes("spot_day_status")) return { rows: [] };
+      if (sql.includes("parking_lots"))
+        return { rows: [{ id: "l1", name: "Zunanje parkirišče" }] };
+      return {
+        rows: [
+          {
+            id: "s1",
+            number: 12,
+            label: "A12",
+            status: "occupied",
+            lot_id: "l1",
+            owner_id: "o1",
+            owner_name: "Janez Novak",
+            active_booking_id: null,
+          },
+        ],
+      };
+    });
+
+    const res = await request(app)
+      .post("/api/integrations/rocketchat")
+      .send({ token: WEBHOOK_TOKEN, user_name: "jsernec", text: "owners" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.text).toContain("Janez Novak");
+    expect(res.body.text).toContain("A12");
+    // No date supplied → defaults to today.
+    expect(res.body.text).toContain("— today:");
+    // Empty presence + occupied status → not free for others today.
+    expect(res.body.text).toContain("🔴");
+
+    // A supplied date is reflected in the header.
+    const resTomorrow = await request(app)
+      .post("/api/integrations/rocketchat")
+      .send({
+        token: WEBHOOK_TOKEN,
+        user_name: "jsernec",
+        text: "owners tomorrow",
+      });
+    expect(resTomorrow.status).toBe(200);
+    expect(resTomorrow.body.text).toContain("— tomorrow:");
   });
 
   it("tells the user when a reserved spot does not exist", async () => {
