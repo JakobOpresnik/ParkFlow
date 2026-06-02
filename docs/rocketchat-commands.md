@@ -38,7 +38,7 @@ the webhook delivers ordinary messages, which is what we use). Replies are in **
 | `help` / `info` / `?` | List available commands | — | 🔓 |
 | `status` / `me` | **Your** parking situation: your active reservation; if you're an **owner**, the state of your spot(s) incl. shared-spot logic (who's using it today) | `GET /api/bookings/my` + `GET /api/owners/me/spots` (+ presence) | 👤 |
 | `free spots` / `spots` / `available` `[building]` | List free (unoccupied) spots — all, or one **building** | `GET /api/spots` (+ `?lot_id=`) | 🔓 |
-| `reserve <spot> [today\|tomorrow\|dd.mm.yyyy]` | Reserve a spot **if you can** (empty-only + all rules); date optional, default **today** | `POST /api/bookings` | 👤 |
+| `reserve <spot\|building\|any> [today\|tomorrow\|dd.mm.yyyy]` | Reserve a spot **if you can** (empty-only + all rules); date optional, default **today**. Held for the **working day 09:00–17:00** (Slovenian time). `building`/`any` → a random free spot. | `POST /api/bookings` | 👤 |
 | `cancel reservation` / `cancel [<spot>]` | Cancel **your reservation**, if you have one | `PATCH /api/bookings/:id/cancel` | 👤 |
 | `free spot` / `free my spot` / `release` `[today\|tomorrow\|dd.mm.yyyy]` | Free **your owned** parking spot (owner) for the day, if you can | `PUT /api/owners/me/spots/:id/day-status` `{status:'free'}` | 👤 |
 | `history` | Your last **5** bookings | `GET /api/bookings/my` | 👤 |
@@ -85,6 +85,13 @@ Example: `free spots zunaj` → free spots in *Zunanje parkirišče* only.
   succeeds on an empty/bookable spot; `cancel` only works on your own (or owner-permitted)
   booking.
 
+- **Reservation window — fixed working hours.** Every reservation (today *and* future dates)
+  holds the spot for the **working day 09:00–17:00** in Slovenian local time (`starts_at`
+  09:00, `expires_at` 17:00), with a DST-aware conversion to UTC (`ljubljanaInstant`). There
+  is no "now + 8 h" default any more — a spot grabbed at 00:11 no longer expired at 08:11.
+  Reserving for **today after 17:00** is refused with a clear message (see §7 B) instead of
+  creating a reservation that would expire the moment it's made.
+
 ---
 
 ## 4. My additional suggestions
@@ -106,7 +113,9 @@ Example: `free spots zunaj` → free spots in *Zunanje parkirišče* only.
    `cancel reservation`/`cancel` = cancel reservation (see grammar above).
 2. Building aliases defined (Zunanje parkirišče / Klet -1 / Klet -2 → see alias table).
 3. `history` → last **5** bookings, from `GET /api/bookings/my`.
-4. `reserve` accepts a date: default **today**, or `today`/`tomorrow`/`dd.mm.yyyy`.
+4. `reserve` accepts a date: default **today**, or `today`/`tomorrow`/`dd.mm.yyyy`. Every
+   reservation runs the **working day 09:00–17:00** (Slovenian time); same-day after 17:00 is
+   refused.
 5. Language → commands + replies in **English**.
 
 6. **Spot naming** → users type the spot **label** (e.g. `A12`); chat labels match DB labels.
@@ -145,12 +154,15 @@ that first word, three outcomes:
 
 ### A. First word is NOT a known command → friendly help
 Any message that doesn't start with a known keyword (`hej`, `kako si`, random text) →
-return a friendly line + the full help list:
+return a friendly line + the full help list. The help list is rendered with emojis +
+Rocket.Chat markdown (`*bold*`, `` `code` ``, `_italic_`):
 > 🤔 I didn't catch that. Here's what I can do:
-> • `status` — your parking situation
-> • `free spots [building]` — list free spots
-> • `reserve <spot> [date]` — reserve a spot
-> • … (full help)
+> 🅿️ *ParkFlow* — your parking assistant. Here's what I can do:
+> 📊 *status* — your current reservation and your owned spot
+> 🟢 *free spots* `[building]` — see what's open right now
+> 🚗 *reserve* `<spot|building|any> [today|tomorrow|dd.mm.yyyy]` — holds a spot 09:00–17:00
+> ❌ *cancel* `[spot]` · 🔓 *free spot* `[date]` · 🕔 *history* · 🗺️ *map* `[spot]` · ❓ *help*
+> 💡 _Dates accept_ `today`, `tomorrow` _or_ `dd.mm.yyyy`.
 
 ### B. Known command, but the argument is missing/invalid → **specific** message (NOT generic help)
 The whole point: a wrong spot or date gets a precise, helpful reply.
@@ -160,6 +172,7 @@ The whole point: a wrong spot or date gets a precise, helpful reply.
 | `reserve` (no spot) | "Which spot? e.g. `reserve A12` (optionally `reserve A12 tomorrow`)." |
 | `reserve X22` (spot doesn't exist) | "I couldn't find spot **X22**. Type `free spots` to see what's available." |
 | `reserve A12 32.13.2026` (bad date) | "I didn't understand the date **32.13.2026**. Use `today`, `tomorrow`, or `dd.mm.yyyy`." |
+| `reserve A12` (today, but already past 17:00) | "No working time left today — reservations run 09:00–17:00. Try `reserve … tomorrow`." |
 | `cancel` (no active reservation) | "You have no active reservation to cancel." |
 | `cancel A12` (you have none on A12) | "You don't have a reservation on **A12**." |
 | `free spot` (you don't own one) | "You don't own a parking spot, so there's nothing to free." |
@@ -190,6 +203,11 @@ Implemented:
   returns a link to the public map with that spot highlighted
   (`<PUBLIC_FRONTEND_URL>/?spot=<id>`). Frontend reads `?spot=` → selects the lot and draws
   the highlight ring; the link survives the login redirect (sessionStorage).
+- ✅ **Fixed working-hours window** — every reservation now runs **09:00–17:00** Slovenian
+  time (today + future), DST-aware; the old "now + 8 h" default (which expired a 00:11 grab
+  at 08:11) is gone. Same-day after 17:00 is refused with a helpful message.
+- ✅ **Redesigned `help`/greeting** — emoji-led, grouped, with inline examples and a date
+  tip, using Rocket.Chat markdown.
 
 Proposed (pick what's worth it):
 1. **Slovenian command aliases** — let users type `rezerviraj`, `prekliči`, `prosto` /
@@ -200,7 +218,8 @@ Proposed (pick what's worth it):
 3. **Suggest a spot** — `reserve` with no spot → "Z-3 is free — try `reserve Z-3`."; when a
    spot is taken → suggest the nearest free one.
 4. **Discoverable cancel** — append "Reply `cancel` to release." to a reservation confirmation.
-5. **Friendlier today** — show "until 17:58 today" instead of the full date when it's today.
+5. **Friendlier today** — show "until 17:00 today" instead of the full date when the
+   reservation is for today (expiry is now always 17:00).
 6. **Did-you-mean** — on an unknown command, fuzzy-match the closest command before falling
    back to help.
 7. **Cap long lists** — if many free spots, show first N + "filter by building".
