@@ -15,7 +15,6 @@ import { createApp } from "../app.js";
 import {
   activeBookingOnDate,
   formatCancelResult,
-  formatFreeSpotResult,
   formatFreeSpots,
   formatFreeSpotsByBuilding,
   formatHistory,
@@ -82,23 +81,12 @@ describe("parseCommand", () => {
     });
   });
 
-  it('treats "free spot" / "free my spot" / "release" as freeing an owned spot', () => {
-    expect(parseCommand("free spot")).toEqual({
-      command: "free-spot",
-      rest: [],
-    });
-    expect(parseCommand("free my spot")).toEqual({
-      command: "free-spot",
-      rest: [],
-    });
-    expect(parseCommand("free spot A12")).toEqual({
-      command: "free-spot",
-      rest: ["A12"],
-    });
-    expect(parseCommand("release")).toEqual({ command: "free-spot", rest: [] });
-    expect(parseCommand("release A12 tomorrow")).toEqual({
-      command: "free-spot",
-      rest: ["A12", "tomorrow"],
+  it('treats "free spot" / "free spots" as listing free spots', () => {
+    expect(parseCommand("free spot")).toEqual({ command: "spots", rest: [] });
+    expect(parseCommand("free spots")).toEqual({ command: "spots", rest: [] });
+    expect(parseCommand("free spots klet1")).toEqual({
+      command: "spots",
+      rest: ["klet1"],
     });
   });
 
@@ -397,20 +385,6 @@ describe("formatCancelResult", () => {
   it("confirms a cancellation", () => {
     expect(formatCancelResult(200, "A12")).toBe(
       "Cancelled your reservation on A12.",
-    );
-  });
-});
-
-describe("formatFreeSpotResult", () => {
-  it("confirms freeing an owned spot", () => {
-    expect(formatFreeSpotResult(200, "A12", "2026-06-01")).toBe(
-      "Freed A12 for 2026-06-01 — it’s now open to others.",
-    );
-  });
-
-  it("rejects when the spot is not yours", () => {
-    expect(formatFreeSpotResult(403, "A12", "2026-06-01")).toBe(
-      "A12 isn’t your spot, so you can’t free it.",
     );
   });
 });
