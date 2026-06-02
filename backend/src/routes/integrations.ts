@@ -1,7 +1,6 @@
 import { Router } from "express";
 import jwt from "jsonwebtoken";
 
-import { isOwnerAbsent } from "../lib/presence.helpers.js";
 import type { WeekPresenceResponse } from "../lib/presence.types.js";
 import type { AuthPayload } from "../middleware/auth.js";
 
@@ -41,7 +40,9 @@ export const HELP_TEXT = [
   "      _e.g._ `reserve A12` · `reserve zunaj tomorrow` · `reserve any`",
   "*cancel* `[spot]` — cancel your current reservation",
   "*history* — see your last 5 bookings",
-  "*owners* `[today|tomorrow|dd.mm.yyyy]` — who owns which spot (🟢 free / 🔴 taken that day)",
+  "*owners* `[building] [today|tomorrow|dd.mm.yyyy]` — who owns which spot (🟩 free / 🟥 taken / 🟪 maybe in — shared)",
+  "*stats* `[building] [today|tomorrow|dd.mm.yyyy]` — how full parking is",
+  "*peak hours* `[building]` — busiest times (last 90 days)",
   "*map* `[spot]` / *where* `<spot>` — get a map link (highlighting the spot)",
   "*help* — show this list",
   "",
@@ -61,6 +62,8 @@ export type Command =
   | "history"
   | "map"
   | "owners"
+  | "stats"
+  | "peak-hours"
   | "unknown";
 
 // Greetings the bot answers in kind (Slovenian + English).
@@ -116,6 +119,14 @@ export function parseCommand(text: string): {
       return { command: "map", rest: after(1) };
     case "owners":
       return { command: "owners", rest: after(1) };
+    case "stats":
+      return { command: "stats", rest: after(1) };
+    case "peak": {
+      // Single trigger phrase "peak hours" — "peak" alone isn't a command.
+      if (tokens[1]?.toLowerCase() === "hours")
+        return { command: "peak-hours", rest: after(2) };
+      return { command: "unknown", rest: tokens };
+    }
     case "cancel": {
       const rest = after(1);
       if (rest[0]?.toLowerCase() === "reservation") rest.shift();
@@ -124,7 +135,8 @@ export function parseCommand(text: string): {
     case "free": {
       const w1 = tokens[1]?.toLowerCase();
       // "free spot"/"free spots" → list free spots; "free <building>" filters.
-      if (w1 === "spots" || w1 === "spot") return { command: "spots", rest: after(2) };
+      if (w1 === "spots" || w1 === "spot")
+        return { command: "spots", rest: after(2) };
       if (w1 === undefined) return { command: "spots", rest: [] };
       // "free zunaj" → list filtered by a building
       return { command: "spots", rest: after(1) };
@@ -391,50 +403,88 @@ export function formatFreeSpotsByBuilding(
   return `Free spots (${free.length}):\n${lines.join("\n")}`;
 }
 
-// Icons shown after each spot label in the `owners` list.
-const SPOT_FREE_ICON = "🟢"; // free for someone else to use that day
-const SPOT_TAKEN_ICON = "🔴"; // owner is in / spot is otherwise taken
+// A spot's effective availability for a day, from the owners-list point of view.
+export type SpotDayStatus = "free" | "taken" | "unconfirmed";
 
-// Whether `spot` is free for someone else to use on `date` (local day). Mirrors
-// the effective-free logic in spots.ts (the "spotted" route): an active booking
-// for that day means taken; otherwise a per-day override wins; otherwise an
-// owned spot is free only when *every* co-owner is absent that day.
-//
-// `overrideStatus` is the spot's spot_day_status for `date`, if any.
-// `isOwnerAbsentOnDate(name)` returns true if that owner is away (spot free),
-// false if present, or null when presence is unknown — in which case we fall
-// back to the spot's stored status, just like spots.ts does.
-export function isSpotAvailableOnDate(
+// How an owner reads on the timesheet for a given day.
+export type OwnerPresence = "in_office" | "absent" | "unknown";
+
+// Icons shown after each spot label in the `owners` list. Squares (not circles):
+// the colour-circle emojis are from different Unicode generations and render at
+// mismatched sizes in Rocket.Chat; 🟩/🟥/🟪 are a matched set (same size).
+const SPOT_STATUS_ICON: Record<SpotDayStatus, string> = {
+  free: "🟩", // free for someone else to use that day
+  taken: "🟥", // a co-owner is in / spot is otherwise occupied or reserved
+  unconfirmed: "🟪", // shared spot, 2+ co-owners may be in — can't tell who
+};
+
+// Effective availability of `spot` for `date`, mirroring the frontend's
+// useEffectiveSpots: an active booking for that day or an 'occupied' override →
+// taken; a 'free' override → free; otherwise count the co-owners in office that
+// day — 0 → free, 1 → taken (occupied), 2+ → unconfirmed (the PP signal can't
+// pick one). `overrideStatus` is the spot's spot_day_status for `date`, if any.
+// `ownerPresence(name)` returns in_office / absent / unknown. Falls back to the
+// stored status when no co-owner has presence data.
+export function spotStatusOnDate(
   spot: SpotLike,
   date: string,
   overrideStatus: string | undefined,
-  isOwnerAbsentOnDate: (ownerName: string) => boolean | null,
-): boolean {
+  ownerPresence: (ownerName: string) => OwnerPresence,
+): SpotDayStatus {
+  const baseFallback: SpotDayStatus = spot.status === "free" ? "free" : "taken";
+
   // An active booking for that day → taken, regardless of everything else.
   if (
     spot.active_booking_id &&
     (spot.active_booking_expires_at ?? "").slice(0, 10) === date
   ) {
-    return false;
+    return "taken";
   }
-  // A per-day override is authoritative.
-  if (overrideStatus !== undefined) return overrideStatus === "free";
+  // A per-day override is authoritative ('occupied' reads as taken).
+  if (overrideStatus !== undefined) {
+    return overrideStatus === "free" ? "free" : "taken";
+  }
   // The ACEX public pool is always free (normally filtered out of this list).
-  if (spot.owner_name === ACEX_OWNER_NAME) return true;
-  // Owned spot: free only when every co-owner is absent that day.
+  if (spot.owner_name === ACEX_OWNER_NAME) return "free";
+  // Owned spot: decide from how many co-owners are in office that day.
   if (spot.owner_name) {
     const ownerNames = spot.owner_name
       .split("/")
       .map((n) => n.trim())
       .filter(Boolean);
-    if (ownerNames.length === 0) return spot.status === "free";
-    const verdicts = ownerNames.map((n) => isOwnerAbsentOnDate(n));
-    // Presence unknown for any co-owner → fall back to the stored status.
-    if (verdicts.some((v) => v === null)) return spot.status === "free";
-    return verdicts.every((v) => v === true);
+    if (ownerNames.length === 0) return baseFallback;
+    const presences = ownerNames.map((n) => ownerPresence(n));
+    // No presence data for any co-owner → fall back to the stored status.
+    if (presences.every((p) => p === "unknown")) return baseFallback;
+    const inOffice = presences.filter((p) => p === "in_office").length;
+    if (inOffice >= 2) return "unconfirmed";
+    if (inOffice === 1) return "taken";
+    return "free";
   }
   // Unowned spot.
-  return spot.status === "free";
+  return baseFallback;
+}
+
+// Build an owner-name → in_office / absent / unknown resolver for `date` from a
+// week of timesheet presence, mirroring useEffectiveSpots: parking_available →
+// absent, else in_office; a work-free day frees every employee; an owner not on
+// the timesheet (or with no entry that day) is unknown — so it never counts as
+// in office. Returns "unknown" for everyone when presence is unavailable.
+function makeOwnerPresence(
+  presence: WeekPresenceResponse | null,
+  date: string,
+): (ownerName: string) => OwnerPresence {
+  return (name: string): OwnerPresence => {
+    if (!presence) return "unknown";
+    const entry = presence.employees.find(
+      (e) => e.name.toLowerCase() === name.toLowerCase(),
+    );
+    if (!entry) return "unknown";
+    if (presence.work_free_days.includes(date)) return "absent";
+    const day = entry.week.find((d) => d.date === date);
+    if (!day) return "unknown";
+    return day.parking_available ? "absent" : "in_office";
+  };
 }
 
 // A human label for a date relative to now: "today", "tomorrow", or DD.MM.YYYY.
@@ -448,19 +498,27 @@ export function dayLabel(date: string, now: Date): string {
 // List every ACEX-employee-owned spot grouped by its owner. Skips unowned spots
 // and any non-employee owner (public pool, placeholders/vehicles, external
 // rentals — see NOT_ACEX_OWNERS). Each spot label carries an availability icon
-// for `when` (🟢 free for others / 🔴 taken), per `isAvailable`. When all of an
-// owner's spots sit in one building, that building is shown in parentheses.
+// for `when` (🟩 free / 🟥 taken / 🟪 unconfirmed), per `statusOf`. When all of an
+// owner's spots sit in one building, that building is shown in parentheses —
+// unless `building` is set (a building filter), in which case the scope is named
+// in the header and the redundant per-owner suffix is omitted. The caller is
+// expected to have already restricted `spots` to that building.
 export function formatOwners(
   spots: SpotLike[],
   lots: Lot[],
-  isAvailable: (spot: SpotLike) => boolean,
+  statusOf: (spot: SpotLike) => SpotDayStatus,
   when: string,
+  building?: string,
 ): string {
   const lotName = new Map(lots.map((l) => [l.id, l.name]));
   const owned = spots.filter(
     (s) => s.owner_id && s.owner_name && !NOT_ACEX_OWNERS.has(s.owner_name),
   );
-  if (owned.length === 0) return "No parking spots have an assigned owner.";
+  if (owned.length === 0) {
+    return building
+      ? `No assigned parking spots in ${building}.`
+      : "No parking spots have an assigned owner.";
+  }
 
   const byOwner = new Map<string, SpotLike[]>();
   for (const s of owned) {
@@ -474,23 +532,125 @@ export function formatOwners(
     .map((name) => {
       const ownedSpots = byOwner.get(name)!.sort((a, b) => a.number - b.number);
       const labels = ownedSpots
-        .map(
-          (s) =>
-            `${spotLabel(s)} ${isAvailable(s) ? SPOT_FREE_ICON : SPOT_TAKEN_ICON}`,
-        )
+        .map((s) => `${spotLabel(s)} ${SPOT_STATUS_ICON[statusOf(s)]}`)
         .join(", ");
-      const buildings = [
-        ...new Set(
-          ownedSpots
-            .map((s) => (s.lot_id ? lotName.get(s.lot_id) : undefined))
-            .filter((n): n is string => Boolean(n)),
-        ),
-      ];
+      // With a building filter the scope is already in the header, so skip the
+      // redundant per-owner building suffix.
+      const buildings = building
+        ? []
+        : [
+            ...new Set(
+              ownedSpots
+                .map((s) => (s.lot_id ? lotName.get(s.lot_id) : undefined))
+                .filter((n): n is string => Boolean(n)),
+            ),
+          ];
       const where = buildings.length === 1 ? ` (${buildings[0]})` : "";
       return `• ${name} — ${labels}${where}`;
     });
 
-  return `Parking spot owners (${byOwner.size}) — ${when}:\n${lines.join("\n")}`;
+  const scope = building ? ` in ${building}` : "";
+  return `Parking spot owners${scope} (${byOwner.size}) — ${when}:\n${lines.join("\n")}`;
+}
+
+// Percentage of n out of total, rounded; 0 when total is 0.
+function computePct(n: number, total: number): number {
+  return total > 0 ? Math.round((n / total) * 100) : 0;
+}
+
+// Live occupancy snapshot for `when`. Counts every spot via `statusOf` (free vs
+// not-free); reports an overall figure plus a per-building breakdown, or a
+// single figure when `building` scopes the list. `spots` is assumed already
+// restricted to `building` when set.
+export function formatOccupancy(
+  spots: SpotLike[],
+  lots: Lot[],
+  statusOf: (spot: SpotLike) => SpotDayStatus,
+  when: string,
+  building?: string,
+): string {
+  if (spots.length === 0) {
+    return building
+      ? `No parking spots in ${building}.`
+      : "No parking spots found.";
+  }
+  const isFree = (s: SpotLike): boolean => statusOf(s) === "free";
+  const scope = building ? ` in ${building}` : "";
+  const header = `Parking occupancy${scope} — ${when}:`;
+
+  const total = spots.length;
+  const free = spots.filter(isFree).length;
+  const overall = `${computePct(total - free, total)}% full — ${free} of ${total} free`;
+  if (building) return `${header}\n• ${overall}`;
+
+  const lines = [`• Overall: ${overall}`];
+  for (const lot of lots) {
+    const inLot = spots.filter((s) => s.lot_id === lot.id);
+    if (inLot.length === 0) continue;
+    const lotFree = inLot.filter(isFree).length;
+    lines.push(
+      `• ${lot.name}: ${computePct(inLot.length - lotFree, inLot.length)}% full (${lotFree}/${inLot.length} free)`,
+    );
+  }
+  return `${header}\n${lines.join("\n")}`;
+}
+
+// One occupancy tally for a (weekday, hour) bucket from GET /api/stats/history.
+export interface HeatmapCell {
+  weekday: number; // 0 = Sunday … 6 = Saturday (Postgres DOW)
+  hour: number; // 0–23
+  count: number;
+}
+
+const WEEKDAY_NAMES = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
+function hourLabel(h: number): string {
+  return `${String(((h % 24) + 24) % 24).padStart(2, "0")}:00`;
+}
+
+// Summarise the occupancy heatmap into the peak demand bucket, busiest weekday,
+// and busiest hour overall. `building` is shown in the header when scoped.
+export function formatPeakHours(
+  heatmap: HeatmapCell[],
+  building?: string,
+): string {
+  const cells = heatmap.filter((c) => c.count > 0);
+  if (cells.length === 0) {
+    return building
+      ? `No historical parking data yet for ${building}.`
+      : "No historical parking data yet.";
+  }
+
+  const peak = cells.reduce((a, b) => (b.count > a.count ? b : a));
+
+  const byHour = new Map<number, number>();
+  const byDay = new Map<number, number>();
+  for (const c of cells) {
+    byHour.set(c.hour, (byHour.get(c.hour) ?? 0) + c.count);
+    byDay.set(c.weekday, (byDay.get(c.weekday) ?? 0) + c.count);
+  }
+  const busiestHour = [...byHour.entries()].reduce((a, b) =>
+    b[1] > a[1] ? b : a,
+  )[0];
+  const busiestDay = [...byDay.entries()].reduce((a, b) =>
+    b[1] > a[1] ? b : a,
+  )[0];
+
+  const scope = building ? ` · ${building}` : "";
+  return [
+    `Busiest parking times — last 90 days${scope}:`,
+    `• Peak: ${WEEKDAY_NAMES[peak.weekday]} around ${hourLabel(peak.hour)}`,
+    `• Busiest day: ${WEEKDAY_NAMES[busiestDay]}`,
+    `• Busiest hour: ${hourLabel(busiestHour)}–${hourLabel(busiestHour + 1)}`,
+  ].join("\n");
 }
 
 export function formatReserveResult(
@@ -518,7 +678,6 @@ export function formatCancelResult(status: number, label: string): string {
   if (status === 200) return `Cancelled your reservation on ${label}.`;
   return `Could not cancel ${label}.`;
 }
-
 
 export function formatStatus(
   bookings: BookingLike[],
@@ -749,21 +908,33 @@ router.post("/rocketchat", async (req, res, next) => {
 
       case "owners": {
         // Public read (no auth) — lists who owns which spot, grouped by owner,
-        // with a per-day availability icon for the requested day (default
-        // today). Pulls that day's per-day overrides and presence so the icon
-        // reflects real availability (owner away / freed), mirroring spots.ts
-        // rather than the spot's stored base status.
-        const dateArg = rest[0];
-        const date = parseDate(dateArg, now);
-        if (date === null) {
+        // with a per-day availability icon. Optional args, in any order: a
+        // building filter (zunaj/klet1/klet2) and/or a date (default today).
+        // Pulls that day's per-day overrides and presence so the icon reflects
+        // real availability (owner away / freed), mirroring useEffectiveSpots.
+        const [lots, spots] = await Promise.all([
+          callArray<Lot>("GET", "/api/lots"),
+          callArray<SpotLike>("GET", "/api/spots"),
+        ]);
+        let date = localDate(now);
+        let lotFilter: Lot | undefined;
+        for (const tok of rest) {
+          const lot = resolveLot(tok, lots);
+          if (lot) {
+            lotFilter = lot;
+            continue;
+          }
+          const parsed = parseDate(tok, now);
+          if (parsed !== null) {
+            date = parsed;
+            continue;
+          }
           reply(
-            `I didn’t understand the date "${dateArg ?? ""}". Use today, tomorrow, or dd.mm.yyyy.`,
+            `I didn’t understand "${tok}". Use a building (zunaj, klet1, klet2) and/or a date (today, tomorrow, dd.mm.yyyy).`,
           );
           return;
         }
-        const [spots, lots, overrides, presenceRes] = await Promise.all([
-          callArray<SpotLike>("GET", "/api/spots"),
-          callArray<Lot>("GET", "/api/lots"),
+        const [overrides, presenceRes] = await Promise.all([
           callArray<DayOverride>(
             "GET",
             `/api/spots/day-overrides?date=${date}`,
@@ -774,18 +945,102 @@ router.post("/rocketchat", async (req, res, next) => {
           overrides.map((o) => [o.spot_id, o.status]),
         );
         // If presence is unavailable (timesheet API down), the resolver returns
-        // null and isSpotAvailableOnDate falls back to the stored status.
+        // "unknown" and spotStatusOnDate falls back to the stored status.
         const presence = presenceRes.status === 200 ? presenceRes.data : null;
-        const isOwnerAbsentOnDate = (name: string): boolean | null =>
-          presence ? isOwnerAbsent(presence, name, date) : null;
-        const isAvailable = (s: SpotLike): boolean =>
-          isSpotAvailableOnDate(
+        const ownerPresence = makeOwnerPresence(presence, date);
+        const statusOf = (s: SpotLike): SpotDayStatus =>
+          spotStatusOnDate(
             s,
             date,
             s.id ? overrideBySpot.get(s.id) : undefined,
-            isOwnerAbsentOnDate,
+            ownerPresence,
           );
-        reply(formatOwners(spots, lots, isAvailable, dayLabel(date, now)));
+        const lot = lotFilter;
+        const scoped = lot ? spots.filter((s) => s.lot_id === lot.id) : spots;
+        reply(
+          formatOwners(scoped, lots, statusOf, dayLabel(date, now), lot?.name),
+        );
+        return;
+      }
+
+      case "stats": {
+        // Public read — live occupancy snapshot. Optional building filter and/or
+        // date (any order, default today), computed with the same presence-aware
+        // effective status as the owners command.
+        const [lots, spots] = await Promise.all([
+          callArray<Lot>("GET", "/api/lots"),
+          callArray<SpotLike>("GET", "/api/spots"),
+        ]);
+        let date = localDate(now);
+        let lotFilter: Lot | undefined;
+        for (const tok of rest) {
+          const lot = resolveLot(tok, lots);
+          if (lot) {
+            lotFilter = lot;
+            continue;
+          }
+          const parsed = parseDate(tok, now);
+          if (parsed !== null) {
+            date = parsed;
+            continue;
+          }
+          reply(
+            `I didn’t understand "${tok}". Use a building (zunaj, klet1, klet2) and/or a date (today, tomorrow, dd.mm.yyyy).`,
+          );
+          return;
+        }
+        const [overrides, presenceRes] = await Promise.all([
+          callArray<DayOverride>(
+            "GET",
+            `/api/spots/day-overrides?date=${date}`,
+          ),
+          call<WeekPresenceResponse>("GET", `/api/presence?date=${date}`),
+        ]);
+        const overrideBySpot = new Map(
+          overrides.map((o) => [o.spot_id, o.status]),
+        );
+        const presence = presenceRes.status === 200 ? presenceRes.data : null;
+        const ownerPresence = makeOwnerPresence(presence, date);
+        const statusOf = (s: SpotLike): SpotDayStatus =>
+          spotStatusOnDate(
+            s,
+            date,
+            s.id ? overrideBySpot.get(s.id) : undefined,
+            ownerPresence,
+          );
+        const lot = lotFilter;
+        const scoped = lot ? spots.filter((s) => s.lot_id === lot.id) : spots;
+        reply(
+          formatOccupancy(
+            scoped,
+            lots,
+            statusOf,
+            dayLabel(date, now),
+            lot?.name,
+          ),
+        );
+        return;
+      }
+
+      case "peak-hours": {
+        // Public read — busiest times from the historical occupancy heatmap.
+        // Optional building filter; no date (the heatmap covers ~90 days).
+        const tok = rest[0];
+        let lotFilter: Lot | undefined;
+        if (tok) {
+          lotFilter = resolveLot(tok, await callArray<Lot>("GET", "/api/lots"));
+          if (!lotFilter) {
+            reply(
+              `I don’t know the building "${tok}". Try: zunaj, klet1, klet2.`,
+            );
+            return;
+          }
+        }
+        const path = lotFilter
+          ? `/api/stats/history?lot_id=${lotFilter.id}`
+          : "/api/stats/history";
+        const { data } = await call<{ heatmap: HeatmapCell[] }>("GET", path);
+        reply(formatPeakHours(data?.heatmap ?? [], lotFilter?.name));
         return;
       }
 
