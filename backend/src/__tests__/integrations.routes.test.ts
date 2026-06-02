@@ -15,6 +15,7 @@ import { createApp } from "../app.js";
 import {
   activeBookingOnDate,
   dayLabel,
+  dedupeSpotsForDate,
   formatCancelResult,
   formatFreeSpots,
   formatFreeSpotsByBuilding,
@@ -226,6 +227,47 @@ describe("parseDate", () => {
     expect(parseDate("32.13.2026", NOW)).toBeNull();
     expect(parseDate("please", NOW)).toBeNull();
     expect(parseDate("3-6-2026", NOW)).toBeNull();
+  });
+});
+
+// --- dedupeSpotsForDate -----------------------------------------------------
+
+describe("dedupeSpotsForDate", () => {
+  const DATE = "2026-06-01";
+
+  it("collapses multiple booking rows for one spot into a single row", () => {
+    // A pool spot returned twice by /api/spots: once per active booking.
+    const spots = [
+      {
+        id: "s1",
+        number: 3,
+        label: "Z-3",
+        status: "free",
+        active_booking_id: "bToday",
+        active_booking_expires_at: `${DATE}T15:00:00.000Z`,
+      },
+      {
+        id: "s1",
+        number: 3,
+        label: "Z-3",
+        status: "free",
+        active_booking_id: "bTomorrow",
+        active_booking_expires_at: "2026-06-02T15:00:00.000Z",
+      },
+    ];
+    const out = dedupeSpotsForDate(spots, DATE);
+    expect(out).toHaveLength(1);
+    // Keeps the row whose booking is on the target date.
+    expect(out[0]!.active_booking_id).toBe("bToday");
+  });
+
+  it("keeps distinct spots and rows without an id", () => {
+    const spots = [
+      { id: "s1", number: 1, label: "Z-1", status: "free" },
+      { id: "s2", number: 2, label: "Z-2", status: "occupied" },
+      { number: 3, label: "Z-3", status: "free" }, // no id
+    ];
+    expect(dedupeSpotsForDate(spots, DATE)).toHaveLength(3);
   });
 });
 
@@ -1060,6 +1102,7 @@ describe("POST /api/integrations/rocketchat (loopback)", () => {
       if (sql.includes("spot_day_status")) return { rows: [] };
       if (sql.includes("parking_lots"))
         return { rows: [{ id: "l1", name: "Zunanje parkirišče" }] };
+      // s2 is returned twice (two active bookings) — must be deduped to 1 spot.
       return {
         rows: [
           { id: "s1", number: 1, label: "Z-1", status: "free", lot_id: "l1" },
@@ -1069,6 +1112,17 @@ describe("POST /api/integrations/rocketchat (loopback)", () => {
             label: "Z-2",
             status: "occupied",
             lot_id: "l1",
+            active_booking_id: "b1",
+            active_booking_expires_at: "2099-01-01T15:00:00.000Z",
+          },
+          {
+            id: "s2",
+            number: 2,
+            label: "Z-2",
+            status: "occupied",
+            lot_id: "l1",
+            active_booking_id: "b2",
+            active_booking_expires_at: "2099-01-02T15:00:00.000Z",
           },
         ],
       };
@@ -1080,7 +1134,8 @@ describe("POST /api/integrations/rocketchat (loopback)", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.text).toContain("Parking occupancy — today:");
-    expect(res.body.text).toContain("% full");
+    // Deduped to 2 spots (not 3): 1 free of 2.
+    expect(res.body.text).toContain("1 of 2 free");
   });
 
   it("reports busiest times via loopback (peak hours)", async () => {
