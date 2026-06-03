@@ -372,6 +372,50 @@ export function activeBookingOnDate(
   );
 }
 
+// Decide which active booking a "cancel" command refers to. `rest` may hold a
+// spot label and/or a date token (today/tomorrow/dd.mm.yyyy), in any order:
+// "cancel", "cancel A12", "cancel today", "cancel A12 tomorrow". Without this,
+// a date token like "today" was mistaken for a spot label. Pure + unit-tested.
+export type CancelSelection =
+  | { kind: "target"; booking: BookingLike }
+  | { kind: "ambiguous"; active: BookingLike[] }
+  | { kind: "none"; spotName?: string; date?: string };
+
+export function selectCancelTarget(
+  bookings: BookingLike[],
+  rest: string[],
+  now: Date,
+): CancelSelection {
+  let dateArg: string | undefined;
+  let spotName: string | undefined;
+  for (const tok of rest) {
+    if (dateArg === undefined && parseDate(tok, now) !== null) dateArg = tok;
+    else spotName ??= tok;
+  }
+  const date = dateArg ? (parseDate(dateArg, now) ?? undefined) : undefined;
+
+  let active = bookings.filter((b) => b.status === "active");
+  if (date)
+    active = active.filter((b) => (b.expires_at ?? "").slice(0, 10) === date);
+
+  let booking: BookingLike | undefined;
+  if (spotName !== undefined) {
+    const needle = spotName;
+    const lower = needle.toLowerCase();
+    booking = active.find(
+      (b) =>
+        b.spot_label?.toLowerCase() === lower ||
+        String(b.spot_number) === needle,
+    );
+  } else if (active.length === 1) {
+    booking = active[0];
+  } else if (active.length > 1) {
+    return { kind: "ambiguous", active };
+  }
+  if (booking?.id) return { kind: "target", booking };
+  return { kind: "none", spotName, date };
+}
+
 // `spots` is the already-available list (the caller filters via
 // spotStatusOnDate); `when` is the day label (today / tomorrow / DD.MM.YYYY).
 export function formatFreeSpots(spots: SpotLike[], when: string): string {
@@ -1244,42 +1288,37 @@ router.post("/rocketchat", async (req, res, next) => {
       case "cancel": {
         if (!needUser()) return;
         const token = mintUserToken(username!);
-        const spotName = rest[0];
         const bookings = await callArray<BookingLike>(
           "GET",
           "/api/bookings/my",
           { token },
         );
-        const active = bookings.filter((b) => b.status === "active");
-        let target: BookingLike | undefined;
-        if (spotName) {
-          target = active.find(
-            (b) =>
-              b.spot_label?.toLowerCase() === spotName.toLowerCase() ||
-              String(b.spot_number) === spotName,
-          );
-        } else if (active.length === 1) {
-          target = active[0];
-        } else if (active.length > 1) {
+        const selection = selectCancelTarget(bookings, rest, now);
+        if (selection.kind === "ambiguous") {
           reply(
-            `You have ${active.length} reservations. Say e.g. "cancel ${bookingLabel(active[0]!)}".`,
+            `You have ${selection.active.length} reservations. Say e.g. "cancel ${bookingLabel(selection.active[0]!)}".`,
           );
           return;
         }
-        if (!target?.id) {
+        if (selection.kind === "none") {
+          const when = selection.date
+            ? dayLabel(selection.date, now)
+            : undefined;
           reply(
-            spotName
-              ? `You don’t have a reservation on ${spotName}.`
-              : "You have no active reservation to cancel.",
+            selection.spotName
+              ? `You don’t have a reservation on ${selection.spotName}${when ? ` for ${when}` : ""}.`
+              : when
+                ? `You have no active reservation for ${when} to cancel.`
+                : "You have no active reservation to cancel.",
           );
           return;
         }
         const { status } = await call(
           "PATCH",
-          `/api/bookings/${target.id}/cancel`,
+          `/api/bookings/${selection.booking.id}/cancel`,
           { token },
         );
-        reply(formatCancelResult(status, bookingLabel(target)));
+        reply(formatCancelResult(status, bookingLabel(selection.booking)));
         return;
       }
 

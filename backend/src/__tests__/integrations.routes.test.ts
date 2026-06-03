@@ -14,6 +14,7 @@ import {
 import { createApp } from "../app.js";
 import {
   activeBookingOnDate,
+  type BookingLike,
   dayLabel,
   dedupeSpotsForDate,
   formatCancelResult,
@@ -33,6 +34,7 @@ import {
   parseDate,
   pickRandomFree,
   resolveLot,
+  selectCancelTarget,
   spotLink,
   spotStatusOnDate,
   workDayOver,
@@ -509,6 +511,88 @@ describe("formatCancelResult", () => {
     expect(formatCancelResult(200, "A12")).toBe(
       "Cancelled your reservation on A12.",
     );
+  });
+});
+
+describe("selectCancelTarget", () => {
+  // Active bookings carry a day via expires_at (same as activeBookingOnDate).
+  const today: BookingLike = {
+    id: "bToday",
+    spot_number: 12,
+    spot_label: "A12",
+    status: "active",
+    expires_at: "2026-06-01T15:00:00.000Z",
+  };
+  const tomorrow: BookingLike = {
+    id: "bTomorrow",
+    spot_number: 5,
+    spot_label: "B05",
+    status: "active",
+    expires_at: "2026-06-02T15:00:00.000Z",
+  };
+
+  it("targets the single active booking when no token is given", () => {
+    expect(selectCancelTarget([today], [], NOW)).toEqual({
+      kind: "target",
+      booking: today,
+    });
+  });
+
+  it('targets the booking on the given day for "cancel today"', () => {
+    // The regression: "today" must select today's booking, not be read as a spot.
+    expect(selectCancelTarget([today, tomorrow], ["today"], NOW)).toEqual({
+      kind: "target",
+      booking: today,
+    });
+    expect(selectCancelTarget([today, tomorrow], ["tomorrow"], NOW)).toEqual({
+      kind: "target",
+      booking: tomorrow,
+    });
+  });
+
+  it("targets by spot label, case-insensitively", () => {
+    expect(selectCancelTarget([today, tomorrow], ["a12"], NOW)).toEqual({
+      kind: "target",
+      booking: today,
+    });
+  });
+
+  it("targets by spot and day together", () => {
+    expect(
+      selectCancelTarget([today, tomorrow], ["B05", "tomorrow"], NOW),
+    ).toEqual({ kind: "target", booking: tomorrow });
+  });
+
+  it("is ambiguous with multiple active bookings and no filter", () => {
+    expect(selectCancelTarget([today, tomorrow], [], NOW)).toEqual({
+      kind: "ambiguous",
+      active: [today, tomorrow],
+    });
+  });
+
+  it("reports none (with the day) when no booking matches the day", () => {
+    expect(selectCancelTarget([tomorrow], ["today"], NOW)).toEqual({
+      kind: "none",
+      spotName: undefined,
+      date: "2026-06-01",
+    });
+  });
+
+  it("reports none (with the spot) when no booking matches the spot", () => {
+    expect(selectCancelTarget([today], ["Z9"], NOW)).toEqual({
+      kind: "none",
+      spotName: "Z9",
+      date: undefined,
+    });
+  });
+
+  it("ignores cancelled bookings", () => {
+    const cancelled: BookingLike = { ...today, id: "x", status: "cancelled" };
+    expect(selectCancelTarget([cancelled], [], NOW)).toEqual({
+      kind: "none",
+      spotName: undefined,
+      date: undefined,
+    });
   });
 });
 
