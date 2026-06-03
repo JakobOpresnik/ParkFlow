@@ -3,7 +3,7 @@ import { Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { Spot } from '@/types'
 
-import { SpotTypeConfig, StatusClass } from './spotConstants'
+import { adminSpotStatus, SpotTypeConfig, StatusClass } from './spotConstants'
 
 // — types —
 
@@ -18,14 +18,15 @@ interface SpotCardProps {
 
 export function SpotCard({ spot, lotName, onEdit, onDelete }: SpotCardProps) {
   const typeConf = SpotTypeConfig[spot.type]
+  const displayStatus = adminSpotStatus(spot)
   return (
     <div className="bg-card rounded-lg border p-3 shadow-sm">
       <div className="flex items-center gap-2">
         <span className="text-sm font-bold tabular-nums">#{spot.number}</span>
         <span
-          className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${StatusClass[spot.status]}`}
+          className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${StatusClass[displayStatus]}`}
         >
-          {spot.status}
+          {displayStatus}
         </span>
         {typeConf.badgeClass && (
           <span
