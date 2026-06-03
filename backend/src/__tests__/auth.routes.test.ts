@@ -153,6 +153,9 @@ describe("POST /api/auth/exchange", () => {
     // Verify the issued token contains correct claims
     const decoded = jwt.verify(res.body.token, TEST_SECRET) as Record<string, unknown>;
     expect(decoded.username).toBe("janez");
+    // userId must be the preferred_username (not the opaque Authentik sub) so that
+    // bookings made via the web key on the same identity the RocketChat bot uses.
+    expect(decoded.userId).toBe("janez");
     expect(decoded.role).toBe("admin");
   });
 
