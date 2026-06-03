@@ -33,8 +33,9 @@ export const HELP_TEXT = [
   "*ParkFlow* — your parking assistant. Here's what I can do:",
   "",
   "*status* — see your current reservation and your owned spot",
-  "*free spots* `[building]` — see what's available right now",
+  "*free spots* `[building] [today|tomorrow|dd.mm.yyyy]` — what's free (default today)",
   "      _building:_ `zunaj` · `klet1` · `klet2`",
+  "      _e.g._ `free spots tomorrow` · `free spots klet1 tomorrow`",
   "*reserve* `<spot|building|any> [today|tomorrow|dd.mm.yyyy]`",
   `      Holds a spot for the working day (${WORK_HOURS_LABEL}). Give a building name or \`any\` to grab a random free one.`,
   "      _e.g._ `reserve A12` · `reserve zunaj tomorrow` · `reserve any`",
@@ -371,24 +372,27 @@ export function activeBookingOnDate(
   );
 }
 
-export function formatFreeSpots(spots: SpotLike[]): string {
-  const free = spots.filter((s) => s.status === "free");
-  if (free.length === 0) return "No free spots right now.";
-  return `Free spots (${free.length}): ${free.map(spotLabel).join(", ")}`;
+// `spots` is the already-available list (the caller filters via
+// spotStatusOnDate); `when` is the day label (today / tomorrow / DD.MM.YYYY).
+export function formatFreeSpots(spots: SpotLike[], when: string): string {
+  if (spots.length === 0) return `No free spots for ${when}.`;
+  return `Free spots (${spots.length}) — ${when}: ${spots
+    .map(spotLabel)
+    .join(", ")}`;
 }
 
-// Group free spots by building, ordered by the given lots order.
+// Group the given (already-available) spots by building, in the given lot order.
 export function formatFreeSpotsByBuilding(
   spots: SpotLike[],
   lots: Lot[],
+  when: string,
 ): string {
-  const free = spots.filter((s) => s.status === "free");
-  if (free.length === 0) return "No free spots right now.";
+  if (spots.length === 0) return `No free spots for ${when}.`;
 
   const lines: string[] = [];
   const grouped = new Set<SpotLike>();
   for (const lot of lots) {
-    const inLot = free.filter((s) => s.lot_id === lot.id);
+    const inLot = spots.filter((s) => s.lot_id === lot.id);
     inLot.forEach((s) => grouped.add(s));
     if (inLot.length > 0) {
       lines.push(
@@ -396,11 +400,11 @@ export function formatFreeSpotsByBuilding(
       );
     }
   }
-  const other = free.filter((s) => !grouped.has(s));
+  const other = spots.filter((s) => !grouped.has(s));
   if (other.length > 0) {
     lines.push(`• Other (${other.length}): ${other.map(spotLabel).join(", ")}`);
   }
-  return `Free spots (${free.length}):\n${lines.join("\n")}`;
+  return `Free spots (${spots.length}) — ${when}:\n${lines.join("\n")}`;
 }
 
 // A spot's effective availability for a day, from the owners-list point of view.
@@ -900,34 +904,82 @@ router.post("/rocketchat", async (req, res, next) => {
           reply(`I couldn’t find spot ${arg}. Type "free spots" to see them.`);
           return;
         }
-        reply(`📍 ${spot.label ?? `#${spot.number}`}: ${spotLink(spot.id)}`);
+        reply(
+          `📍 ${spot.label ?? `#${spot.number}`}: ${spotLink(spot.id, localDate(now))}`,
+        );
         return;
       }
 
       case "spots": {
-        const buildingToken = rest[0];
-        if (buildingToken) {
-          const lot = resolveLot(
-            buildingToken,
-            await callArray<Lot>("GET", "/api/lots"),
-          );
-          if (!lot) {
-            reply(
-              `I don’t know the building "${buildingToken}". Try: zunaj, klet1, klet2.`,
-            );
-            return;
+        // `free spots [building] [date]` — real availability for a day, not just
+        // live status. Mirrors the `owners` command: same sources, same
+        // spotStatusOnDate rule. Tokens are order-independent.
+        const lots = await callArray<Lot>("GET", "/api/lots");
+
+        let date: string | null = null;
+        let lot: Lot | undefined;
+        for (const token of rest) {
+          const parsed = parseDate(token, now);
+          if (parsed !== null) {
+            date ??= parsed;
+            continue;
           }
-          const spots = await callArray<SpotLike>(
-            "GET",
-            `/api/spots?lot_id=${lot.id}`,
+          const matched = resolveLot(token, lots);
+          if (matched) {
+            lot ??= matched;
+            continue;
+          }
+          reply(
+            `I don’t understand "${token}". Use a building (zunaj, klet1, klet2) ` +
+              `or a date (today, tomorrow, dd.mm.yyyy).`,
           );
-          reply(`${lot.name} — ${formatFreeSpots(spots)}`);
           return;
         }
-        // No building filter — list all free spots grouped by building.
-        const spots = await callArray<SpotLike>("GET", "/api/spots");
-        const lots = await callArray<Lot>("GET", "/api/lots");
-        reply(formatFreeSpotsByBuilding(spots, lots));
+
+        const targetDate = date ?? localDate(now);
+        const when = dayLabel(targetDate, now);
+
+        const [spots, overrides, presenceRes] = await Promise.all([
+          callArray<SpotLike>(
+            "GET",
+            lot ? `/api/spots?lot_id=${lot.id}` : "/api/spots",
+          ),
+          callArray<DayOverride>(
+            "GET",
+            `/api/spots/day-overrides?date=${targetDate}`,
+          ),
+          call<WeekPresenceResponse>("GET", `/api/presence?date=${targetDate}`),
+        ]);
+        const overrideBySpot = new Map(
+          overrides.map((o) => [o.spot_id, o.status]),
+        );
+        // Presence unavailable (timesheet API down) → resolver returns "unknown"
+        // and spotStatusOnDate falls back to the spot's stored status. Dedup
+        // first so a multiply-booked spot isn't listed more than once.
+        const presence = presenceRes.status === 200 ? presenceRes.data : null;
+        const ownerPresence = makeOwnerPresence(presence, targetDate);
+        const available = dedupeSpotsForDate(spots, targetDate).filter(
+          (s) =>
+            spotStatusOnDate(
+              s,
+              targetDate,
+              s.id ? overrideBySpot.get(s.id) : undefined,
+              ownerPresence,
+            ) === "free",
+        );
+
+        // Without presence, owner-occupied spots may be wrongly omitted — flag
+        // it rather than implying the list is complete.
+        const note =
+          presence === null
+            ? "\n⚠️ List may be incomplete — I couldn’t check owner spots right now."
+            : "";
+
+        reply(
+          lot
+            ? `${lot.name} — ${formatFreeSpots(available, when)}${note}`
+            : `${formatFreeSpotsByBuilding(available, lots, when)}${note}`,
+        );
         return;
       }
 
@@ -1179,11 +1231,11 @@ router.post("/rocketchat", async (req, res, next) => {
           date,
           building,
         );
-        // Deep-link to the reserved day (omit for today to keep the URL clean).
-        const linkDate = date === localDate(now) ? undefined : date;
+        // Deep-link to the reserved day. Always include the date — even today —
+        // so the link can't reopen on a stale localStorage day in the browser.
         reply(
           status === 201
-            ? `${reserveMsg}\n📍 See it on the map: ${spotLink(spot.id, linkDate)}`
+            ? `${reserveMsg}\n📍 See it on the map: ${spotLink(spot.id, date)}`
             : reserveMsg,
         );
         return;
