@@ -100,7 +100,11 @@ router.post('/exchange', async (req, res, next) => {
     const role = userinfo.groups?.includes(ADMIN_GROUP) ? 'admin' : 'user';
 
     const payload: AuthPayload = {
-      userId: userinfo.sub,
+      // Key the user by preferred_username (not the opaque Authentik sub) so the
+      // web and the RocketChat bot — which only ever sees the username/handle —
+      // store and match bookings under the same identity. Falls back to sub if
+      // Authentik omits preferred_username.
+      userId: userinfo.preferred_username ?? userinfo.sub,
       username: userinfo.preferred_username ?? userinfo.sub,
       displayName:
         userinfo.name ?? userinfo.preferred_username ?? userinfo.sub,

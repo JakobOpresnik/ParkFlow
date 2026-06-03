@@ -7,6 +7,7 @@ import { TableCell, TableRow } from '@/components/ui/table'
 import type { Spot, SpotType } from '@/types'
 
 import {
+  adminSpotStatus,
   SpotTypeConfig,
   StatusClass,
   STICKY_ACTIONS_CLASS,
@@ -33,6 +34,7 @@ export function SpotRow({
 }: SpotRowProps) {
   const { t } = useTranslation()
   const typeConf = SpotTypeConfig[spot.type]
+  const displayStatus = adminSpotStatus(spot)
   const STATUS_LABELS: Record<string, string> = {
     free: t('admin.freeStatus'),
     occupied: t('admin.occupiedStatus'),
@@ -57,9 +59,9 @@ export function SpotRow({
       </TableCell>
       <TableCell>
         <span
-          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${StatusClass[spot.status]}`}
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${StatusClass[displayStatus]}`}
         >
-          {STATUS_LABELS[spot.status] ?? spot.status}
+          {STATUS_LABELS[displayStatus] ?? displayStatus}
         </span>
       </TableCell>
       <TableCell>
