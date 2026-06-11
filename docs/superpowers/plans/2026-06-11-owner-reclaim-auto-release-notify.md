@@ -686,16 +686,41 @@ git commit -m "feat(notify): notifications REST endpoints"
 
 - [ ] **Step 1: Write the failing test**
 
-Add to the loopback describe block in `backend/src/__tests__/integrations.routes.test.ts` (the block near line 1088 that runs against the live test API). This asserts a seeded notification is prepended when the user runs `status`.
+IMPORTANT — the loopback describe block (near line 1088) mocks `pool.query` by SQL substring (`mockQuery.mockImplementation((sql) => ...)`); `app.listen` only loopbacks the HTTP layer, there is **no real DB**. So the test mocks the notifications SELECT/UPDATE via `pool.query`, returning `{ rows: [] }` for everything else (which makes bookings/owned empty). The `status` command issues its DB work through internal HTTP calls that all funnel into the mocked `pool.query`.
+
+Add this test inside the loopback describe block:
 
 ```typescript
 it("status prepends an unread, un-pushed notification then marks it read", async () => {
   process.env.ROCKETCHAT_WEBHOOK_TOKEN = WEBHOOK_TOKEN;
-  // Seed one undelivered notification for the bot user via direct SQL helper
-  // used elsewhere in this suite (see seed helpers at top of loopback block).
-  await seedNotification({
-    user_id: "jsernec",
-    body: "Your reservation for Z-17 on 2026-06-12 was released because the owner reclaimed the spot.",
+  let marked = false;
+  mockQuery.mockImplementation((sql: string) => {
+    // PATCH /api/notifications/:id/read
+    if (sql.includes("UPDATE notifications")) {
+      marked = true;
+      return { rowCount: 1 };
+    }
+    // GET /api/notifications?undelivered=1
+    if (sql.includes("FROM notifications")) {
+      return marked
+        ? { rows: [] }
+        : {
+            rows: [
+              {
+                id: "n1",
+                type: "reservation_released",
+                title: "Reservation released",
+                body: "Your reservation for Z-17 on 2026-06-12 was released because the owner reclaimed the spot.",
+                data: null,
+                created_at: "2026-06-11T00:00:00Z",
+                read_at: null,
+                pushed_at: null,
+              },
+            ],
+          };
+    }
+    // everything else (expire, bookings/my, owners/me/spots, spots, lots) → empty
+    return { rows: [] };
   });
 
   const res = await request(app).post("/api/integrations/rocketchat").send({
@@ -707,30 +732,11 @@ it("status prepends an unread, un-pushed notification then marks it read", async
   expect(res.status).toBe(200);
   expect(res.body.text).toContain("⚠️");
   expect(res.body.text).toContain("was released because the owner reclaimed");
-
-  // it was marked read → a second status does not repeat it
-  const res2 = await request(app).post("/api/integrations/rocketchat").send({
-    token: WEBHOOK_TOKEN,
-    user_name: "jsernec",
-    text: "status",
-  });
-  expect(res2.body.text).not.toContain("⚠️");
+  expect(marked).toBe(true); // the PATCH .../read fired
 });
 ```
 
-If the loopback block has no `seedNotification` helper, add one next to the existing seed helpers in that block:
-
-```typescript
-async function seedNotification(n: { user_id: string; body: string }) {
-  await testPool.query(
-    `INSERT INTO notifications (user_id, type, title, body)
-     VALUES ($1, 'reservation_released', 'Reservation released', $2)`,
-    [n.user_id, n.body],
-  );
-}
-```
-
-(Use whatever the block already calls its live pool — match the existing seed helpers' pool handle.)
+Note on `owners/me/spots`: with the default `{ rows: [] }` the owner-profile lookup returns no rows, the endpoint 404s, and the bot treats owned spots as `[]` — `formatStatus` then yields its empty-state line, prefixed by the `⚠️` notice. That's the expected reply.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -765,7 +771,7 @@ In `backend/src/routes/integrations.ts`, inside `case "status":` (and shared `ca
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `cd backend && bun run test -- integrations.routes`
-Expected: PASS (new test + all existing bot tests — unaffected since `callArray` returns `[]` when there are no undelivered notices).
+Expected: the new test PASSES and no *new* failures appear. NOTE: 2 tests ("warns instead of replacing when you already have a booking that day", and the `X22 / couldn't find` one) are **pre-existing, time-of-day-dependent failures** — they fail whenever the suite runs after 17:00 Europe/Ljubljana because the bot reports the work day is over. They are unrelated to this task; do not try to fix them. Confirm your new test passes and the pass count is otherwise unchanged.
 
 - [ ] **Step 5: Commit**
 
