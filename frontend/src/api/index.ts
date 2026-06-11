@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/store/authStore'
 import type {
+  AppNotification,
   AppUser,
   Booking,
   FeatureRequest,
@@ -256,5 +257,16 @@ export const api = {
   deleteFeedback: (id: string) =>
     request<{ ok: boolean }>(`/api/feedback/${id}`, {
       method: 'DELETE',
+    }),
+
+  // Notifications
+  listNotifications: () => request<AppNotification[]>('/api/notifications'),
+  markNotificationRead: (id: string) =>
+    request<{ ok: boolean }>(`/api/notifications/${id}/read`, {
+      method: 'PATCH',
+    }),
+  markAllNotificationsRead: () =>
+    request<{ ok: boolean }>('/api/notifications/read-all', {
+      method: 'PATCH',
     }),
 }
