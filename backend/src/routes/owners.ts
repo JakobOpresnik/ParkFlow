@@ -2,7 +2,12 @@ import { Router } from "express";
 
 import { pool } from "../db/pool.js";
 import { broadcast } from "../lib/broadcast.js";
-import { requireAdmin, requireAuth, requireNonGuest } from "../middleware/auth.js";
+import { pushChatMessage } from "../lib/rocketchatNotify.js";
+import {
+  requireAdmin,
+  requireAuth,
+  requireNonGuest,
+} from "../middleware/auth.js";
 
 const router = Router();
 
@@ -32,7 +37,9 @@ router.get("/me", requireAuth, requireNonGuest, async (req, res, next) => {
       [req.user!.username, req.user!.displayName],
     );
     if (result.rows.length === 0) {
-      res.status(404).json({ error: "No owner profile linked to your account" });
+      res
+        .status(404)
+        .json({ error: "No owner profile linked to your account" });
       return;
     }
     res.json(result.rows[0]);
@@ -42,22 +49,28 @@ router.get("/me", requireAuth, requireNonGuest, async (req, res, next) => {
 });
 
 // GET /api/owners/me/spots — spots owned by authenticated user with active booking info
-router.get("/me/spots", requireAuth, requireNonGuest, async (req, res, next) => {
-  try {
-    const ownerResult = await pool.query(
-      `SELECT id FROM owners AS o WHERE ${OWNER_MATCHES_USER}
+router.get(
+  "/me/spots",
+  requireAuth,
+  requireNonGuest,
+  async (req, res, next) => {
+    try {
+      const ownerResult = await pool.query(
+        `SELECT id FROM owners AS o WHERE ${OWNER_MATCHES_USER}
        ORDER BY CASE WHEN $1 = ANY(string_to_array(o.user_id, ',')) THEN 0 ELSE 1 END, o.id
        LIMIT 1`,
-      [req.user!.username, req.user!.displayName],
-    );
-    if (ownerResult.rows.length === 0) {
-      res.status(404).json({ error: "No owner profile linked to your account" });
-      return;
-    }
-    const ownerId = ownerResult.rows[0].id as string;
+        [req.user!.username, req.user!.displayName],
+      );
+      if (ownerResult.rows.length === 0) {
+        res
+          .status(404)
+          .json({ error: "No owner profile linked to your account" });
+        return;
+      }
+      const ownerId = ownerResult.rows[0].id as string;
 
-    const result = await pool.query(
-      `SELECT
+      const result = await pool.query(
+        `SELECT
         s.id,
         s.number,
         s.label,
@@ -81,14 +94,15 @@ router.get("/me/spots", requireAuth, requireNonGuest, async (req, res, next) => 
       LEFT JOIN bookings b ON b.spot_id = s.id AND b.status = 'active'
       WHERE s.owner_id = $1
       ORDER BY s.number`,
-      [ownerId],
-    );
+        [ownerId],
+      );
 
-    res.json(result.rows);
-  } catch (err) {
-    next(err);
-  }
-});
+      res.json(result.rows);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 // GET /api/owners/me/week — bookings on owner's spots for a date range
 router.get("/me/week", requireAuth, requireNonGuest, async (req, res, next) => {
@@ -100,14 +114,18 @@ router.get("/me/week", requireAuth, requireNonGuest, async (req, res, next) => {
       [req.user!.username, req.user!.displayName],
     );
     if (ownerResult.rows.length === 0) {
-      res.status(404).json({ error: "No owner profile linked to your account" });
+      res
+        .status(404)
+        .json({ error: "No owner profile linked to your account" });
       return;
     }
     const ownerId = ownerResult.rows[0].id as string;
 
     const { from, to } = req.query as { from?: string; to?: string };
     if (!from || !to) {
-      res.status(400).json({ error: "from and to query params required (YYYY-MM-DD)" });
+      res
+        .status(400)
+        .json({ error: "from and to query params required (YYYY-MM-DD)" });
       return;
     }
 
@@ -138,55 +156,69 @@ router.get("/me/week", requireAuth, requireNonGuest, async (req, res, next) => {
 });
 
 // GET /api/owners/me/overrides?from=&to= — per-day status overrides for owner's spots
-router.get("/me/overrides", requireAuth, requireNonGuest, async (req, res, next) => {
-  try {
-    const ownerResult = await pool.query(
-      `SELECT id FROM owners AS o WHERE ${OWNER_MATCHES_USER}
+router.get(
+  "/me/overrides",
+  requireAuth,
+  requireNonGuest,
+  async (req, res, next) => {
+    try {
+      const ownerResult = await pool.query(
+        `SELECT id FROM owners AS o WHERE ${OWNER_MATCHES_USER}
        ORDER BY CASE WHEN $1 = ANY(string_to_array(o.user_id, ',')) THEN 0 ELSE 1 END, o.id
        LIMIT 1`,
-      [req.user!.username, req.user!.displayName],
-    );
-    if (ownerResult.rows.length === 0) {
-      res.status(404).json({ error: "No owner profile linked to your account" });
-      return;
-    }
-    const ownerId = ownerResult.rows[0].id as string;
+        [req.user!.username, req.user!.displayName],
+      );
+      if (ownerResult.rows.length === 0) {
+        res
+          .status(404)
+          .json({ error: "No owner profile linked to your account" });
+        return;
+      }
+      const ownerId = ownerResult.rows[0].id as string;
 
-    const { from, to } = req.query as { from?: string; to?: string };
-    if (!from || !to) {
-      res.status(400).json({ error: "from and to query params required" });
-      return;
-    }
+      const { from, to } = req.query as { from?: string; to?: string };
+      if (!from || !to) {
+        res.status(400).json({ error: "from and to query params required" });
+        return;
+      }
 
-    const result = await pool.query(
-      `SELECT sds.id, sds.spot_id, sds.date, sds.status, sds.set_by
+      const result = await pool.query(
+        `SELECT sds.id, sds.spot_id, sds.date, sds.status, sds.set_by
        FROM spot_day_status sds
        JOIN spots s ON sds.spot_id = s.id
        WHERE s.owner_id = $1 AND sds.date >= $2::date AND sds.date <= $3::date
        ORDER BY sds.date`,
-      [ownerId, from, to],
-    );
-    res.json(result.rows);
-  } catch (err) {
-    next(err);
-  }
-});
+        [ownerId, from, to],
+      );
+      res.json(result.rows);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 // PUT /api/owners/me/spots/:spotId/day-status — set or clear per-day override
-router.put("/me/spots/:spotId/day-status", requireAuth, requireNonGuest, async (req, res, next) => {
-  try {
-    const { spotId } = req.params;
-    const { date, status } = req.body as { date: string; status: string | null };
+router.put(
+  "/me/spots/:spotId/day-status",
+  requireAuth,
+  requireNonGuest,
+  async (req, res, next) => {
+    try {
+      const { spotId } = req.params;
+      const { date, status } = req.body as {
+        date: string;
+        status: string | null;
+      };
 
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      res.status(400).json({ error: "date is required (YYYY-MM-DD)" });
-      return;
-    }
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        res.status(400).json({ error: "date is required (YYYY-MM-DD)" });
+        return;
+      }
 
-    // Verify the caller owns this spot (either via user_id linkage or
-    // displayName matching a segment of owner.name).
-    const check = await pool.query(
-      `SELECT s.id FROM spots s
+      // Verify the caller owns this spot (either via user_id linkage or
+      // displayName matching a segment of owner.name).
+      const check = await pool.query(
+        `SELECT s.id, s.label, s.number FROM spots s
        JOIN owners o ON s.owner_id = o.id
        WHERE s.id = $1 AND (
          $2 = ANY(string_to_array(o.user_id, ','))
@@ -195,42 +227,157 @@ router.put("/me/spots/:spotId/day-status", requireAuth, requireNonGuest, async (
            FROM unnest(string_to_array(o.name, '/')) AS t(n)
          )
        )`,
-      [spotId, req.user!.username, req.user!.displayName],
-    );
-    if (check.rows.length === 0) {
-      res.status(403).json({ error: "Not your spot" });
-      return;
-    }
-
-    if (status === null || status === undefined) {
-      // Clear override — revert to timesheet
-      await pool.query(
-        `DELETE FROM spot_day_status WHERE spot_id = $1 AND date = $2`,
-        [spotId, date],
+        [spotId, req.user!.username, req.user!.displayName],
       );
+      if (check.rows.length === 0) {
+        res.status(403).json({ error: "Not your spot" });
+        return;
+      }
+      const spot = check.rows[0] as {
+        id: string;
+        label: string | null;
+        number: number;
+      };
+
+      if (status === null || status === undefined) {
+        // Clear override — revert to timesheet
+        await pool.query(
+          `DELETE FROM spot_day_status WHERE spot_id = $1 AND date = $2`,
+          [spotId, date],
+        );
+        broadcast();
+        res.json({ ok: true, cleared: true });
+        return;
+      }
+
+      if (status !== "free" && status !== "occupied") {
+        res
+          .status(400)
+          .json({ error: "status must be 'free', 'occupied', or null" });
+        return;
+      }
+
+      if (status === "free") {
+        const result = await pool.query(
+          `INSERT INTO spot_day_status (spot_id, date, status, set_by)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (spot_id, date) DO UPDATE SET status = $3, set_by = $4
+         RETURNING *`,
+          [spotId, date, status, req.user!.displayName],
+        );
+        broadcast();
+        res.json(result.rows[0]);
+        return;
+      }
+
+      // status === "occupied": reclaim. Release any conflicting non-owner active
+      // booking on this spot+date, record a notification, then DM after commit.
+      const spotLabel = spot.label ?? `#${spot.number}`;
+      const released: {
+        booking_id: string;
+        reserved_by: string | null;
+        user_id: string;
+        notif_id: string;
+        body: string;
+      }[] = [];
+
+      const client = await pool.connect();
+      let overrideRow: unknown;
+      try {
+        await client.query("BEGIN");
+
+        const upsert = await client.query(
+          `INSERT INTO spot_day_status (spot_id, date, status, set_by)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (spot_id, date) DO UPDATE SET status = $3, set_by = $4
+         RETURNING *`,
+          [spotId, date, status, req.user!.displayName],
+        );
+        overrideRow = upsert.rows[0];
+
+        const conflicts = await client.query(
+          `SELECT b.id, b.user_id, b.reserved_by
+         FROM bookings b
+         WHERE b.spot_id = $1 AND b.status = 'active'
+           AND b.expires_at::date = $2::date
+           AND b.booked_by_owner = false
+         FOR UPDATE`,
+          [spotId, date],
+        );
+
+        for (const c of conflicts.rows as {
+          id: string;
+          user_id: string;
+          reserved_by: string | null;
+        }[]) {
+          await client.query(
+            `UPDATE bookings SET status = 'cancelled', ended_at = now(), cancelled_by = $2 WHERE id = $1`,
+            [c.id, req.user!.displayName],
+          );
+          const other = await client.query(
+            `SELECT id FROM bookings WHERE spot_id = $1 AND status = 'active' AND id != $2 LIMIT 1`,
+            [spotId, c.id],
+          );
+          if (other.rows.length === 0) {
+            await client.query(
+              `UPDATE spots SET status = 'free' WHERE id = $1`,
+              [spotId],
+            );
+          }
+          const body = `Your reservation for ${spotLabel} on ${date} was released because the owner reclaimed the spot.`;
+          const notif = await client.query(
+            `INSERT INTO notifications (user_id, type, title, body, data)
+           VALUES ($1, 'reservation_released', $2, $3, $4)
+           RETURNING id`,
+            [
+              c.user_id,
+              "Reservation released",
+              body,
+              JSON.stringify({ spot_id: spotId, date, booking_id: c.id }),
+            ],
+          );
+          released.push({
+            booking_id: c.id,
+            reserved_by: c.reserved_by,
+            user_id: c.user_id,
+            notif_id: notif.rows[0].id as string,
+            body,
+          });
+        }
+
+        await client.query("COMMIT");
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
+      }
+
       broadcast();
-      res.json({ ok: true, cleared: true });
-      return;
-    }
 
-    if (status !== "free" && status !== "occupied") {
-      res.status(400).json({ error: "status must be 'free', 'occupied', or null" });
-      return;
-    }
+      for (const r of released) {
+        const ok = await pushChatMessage(r.user_id, `⚠️ ${r.body}`);
+        if (ok) {
+          await pool.query(
+            `UPDATE notifications SET pushed_at = now() WHERE id = $1`,
+            [r.notif_id],
+          );
+        }
+      }
 
-    const result = await pool.query(
-      `INSERT INTO spot_day_status (spot_id, date, status, set_by)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (spot_id, date) DO UPDATE SET status = $3, set_by = $4
-       RETURNING *`,
-      [spotId, date, status, req.user!.displayName],
-    );
-    broadcast();
-    res.json(result.rows[0]);
-  } catch (err) {
-    next(err);
-  }
-});
+      res.json({
+        ...(overrideRow as object),
+        released: released.map((r) => ({
+          booking_id: r.booking_id,
+          reserved_by: r.reserved_by,
+        })),
+      });
+      return;
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 // PATCH /api/owners/:id/link — admin links an owner to an SSO username
 router.patch("/:id/link", requireAuth, requireAdmin, async (req, res, next) => {
@@ -341,8 +488,8 @@ router.put("/:id", requireAuth, requireAdmin, async (req, res, next) => {
         phone ?? null,
         vehicle_plate ?? null,
         notes ?? null,
-        user_id !== undefined,                          // $6: whether to update user_id
-        user_id !== undefined ? (user_id?.trim() || null) : null, // $7: new value
+        user_id !== undefined, // $6: whether to update user_id
+        user_id !== undefined ? user_id?.trim() || null : null, // $7: new value
         id,
       ],
     );
