@@ -23,6 +23,7 @@ import {
   isAdminSection,
   LINK_CLASS,
 } from './constants'
+import { NotificationBell } from './NotificationBell'
 
 // — types —
 
@@ -57,15 +58,18 @@ export function DesktopSidebar({
         <span className="ml-2.5 text-sm font-semibold tracking-tight">
           ParkFlow
         </span>
-        <button
-          type="button"
-          onClick={onAboutOpen}
-          title={t('about.buttonTitle')}
-          aria-label={t('about.buttonTitle')}
-          className="text-muted-foreground/70 hover:text-muted-foreground ml-auto cursor-pointer rounded-full p-1 transition-colors"
-        >
-          <Info className="size-4" />
-        </button>
+        <div className="ml-auto flex items-center gap-1">
+          <NotificationBell />
+          <button
+            type="button"
+            onClick={onAboutOpen}
+            title={t('about.buttonTitle')}
+            aria-label={t('about.buttonTitle')}
+            className="text-muted-foreground/70 hover:text-muted-foreground cursor-pointer rounded-full p-1 transition-colors"
+          >
+            <Info className="size-4" />
+          </button>
+        </div>
       </div>
 
       {/* Nav */}
