@@ -90,13 +90,14 @@ export const api = {
     date: string,
     status: 'free' | 'occupied' | null,
   ) =>
-    request<SpotDayOverride | { ok: boolean }>(
-      `/api/owners/me/spots/${spotId}/day-status`,
+    request<
       {
-        method: 'PUT',
-        body: JSON.stringify({ date, status }),
-      },
-    ),
+        released?: { booking_id: string; reserved_by: string | null }[]
+      } & Record<string, unknown>
+    >(`/api/owners/me/spots/${spotId}/day-status`, {
+      method: 'PUT',
+      body: JSON.stringify({ date, status }),
+    }),
   linkOwner: (id: string, username: string | null) =>
     request<Owner>(`/api/owners/${id}/link`, {
       method: 'PATCH',
