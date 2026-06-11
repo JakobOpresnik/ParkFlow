@@ -1368,7 +1368,23 @@ router.post("/rocketchat", async (req, res, next) => {
             ),
           }));
         }
-        reply(formatStatus(enriched, owned));
+        // Fallback delivery: prepend any unread notice that was never pushed
+        // (proactive DM failed or the handle couldn't be resolved), then mark read.
+        const notices = await callArray<{ id: string; body: string }>(
+          "GET",
+          "/api/notifications?undelivered=1",
+          { token },
+        );
+        let prefix = "";
+        if (notices.length > 0) {
+          prefix = notices.map((n) => `⚠️ ${n.body}`).join("\n") + "\n\n";
+          await Promise.all(
+            notices.map((n) =>
+              call("PATCH", `/api/notifications/${n.id}/read`, { token }),
+            ),
+          );
+        }
+        reply(prefix + formatStatus(enriched, owned));
         return;
       }
 

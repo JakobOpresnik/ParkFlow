@@ -1491,4 +1491,45 @@ describe("POST /api/integrations/rocketchat (loopback)", () => {
     expect(res.body.text).toContain("A2");
     expect(res.body.text).toContain("Your last");
   });
+
+  it("status prepends an unread, un-pushed notification then marks it read", async () => {
+    process.env.ROCKETCHAT_WEBHOOK_TOKEN = WEBHOOK_TOKEN;
+    let marked = false;
+    mockQuery.mockImplementation((sql: string) => {
+      if (sql.includes("UPDATE notifications")) {
+        marked = true;
+        return { rowCount: 1 };
+      }
+      if (sql.includes("FROM notifications")) {
+        return marked
+          ? { rows: [] }
+          : {
+              rows: [
+                {
+                  id: "n1",
+                  type: "reservation_released",
+                  title: "Reservation released",
+                  body: "Your reservation for Z-17 on 2026-06-12 was released because the owner reclaimed the spot.",
+                  data: null,
+                  created_at: "2026-06-11T00:00:00Z",
+                  read_at: null,
+                  pushed_at: null,
+                },
+              ],
+            };
+      }
+      return { rows: [] };
+    });
+
+    const res = await request(app).post("/api/integrations/rocketchat").send({
+      token: WEBHOOK_TOKEN,
+      user_name: "jsernec",
+      text: "status",
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.text).toContain("⚠️");
+    expect(res.body.text).toContain("was released because the owner reclaimed");
+    expect(marked).toBe(true);
+  });
 });
