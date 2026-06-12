@@ -107,30 +107,3 @@ export async function runReminderTick(now: Date = new Date()): Promise<void> {
   }
 }
 
-let timer: ReturnType<typeof setInterval> | null = null
-
-export function startReminderScheduler(): void {
-  if (process.env.NODE_ENV === 'test') return
-  if (process.env.REMINDERS_ENABLED === 'false') {
-    console.log('[reminders] disabled via REMINDERS_ENABLED=false')
-    return
-  }
-  const tickMinutes = Number(process.env.REMINDER_TICK_MINUTES ?? '15')
-  const run = (): void => {
-    void runReminderTick().catch((err) =>
-      console.error('[reminders] tick failed:', err),
-    )
-  }
-  setTimeout(run, 10_000) // first run shortly after boot
-  timer = setInterval(run, tickMinutes * 60_000)
-  console.log(
-    `[reminders] scheduler started (every ${tickMinutes} min, morning ${MORNING_TIME} ${TZ})`,
-  )
-}
-
-export function stopReminderScheduler(): void {
-  if (timer) {
-    clearInterval(timer)
-    timer = null
-  }
-}
