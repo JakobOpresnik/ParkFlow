@@ -59,6 +59,11 @@ const en = {
     signIn: 'Sign in',
     profile: 'View profile',
     more: 'More',
+    notifications: 'Alerts',
+  },
+  notifications: {
+    title: 'Notifications',
+    empty: 'No notifications.',
   },
   auth: {
     sessionExpired: 'Session expired — redirecting back to sign in…',
