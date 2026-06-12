@@ -193,5 +193,44 @@ Run: `bun run build`, `bun run lint`, `bun test` (backend); `bun run fix`
 
 ## Docs
 
-Update `docs/BUSINESS_RULES.md` (and `DEV_SPEC.md` if needed) via the `doc-update`
-skill once implemented — this changes a booking/ownership business rule.
+This repo has no `BUSINESS_RULES.md` / versioned doc system, so the rule is
+recorded here (the design doc of record) rather than via the `doc-update` skill.
+
+---
+
+## Amendment (2026-06-12): re-targeted to **notify-on-cancel**
+
+During implementation we discovered the original hook (owner sets day-status →
+`occupied`) is **not** how owners actually reclaim a spot in the app:
+
+- `computeDayStatus` returns `reserved` whenever an active booking exists, so the
+  owner-parking "Occupy" button (which only renders on `free`) is **unreachable**
+  once a non-owner has booked.
+- "Occupy" never set day-status anyway — it created an owner self-booking
+  (`POST /api/bookings`, deliberately, for co-owner map attribution + intervals).
+- The **real, reachable** in-app reclaim is the **"Cancel reservation"** button
+  on a `reserved` spot, which cancels the squatter's booking via
+  `PATCH /api/bookings/:id/cancel` (a spot owner is already allowed to cancel a
+  non-owner booking). The release already happens — only the **notification** was
+  missing.
+
+**Final implemented behavior:** when a booking is cancelled by someone other than
+its owner (spot owner reclaiming, or an admin) via `PATCH /api/bookings/:id/cancel`,
+the handler writes a `notifications` row for the bumped user inside the cancel
+transaction and fires a best-effort proactive RocketChat DM after commit; the
+response gains `{ notified: boolean }`. The owner's cancel toast confirms the user
+was notified. All notification infrastructure (table, DM helper, `/api/notifications`
+endpoints, web bell, bot-`status` fallback) is unchanged and reused.
+
+The day-status auto-release (original Task 3) and the owner-occupy repoint
+(original Task 8) were **reverted**. `POST /api/bookings` co-owner self-book and
+timesheet-driven conflicts remain out of scope.
+
+**Business rule (recorded):** A spot owner (or admin) cancelling a non-owner's
+reservation auto-notifies the bumped user via in-app notification + proactive
+RocketChat DM, with a bot-`status` fallback. Co-owners' own bookings can't be
+cancelled by another co-owner. Users cancelling their own booking are not notified.
+
+**Verified (2026-06-12):** the outbound incoming webhook accepts `channel:"@<handle>"`
+and returns `{success:true}` — proactive `@user` DMs are deliverable. Notification
+copy is English.

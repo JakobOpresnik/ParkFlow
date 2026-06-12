@@ -1110,3 +1110,39 @@ git commit -m "docs: business rule for owner-reclaim auto-release + notification
 **Type consistency:** `pushChatMessage(handle, text)` (Task 2) is called identically in Task 3. `released: { booking_id, reserved_by }[]` shape is identical in Task 3 response, Task 8 API type, and the day-status test. `AppNotification` fields (Task 6) match the `notifications` columns (Task 1) and the GET select (Task 4). Bot `?undelivered=1` (Task 5) matches the GET filter (Task 4).
 
 **Placeholder scan:** No TBD/TODO; every code step has complete code. Two intentional "verify against the file" notes (Task 6 import paths, Task 8 variable names) point at exact files/lines, not vague hand-waving.
+
+---
+
+## Execution amendment (2026-06-12)
+
+Implemented via subagent-driven development. Outcome differs from the plan as
+written — see the spec amendment for the full rationale.
+
+**Kept as planned (committed):**
+- Task 1 — `notifications` table migration (`024_notifications.sql`)
+- Task 2 — `lib/rocketchatNotify.ts` + `.env.example` (`ROCKETCHAT_INCOMING_WEBHOOK_URL`)
+- Task 4 — `/api/notifications` endpoints + router registration
+- Task 5 — bot `status` prepends unread, un-pushed notices
+- Task 6 — frontend api + `AppNotification` type + `useNotifications` hooks
+- Task 7 — `NotificationBell` + sidebar mount
+
+**Reverted (wrong hook / regressed behavior):**
+- Task 3 — day-status `occupied` auto-release (the day-status path isn't the
+  real in-app reclaim; reverted).
+- Task 8 — owner "Occupy" repointed to day-status (regressed co-owner map
+  attribution + intervals; reverted, restoring `createBooking`).
+
+**Replacement (the actual feature):**
+- **Notify-on-cancel** — `PATCH /api/bookings/:id/cancel` now writes a
+  `notifications` row + proactive DM when a non-owner's booking is cancelled by
+  someone else, and returns `{ ok, notified }`. (commit "feat(bookings): notify
+  bumped user when an owner cancels their reservation")
+- **Owner cancel toast** — confirms the user was notified when `notified` is true.
+
+**Verification:** backend `bun run test` = 187/187 pass; backend `bun run build`
+clean; frontend `bun run build` clean, `bun run lint` 0 errors (43 pre-existing
+warnings). Live webhook DM to `@jsernec` returned `{success:true}`.
+
+**Note:** the notify-on-cancel commit reformatted `bookings.ts` to double quotes
+(repo has no Prettier config → defaults; matches the majority of route files) —
+functionally a no-op but a noisy diff; squash/clean if desired.
