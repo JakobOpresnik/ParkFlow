@@ -50,6 +50,7 @@ export const HELP_TEXT = [
   "*stats* `[building] [today|tomorrow|dd.mm.yyyy]` — how full parking is",
   "*peak hours* `[building]` — busiest times (last 90 days)",
   "*map* `[spot]` / *where* `<spot>` — get a map link (highlighting the spot)",
+  "*reminders* `[on|off] [type|all]` — manage your scheduled reminders",
   "*help* — show this list",
   "",
   "_Dates accept_ `today`, `tomorrow` _or_ `dd.mm.yyyy`.",
@@ -70,6 +71,7 @@ export type Command =
   | "owners"
   | "stats"
   | "peak-hours"
+  | "reminders"
   | "unknown";
 
 // Greetings the bot answers in kind (Slovenian + English).
@@ -125,6 +127,9 @@ export function parseCommand(text: string): {
       return { command: "map", rest: after(1) };
     case "owners":
       return { command: "owners", rest: after(1) };
+    case "reminders":
+    case "reminder":
+      return { command: "reminders", rest: after(1) };
     case "stats":
       return { command: "stats", rest: after(1) };
     case "peak": {
@@ -1412,6 +1417,57 @@ router.post("/rocketchat", async (req, res, next) => {
           );
         }
         reply(prefix + formatStatus(enriched, owned));
+        return;
+      }
+
+      case "reminders": {
+        if (!needUser()) return;
+        const token = mintUserToken(username!);
+        const { data } = await call<{
+          catalog: { type: string; label: string; description: string }[];
+          prefs: Record<string, boolean>;
+        }>("GET", "/api/notifications/prefs", { token });
+        const catalog = data?.catalog ?? [];
+        const prefs = data?.prefs ?? {};
+
+        const sub = rest[0]?.toLowerCase();
+        if (sub === "on" || sub === "off") {
+          const enabled = sub === "on";
+          const targetArg = rest[1]?.toLowerCase();
+          const targets =
+            !targetArg || targetArg === "all"
+              ? catalog.map((c) => c.type)
+              : catalog.filter((c) => c.type === targetArg).map((c) => c.type);
+          if (targets.length === 0) {
+            reply(
+              `Unknown reminder. Available: ${catalog.map((c) => c.type).join(", ")}.`,
+            );
+            return;
+          }
+          await Promise.all(
+            targets.map((type) =>
+              call("PUT", `/api/notifications/prefs/${type}`, {
+                token,
+                body: { enabled },
+              }),
+            ),
+          );
+          reply(`✅ Reminders turned ${sub} for: ${targets.join(", ")}.`);
+          return;
+        }
+
+        const lines = catalog.map(
+          (c) =>
+            `${prefs[c.type] === false ? "🔕" : "🔔"} *${c.type}* — ${c.label}`,
+        );
+        reply(
+          [
+            "*Your reminders:*",
+            ...lines,
+            "",
+            "_Toggle with_ `reminders off <type>` _/_ `reminders on <type>` _(or_ `all`_)._",
+          ].join("\n"),
+        );
         return;
       }
 

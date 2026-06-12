@@ -1485,6 +1485,18 @@ describe("POST /api/integrations/rocketchat (loopback)", () => {
     expect(res.body.text).toContain(`date=${localDate(new Date())}`);
   });
 
+describe("parseCommand — reminders", () => {
+  it("parses the bare command", () => {
+    expect(parseCommand("reminders")).toEqual({ command: "reminders", rest: [] });
+  });
+  it("parses on/off with a target", () => {
+    expect(parseCommand("reminders off all")).toEqual({
+      command: "reminders",
+      rest: ["off", "all"],
+    });
+  });
+});
+
   it("returns booking history using a minted token (write/read path)", async () => {
     process.env.ROCKETCHAT_WEBHOOK_TOKEN = WEBHOOK_TOKEN;
     mockQuery
