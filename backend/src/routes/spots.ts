@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import { pool } from '../db/pool.js';
 import { broadcast } from '../lib/broadcast.js';
+import { ljubljanaDate } from '../lib/localDate.js';
 import { fetchWeekPresence, isOwnerAbsent } from '../lib/presence.js';
 import {
   optionalAuth,
@@ -46,6 +47,7 @@ const SPOT_SELECT = `
     b.reserved_by      AS active_booking_reserved_by,
     b.starts_at        AS active_booking_starts_at,
     b.expires_at       AS active_booking_expires_at,
+    to_char(b.booking_date, 'YYYY-MM-DD') AS active_booking_date,
     b.booked_by_owner  AS active_booking_booked_by_owner,
     sr.reported_at     AS spotted_reported_at,
     sr.expires_at      AS spotted_expires_at
@@ -87,7 +89,7 @@ router.post(
     try {
       const { id } = req.params;
 
-      const targetDate = new Date().toISOString().slice(0, 10);
+      const targetDate = ljubljanaDate(new Date());
 
       // Pre-fetch presence outside the transaction — external HTTP call.
       let presenceData: Awaited<ReturnType<typeof fetchWeekPresence>> | null =
@@ -170,10 +172,9 @@ router.post(
         // if status hasn't been refreshed yet — block reports in that case too.
         const bookingCheck = await client.query(
           `SELECT 1 FROM bookings
-           WHERE spot_id = $1 AND status = 'active'
-             AND expires_at::date = (now() AT TIME ZONE 'UTC')::date
+           WHERE spot_id = $1 AND status = 'active' AND booking_date = $2::date
            LIMIT 1`,
-          [id],
+          [id, targetDate],
         );
         if (bookingCheck.rows.length > 0) {
           await client.query('ROLLBACK');

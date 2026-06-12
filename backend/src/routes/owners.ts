@@ -74,6 +74,7 @@ router.get("/me/spots", requireAuth, requireNonGuest, async (req, res, next) => 
         b.reserved_by      AS active_booking_reserved_by,
         b.starts_at        AS active_booking_starts_at,
         b.expires_at       AS active_booking_expires_at,
+        to_char(b.booking_date, 'YYYY-MM-DD') AS active_booking_date,
         b.booked_by_owner  AS active_booking_booked_by_owner
       FROM spots s
       LEFT JOIN owners o ON s.owner_id = o.id
@@ -120,6 +121,7 @@ router.get("/me/week", requireAuth, requireNonGuest, async (req, res, next) => {
         b.booked_at,
         b.starts_at,
         b.expires_at,
+        to_char(b.booking_date, 'YYYY-MM-DD') AS booking_date,
         b.ended_at,
         b.cancelled_by
       FROM bookings b
