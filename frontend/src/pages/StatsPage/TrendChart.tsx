@@ -77,7 +77,9 @@ export function TrendChart({ data, days, onRangeChange }: TrendChartProps) {
     ? String(avgRounded)
     : avgRounded.toFixed(1)
 
-  const yTicks = [0, Math.round(max / 2), max]
+  // Dedupe: with an empty series max clamps to 1 and Math.round(1/2) === 1,
+  // which would render two identical gridlines with the same React key.
+  const yTicks = [...new Set([0, Math.round(max / 2), max])]
 
   // Dot size scales with point density: fewer points → larger dots.
   const dotRadius = days <= 7 ? 3.5 : days <= 30 ? 2.2 : 1.5
