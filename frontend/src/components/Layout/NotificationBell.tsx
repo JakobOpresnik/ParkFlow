@@ -13,15 +13,7 @@ import {
   useNotifications,
 } from '@/hooks/useNotifications'
 
-interface NotificationBellProps {
-  // 'sidebar' = compact icon button (desktop sidebar header);
-  // 'mobile' = bottom-nav tab (icon + label), matching MobileBottomNav items.
-  readonly variant?: 'sidebar' | 'mobile'
-}
-
-export function NotificationBell({
-  variant = 'sidebar',
-}: NotificationBellProps) {
+export function NotificationBell() {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const { data: notifications = [] } = useNotifications()
@@ -33,42 +25,22 @@ export function NotificationBell({
     if (next && unread > 0) markAll.mutate()
   }
 
-  const badge =
-    unread > 0 ? (
-      <span className="bg-destructive absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full text-[10px] font-semibold text-white">
-        {unread > 9 ? '9+' : unread}
-      </span>
-    ) : null
-
   return (
     <>
-      {variant === 'mobile' ? (
-        <button
-          type="button"
-          onClick={() => handleOpenChange(true)}
-          aria-label={t('notifications.title')}
-          className="text-muted-foreground flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-0.5 px-0.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] transition-colors"
-        >
-          <span className="relative">
-            <Bell className="size-5 shrink-0" />
-            {badge}
+      <button
+        type="button"
+        onClick={() => handleOpenChange(true)}
+        title={t('notifications.title')}
+        aria-label={t('notifications.title')}
+        className="text-muted-foreground/70 hover:text-muted-foreground relative cursor-pointer rounded-full p-1 transition-colors"
+      >
+        <Bell className="size-4" />
+        {unread > 0 && (
+          <span className="bg-destructive absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full text-[10px] font-semibold text-white">
+            {unread > 9 ? '9+' : unread}
           </span>
-          <span className="w-full truncate text-center text-[9px] leading-tight">
-            {t('nav.notifications')}
-          </span>
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={() => handleOpenChange(true)}
-          title={t('notifications.title')}
-          aria-label={t('notifications.title')}
-          className="text-muted-foreground/70 hover:text-muted-foreground relative cursor-pointer rounded-full p-1 transition-colors"
-        >
-          <Bell className="size-4" />
-          {badge}
-        </button>
-      )}
+        )}
+      </button>
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent>
           <DialogHeader>

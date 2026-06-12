@@ -59,7 +59,6 @@ const en = {
     signIn: 'Sign in',
     profile: 'View profile',
     more: 'More',
-    notifications: 'Alerts',
   },
   notifications: {
     title: 'Notifications',

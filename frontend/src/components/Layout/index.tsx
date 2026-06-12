@@ -11,6 +11,7 @@ import { useUIStore } from '@/store/uiStore'
 
 import { DesktopSidebar } from './DesktopSidebar'
 import { MobileBottomNav } from './MobileBottomNav'
+import { MobileHeader } from './MobileHeader'
 import { MoreDrawer } from './MoreDrawer'
 
 // — types —
@@ -97,14 +98,17 @@ export function Layout({ children, noPadding }: LayoutProps) {
         onAboutOpen={() => setAboutOpen(true)}
       />
 
-      {/* Main content area */}
-      {noPadding ? (
-        <main className="flex-1 overflow-hidden">{children}</main>
-      ) : (
-        <main className="bg-muted/40 flex-1 overflow-y-auto p-4 pb-20 sm:p-6 sm:pb-6">
-          <div className="mx-auto max-w-6xl">{children}</div>
-        </main>
-      )}
+      {/* Main column: mobile top bar (sm:hidden) above the content area */}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <MobileHeader />
+        {noPadding ? (
+          <main className="flex-1 overflow-hidden">{children}</main>
+        ) : (
+          <main className="bg-muted/40 flex-1 overflow-y-auto p-4 pb-20 sm:p-6 sm:pb-6">
+            <div className="mx-auto max-w-6xl">{children}</div>
+          </main>
+        )}
+      </div>
 
       <MobileBottomNav
         pathname={pathname}

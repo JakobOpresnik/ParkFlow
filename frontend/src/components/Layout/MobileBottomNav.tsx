@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/store/authStore'
 
 import { getNavItems, isActivePath, isAdminSection } from './constants'
-import { NotificationBell } from './NotificationBell'
 
 // — types —
 
@@ -46,7 +45,6 @@ export function MobileBottomNav({
           </Link>
         )
       })}
-      <NotificationBell variant="mobile" />
       <button
         onClick={onMoreOpen}
         className={`flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-0.5 px-0.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] transition-colors ${

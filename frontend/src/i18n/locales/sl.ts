@@ -59,7 +59,6 @@ const sl = {
     signIn: 'Prijava',
     profile: 'Ogled profila',
     more: 'Več',
-    notifications: 'Obvestila',
   },
   notifications: {
     title: 'Obvestila',
