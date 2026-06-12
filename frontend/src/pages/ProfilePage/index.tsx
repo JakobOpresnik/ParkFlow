@@ -17,13 +17,9 @@ export function ProfilePage() {
   const {
     user,
     lots,
-    notifyOnBooking,
-    notifyOnAvailability,
     preferredLotId,
     arrivalTime,
     reservationDuration,
-    setNotifyOnBooking,
-    setNotifyOnAvailability,
     setArrivalTime,
     setReservationDuration,
     handlePreferredLotChange,
@@ -94,11 +90,7 @@ export function ProfilePage() {
         preferredLotId={preferredLotId}
         arrivalTime={arrivalTime}
         reservationDuration={reservationDuration}
-        notifyOnBooking={notifyOnBooking}
-        notifyOnAvailability={notifyOnAvailability}
         onPreferredLotChange={handlePreferredLotChange}
-        onNotifyOnBookingChange={setNotifyOnBooking}
-        onNotifyOnAvailabilityChange={setNotifyOnAvailability}
         onArrivalTimeChange={setArrivalTime}
         onReservationDurationChange={setReservationDuration}
       />

@@ -367,11 +367,12 @@ const sl = {
     expiredNotePlural: '{{count}} rezervacij poteklo brez preklica',
     preferences: 'Nastavitve',
     prefsSavedLocally: 'Shranjeno lokalno na tej napravi',
-    notifyOnBooking: 'Potrditve rezervacij',
-    notifyOnBookingDesc: 'Obvestilo ob rezervaciji ali preklicu mesta',
-    notifyOnAvailability: 'Opozorila o razpoložljivosti',
-    notifyOnAvailabilityDesc:
-      'Obvestilo, ko postanejo prednostna mesta na voljo',
+    reminders: {
+      reservation_today: {
+        label: 'Jutranji opomnik',
+        desc: 'Opomnik, ko imaš danes rezervacijo',
+      },
+    },
     preferredLot: 'Prednostno parkirišče',
     preferredLotDesc: 'Privzeto parkirišče pri brskanju po zemljevidu',
     anyLot: 'Katero koli',

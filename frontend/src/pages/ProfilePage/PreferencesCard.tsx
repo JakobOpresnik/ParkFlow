@@ -1,9 +1,10 @@
-import { Bell, BellOff, Clock, ParkingCircle } from 'lucide-react'
+import { Clock, ParkingCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { PreferenceRow } from '@/components/PreferenceRow/PreferenceRow'
 import { Select } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
+
+import { RemindersSection } from './RemindersSection'
 
 // — types —
 
@@ -12,11 +13,7 @@ interface PreferencesCardProps {
   readonly preferredLotId: string | null
   readonly arrivalTime: string
   readonly reservationDuration: number
-  readonly notifyOnBooking: boolean
-  readonly notifyOnAvailability: boolean
   readonly onPreferredLotChange: (id: string | null) => void
-  readonly onNotifyOnBookingChange: (v: boolean) => void
-  readonly onNotifyOnAvailabilityChange: (v: boolean) => void
   readonly onArrivalTimeChange: (v: string) => void
   readonly onReservationDurationChange: (v: number) => void
 }
@@ -28,11 +25,7 @@ export function PreferencesCard({
   preferredLotId,
   arrivalTime,
   reservationDuration,
-  notifyOnBooking,
-  notifyOnAvailability,
   onPreferredLotChange,
-  onNotifyOnBookingChange,
-  onNotifyOnAvailabilityChange,
   onArrivalTimeChange,
   onReservationDurationChange,
 }: PreferencesCardProps) {
@@ -47,30 +40,7 @@ export function PreferencesCard({
         </p>
       </div>
       <div className="divide-y px-5">
-        <div className="py-4">
-          <PreferenceRow
-            icon={Bell}
-            title={t('profile.notifyOnBooking')}
-            description={t('profile.notifyOnBookingDesc')}
-          >
-            <Switch
-              checked={notifyOnBooking}
-              onCheckedChange={onNotifyOnBookingChange}
-            />
-          </PreferenceRow>
-        </div>
-        <div className="py-4">
-          <PreferenceRow
-            icon={BellOff}
-            title={t('profile.notifyOnAvailability')}
-            description={t('profile.notifyOnAvailabilityDesc')}
-          >
-            <Switch
-              checked={notifyOnAvailability}
-              onCheckedChange={onNotifyOnAvailabilityChange}
-            />
-          </PreferenceRow>
-        </div>
+        <RemindersSection />
         {lots.length > 0 && (
           <div className="py-4">
             <PreferenceRow

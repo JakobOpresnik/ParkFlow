@@ -3,8 +3,6 @@ import { create } from 'zustand'
 const STORAGE_KEY = 'pf_user_prefs'
 
 interface UserPrefs {
-  notifyOnBooking: boolean
-  notifyOnAvailability: boolean
   preferredLotId: string | null
   /** HH:MM, e.g. "08:00" — used as the default reservation start time */
   arrivalTime: string
@@ -13,16 +11,12 @@ interface UserPrefs {
 }
 
 interface PrefsStore extends UserPrefs {
-  setNotifyOnBooking: (v: boolean) => void
-  setNotifyOnAvailability: (v: boolean) => void
   setPreferredLotId: (id: string | null) => void
   setArrivalTime: (t: string) => void
   setReservationDuration: (h: number) => void
 }
 
 const DEFAULTS: UserPrefs = {
-  notifyOnBooking: true,
-  notifyOnAvailability: false,
   preferredLotId: null,
   arrivalTime: '09:00',
   reservationDuration: 8,
@@ -34,9 +28,6 @@ function loadPrefs(): UserPrefs {
     if (!raw) return { ...DEFAULTS }
     const stored = JSON.parse(raw) as Partial<UserPrefs>
     return {
-      notifyOnBooking: stored.notifyOnBooking ?? DEFAULTS.notifyOnBooking,
-      notifyOnAvailability:
-        stored.notifyOnAvailability ?? DEFAULTS.notifyOnAvailability,
       preferredLotId: stored.preferredLotId ?? DEFAULTS.preferredLotId,
       arrivalTime: stored.arrivalTime ?? DEFAULTS.arrivalTime,
       reservationDuration:
@@ -54,14 +45,6 @@ function savePrefs(prefs: UserPrefs) {
 export const usePrefsStore = create<PrefsStore>((set, get) => ({
   ...loadPrefs(),
 
-  setNotifyOnBooking: (v) => {
-    set({ notifyOnBooking: v })
-    savePrefs({ ...get(), notifyOnBooking: v })
-  },
-  setNotifyOnAvailability: (v) => {
-    set({ notifyOnAvailability: v })
-    savePrefs({ ...get(), notifyOnAvailability: v })
-  },
   setPreferredLotId: (id) => {
     set({ preferredLotId: id })
     savePrefs({ ...get(), preferredLotId: id })
