@@ -70,9 +70,8 @@ export function useEffectiveSpots(date: string) {
     }
 
     const processed = spots.map((spot) => {
-      const bookingIsForDate =
-        spot.active_booking_expires_at?.slice(0, 10) === date
-      const hasNoBooking = spot.active_booking_expires_at == null
+      const bookingIsForDate = spot.active_booking_date === date
+      const hasNoBooking = spot.active_booking_id == null
 
       // An active booking for this specific date → always show as reserved,
       // regardless of the spot's base status. This matters for ACEX-owned spots
@@ -187,9 +186,8 @@ export function useEffectiveSpots(date: string) {
         byId.set(spot.id, spot)
         continue
       }
-      const existingForDate =
-        existing.active_booking_expires_at?.slice(0, 10) === date
-      const newForDate = spot.active_booking_expires_at?.slice(0, 10) === date
+      const existingForDate = existing.active_booking_date === date
+      const newForDate = spot.active_booking_date === date
       if (newForDate && !existingForDate) {
         byId.set(spot.id, spot)
       } else if (

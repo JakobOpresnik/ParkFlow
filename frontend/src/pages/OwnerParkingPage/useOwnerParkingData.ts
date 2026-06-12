@@ -43,7 +43,7 @@ export function useOwnerParkingData(
         (b) =>
           b.status === 'active' &&
           !ownedSpotIds.has(b.spot_id) &&
-          b.expires_at.slice(0, 10) === selectedDate,
+          b.booking_date === selectedDate,
       ),
     [myBookings, ownedSpotIds, selectedDate],
   )
