@@ -32,10 +32,11 @@ deferred from v1 (see Out of scope) but explicitly cheap to add later.
 | Decision | Choice |
 | --- | --- |
 | Reminder types in v1 | **`reservation_today` (morning) only** |
-| Morning send time | 07:30 local (`REMINDER_MORNING_TIME`, env-configurable) — before the morning commute / the 09:00 work-hours window |
+| Morning send time | Owned by the cron schedule `35 7 * * 1-5` (07:35 local, Mon–Fri). `REMINDER_MORNING_TIME` (07:30) stays as a backend gate so an off-hours manual trigger can't fire before the morning window. |
+| Weekends | Handled by the cron schedule (`1-5` = Mon–Fri) — no Sat/Sun runs. No separate weekend flag. |
 | `reservation_ending` (pre-expiry) | **Deferred** — no "extend booking" action exists (verified: bookings only support create/cancel), so an expiry warning has no actionable follow-up. Catalog-ready for later. |
-| Scheduler mechanism | In-process `setInterval` ticker, started on boot (like `startTimesheetWs`) |
-| Multi-instance safety | Postgres advisory lock around each tick |
+| Scheduler mechanism | **Docker cron service → token-gated `POST /api/internal/reminders/run`**, which calls `runReminderTick()`. No in-process timer. |
+| Multi-instance safety | Postgres advisory lock inside `runReminderTick` (also guards double/overlapping triggers) |
 | Default state | **ON (opt-out)**: default-on (absent `notification_prefs` row = enabled). A once-a-day morning DM is low-frequency and useful; opt-in would mean near-zero adoption. |
 | Preferences storage | Server-side `notification_prefs` table |
 | Preferences writers | Both: in-app Settings UI **and** bot command `/reminders` |
@@ -75,6 +76,8 @@ booking:
 - booking `status = 'active'`, and
 - its `booking_date` (the authoritative local day, a `DATE` column added in
   `025_booking_date.sql`) equals **today** in `REMINDER_TZ`, and
+- today is a weekday when `REMINDER_SKIP_WEEKENDS` is enabled (default) —
+  Sat/Sun produce no reminders, and
 - local time now `>=` `REMINDER_MORNING_TIME`, and
 - the booking was created **before** today's morning time
   (`booked_at < today@MORNING_TIME`) — so booking a spot at 10:00 for today does
@@ -174,10 +177,11 @@ Timezone handling is done in SQL via `AT TIME ZONE 'Europe/Ljubljana'` for the
 
 | Var | Default | Meaning |
 | --- | --- | --- |
-| `REMINDERS_ENABLED` | `true` | Master kill switch for the ticker |
-| `REMINDER_TZ` | `Europe/Ljubljana` | Timezone for "today" + morning time |
-| `REMINDER_MORNING_TIME` | `07:30` | Local `HH:MM` at/after which the morning reminder sends |
-| `REMINDER_TICK_MINUTES` | `15` | Ticker interval |
+| `REMINDER_TRIGGER_TOKEN` | _(required)_ | Shared secret the cron service sends as `X-Reminder-Token`; the endpoint rejects mismatches with 401 |
+| `REMINDER_TZ` | `Europe/Ljubljana` | Timezone for the "today" date + morning gate |
+| `REMINDER_MORNING_TIME` | `07:30` | Local `HH:MM` gate — `runReminderTick` no-ops before this time |
+
+The schedule (07:35, Mon–Fri) lives in the cron service's crontab, not in backend env.
 
 Added to `backend/.env.example`.
 
@@ -352,3 +356,30 @@ The branch was rebased onto `origin/main` (`e320b7e`), which merged the
    deriving the day from `expires_at`. The "booked before the morning window"
    guard still uses `booked_at` (a timestamptz), and the morning-time gate is
    unchanged.
+
+## Amendment (2026-06-12): scheduler mechanism → Option B (Docker cron + endpoint)
+
+After implementing the in-process ticker, we switched the **trigger** mechanism
+(the *logic* — `runReminderTick()` — is unchanged):
+
+- **Removed** the in-process `setInterval` timer (`startReminderScheduler` /
+  `stopReminderScheduler`) and the boot wiring in `index.ts`.
+- **Added** a token-gated `POST /api/internal/reminders/run`
+  (`backend/src/routes/internal.ts`, mounted at `/api/internal`): it checks an
+  `X-Reminder-Token` header against `REMINDER_TRIGGER_TOKEN` (401 on mismatch),
+  then `await runReminderTick(new Date())` and returns `{ ok: true }`. Same
+  token pattern as the existing RocketChat webhook.
+- **Added** a `reminders-cron` service to `docker-compose.yml` (a tiny image
+  whose crontab is `35 7 * * 1-5`, TZ Europe/Ljubljana) that `curl`s the
+  endpoint over the internal Docker network with the token header.
+- **Weekends** are handled by the cron schedule (`1-5`); no `REMINDER_SKIP_WEEKENDS`.
+- **Env (final):** `REMINDER_TRIGGER_TOKEN` (new, required), `REMINDER_TZ`,
+  `REMINDER_MORNING_TIME` (kept as a defense gate). Dropped `REMINDERS_ENABLED`,
+  `REMINDER_TICK_MINUTES`, `REMINDER_SKIP_WEEKENDS`.
+- The advisory lock stays in `runReminderTick` (guards double/overlapping
+  triggers); the morning-time gate stays so an off-hours manual `curl` can't
+  fire before 07:30. Schedule + weekday selection now live in the crontab.
+
+Why: a single tiny morning job doesn't need an always-on timer; an explicit cron
+schedule is more ops-visible, and the logic stays in the backend (Celery /
+BullMQ / a separate worker would be overkill — no broker or job queue needed).

@@ -477,7 +477,7 @@ Expected: PASS.
 
 - [ ] **Step 4: Verify existing tests still pass (scheduler must NOT auto-start under test)**
 
-Run: `cd backend && bun test`
+Run: `cd backend && bun run test`
 Expected: PASS — all suites green; no scheduler logs (gated by `NODE_ENV==='test'`).
 
 - [ ] **Step 5: Commit**
@@ -1107,4 +1107,154 @@ Confirm no regressions in the existing notifications bell and bot `status` flow.
 - **Spec coverage:** morning ticker (Tasks 3-4), default-on opt-out store (Task 1) + API (Task 5) + bot (Task 6) + UI (Tasks 8-10), catalog (Task 2), env (Task 7), copy/i18n (Tasks 3, 10). Ending-soon intentionally absent (deferred). Three regression guards baked into Task 3 (advisory lock + release in `finally`, `NODE_ENV==='test'` no-op, `.catch()` on scheduled call) and asserted in tests.
 - **Test harness reality:** backend tests mock the pool, so scheduler SQL correctness (tz/dedup/opt-out) is asserted by shape + verified manually in Task 11 Step 3, not by a live query.
 - **Rebased onto `critical-audit-fixes`:** migration is **026** (025 is `025_booking_date.sql`); the morning query keys "today" off the authoritative `booking_date` column, not `expires_at::date`. Confirm `booking_date` exists (`bun run build` + a glance at `025_booking_date.sql`) before relying on it.
+
+---
+
+## Amendment: scheduler mechanism → Option B (Docker cron + token-gated endpoint)
+
+The *trigger* changes; `runReminderTick()` (Task 3 logic) is unchanged. This
+supersedes the original Task 4 (no in-process timer) and adjusts Task 7.
+
+### Task 3-revise: drop the in-process timer
+
+In `backend/src/lib/reminderScheduler.ts`, **delete** `startReminderScheduler`,
+`stopReminderScheduler`, and the `let timer` line (the entire `setInterval`
+machinery). Keep `runReminderTick`, `MORNING_SQL`, constants, and imports exactly
+as they are. The existing `reminderScheduler.test.ts` only imports
+`runReminderTick`, so it stays green. Verify: `cd backend && bun run test src/__tests__/reminderScheduler.test.ts` and `bun run build`.
+
+### Task 4-rewrite: token-gated internal trigger endpoint
+
+**Files:** Create `backend/src/routes/internal.ts`; modify `backend/src/app.ts`;
+create test `backend/src/__tests__/internal.routes.test.ts`.
+
+`backend/src/routes/internal.ts`:
+
+```ts
+import { Router } from "express";
+
+import { runReminderTick } from "../lib/reminderScheduler.js";
+
+const router = Router();
+
+// POST /api/internal/reminders/run — triggered by the reminders-cron service.
+// Token-gated (X-Reminder-Token must equal REMINDER_TRIGGER_TOKEN). Not a user
+// endpoint — no JWT, just the shared secret, mirroring the RocketChat webhook.
+router.post("/reminders/run", async (req, res, next) => {
+  try {
+    const expected = process.env.REMINDER_TRIGGER_TOKEN;
+    if (!expected) {
+      res.status(500).json({ error: "Reminder trigger is not configured." });
+      return;
+    }
+    if (req.get("x-reminder-token") !== expected) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    await runReminderTick(new Date());
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+export default router;
+```
+
+In `backend/src/app.ts`: add `import internalRouter from "./routes/internal.js";`
+with the other route imports, and `app.use("/api/internal", internalRouter);`
+with the other `app.use("/api/...")` lines.
+
+Test `backend/src/__tests__/internal.routes.test.ts` (mirrors the working
+mock-pool pattern from `notifications.routes.test.ts`):
+
+```ts
+import request from 'supertest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { createApp } from '../app.js'
+
+vi.mock('../db/pool.js', () => ({
+  pool: { query: vi.fn(), connect: vi.fn() },
+}))
+vi.mock('../lib/reminderScheduler.js', () => ({
+  runReminderTick: vi.fn(),
+}))
+
+const { runReminderTick } = await import('../lib/reminderScheduler.js')
+const mockTick = runReminderTick as ReturnType<typeof vi.fn>
+
+const app = createApp()
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  process.env.REMINDER_TRIGGER_TOKEN = 'secret'
+})
+
+describe('POST /api/internal/reminders/run', () => {
+  it('runs the tick when the token matches', async () => {
+    mockTick.mockResolvedValueOnce(undefined)
+    const res = await request(app)
+      .post('/api/internal/reminders/run')
+      .set('X-Reminder-Token', 'secret')
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ ok: true })
+    expect(mockTick).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects a wrong token with 401 and does not run', async () => {
+    const res = await request(app)
+      .post('/api/internal/reminders/run')
+      .set('X-Reminder-Token', 'nope')
+    expect(res.status).toBe(401)
+    expect(mockTick).not.toHaveBeenCalled()
+  })
+})
+```
+
+Verify: `cd backend && bun run test src/__tests__/internal.routes.test.ts` (2 pass) + `bun run build`.
+
+### Task 4b-new: reminders-cron Docker service
+
+**Files:** modify `docker-compose.yml` (read it first; match existing service
+style + network). Add a small service that, on `35 7 * * 1-5` (TZ
+Europe/Ljubljana), POSTs to the backend with the token header over the internal
+network. Recommended shape (adapt names to the existing compose — backend
+service name, network, and `${REMINDER_TRIGGER_TOKEN}` from `.env`):
+
+```yaml
+  reminders-cron:
+    image: alpine:3.20
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      - TZ=Europe/Ljubljana
+      - REMINDER_TRIGGER_TOKEN=${REMINDER_TRIGGER_TOKEN}
+      - BACKEND_URL=http://backend:3001
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache curl tzdata >/dev/null
+        printf '35 7 * * 1-5 curl -fsS -X POST -H "X-Reminder-Token: %s" %s/api/internal/reminders/run\n' "$REMINDER_TRIGGER_TOKEN" "$BACKEND_URL" > /etc/crontabs/root
+        crond -f -l 2
+```
+
+Verify (if Docker available): `docker compose config` parses without error. If
+Docker isn't available locally, note that and rely on review. Commit.
+
+### Task 7-revise: env vars (final set)
+
+Append to `backend/.env.example` (NOT the timer vars):
+
+```
+# Scheduled reminders — morning "you have a reservation today" (Docker cron + endpoint)
+REMINDER_TRIGGER_TOKEN=change-me-to-a-long-random-secret
+REMINDER_TZ=Europe/Ljubljana
+REMINDER_MORNING_TIME=07:30
+```
+
+(No `REMINDERS_ENABLED`, `REMINDER_TICK_MINUTES`, or `REMINDER_SKIP_WEEKENDS` —
+the cron schedule owns timing + weekday selection.)
 - **Type consistency:** `runReminderTick`, `startReminderScheduler`, `REMINDER_TYPES`, `isReminderType`, `getNotificationPrefs`, `setNotificationPref`, `useNotificationPrefs`, `useSetNotificationPref`, `NotificationPrefs`, `ReminderTypeDef` used consistently across backend/frontend tasks.
