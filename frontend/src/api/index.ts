@@ -230,7 +230,7 @@ export const api = {
       body: JSON.stringify(params),
     }),
   cancelBooking: (id: string) =>
-    request<{ ok: boolean }>(`/api/bookings/${id}/cancel`, {
+    request<{ ok: boolean; notified?: boolean }>(`/api/bookings/${id}/cancel`, {
       method: 'PATCH',
     }),
 
