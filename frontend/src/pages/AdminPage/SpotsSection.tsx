@@ -1,4 +1,5 @@
 import { ParkingCircle } from 'lucide-react'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -19,6 +20,7 @@ import {
 import { useLots } from '@/hooks/useLots'
 import { useOwners } from '@/hooks/useOwners'
 import { useSpots } from '@/hooks/useSpots'
+import { dedupeSpotsById } from '@/lib/dedupeSpots'
 
 import { SpotCard } from './SpotCard'
 import { STICKY_ACTIONS_CLASS } from './spotConstants'
@@ -35,8 +37,13 @@ import { useSpotFilters } from './useSpotFilters'
 export function SpotsSection() {
   const { t } = useTranslation()
   const { data: lots = [] } = useLots()
-  const { data: allSpots = [], isLoading } = useSpots()
+  const { data: rawSpots = [], isLoading } = useSpots()
   const { data: owners = [] } = useOwners()
+
+  // Collapse the per-active-booking duplicate rows the spots endpoint emits, so
+  // the admin table doesn't show a spot twice (and inflate counts) when it's
+  // booked on multiple days.
+  const allSpots = useMemo(() => dedupeSpotsById(rawSpots), [rawSpots])
 
   const {
     lotFilter,

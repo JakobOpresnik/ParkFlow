@@ -1,10 +1,11 @@
 import { useNavigate } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useLots } from '@/hooks/useLots'
 import { useSpots } from '@/hooks/useSpots'
+import { dedupeSpotsById } from '@/lib/dedupeSpots'
 import { useUIStore } from '@/store/uiStore'
 import type { Spot, SpotCoordinates } from '@/types'
 
@@ -29,7 +30,10 @@ export function MapEditorPage() {
   const svgRef = useRef<SVGSVGElement>(null)
 
   const { data: lots = [], isLoading: lotsLoading } = useLots()
-  const { data: allSpots = [], isLoading: spotsLoading } = useSpots()
+  const { data: rawSpots = [], isLoading: spotsLoading } = useSpots()
+
+  // One rect per spot — the spots endpoint duplicates a spot per active booking.
+  const allSpots = useMemo(() => dedupeSpotsById(rawSpots), [rawSpots])
 
   const [selectedLotId, setSelectedLotId] = useState<string | null>(null)
   const [mode, setMode] = useState<Mode>('draw')

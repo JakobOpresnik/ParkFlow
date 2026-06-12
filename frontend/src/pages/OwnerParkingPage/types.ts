@@ -18,6 +18,7 @@ export interface WeekStripProps {
 export interface SpotCardProps {
   readonly spot: OwnerSpot
   readonly status: DayStatus
+  readonly selectedDate: string
   readonly isOverridden: boolean
   readonly isNonWorkDay: boolean
   readonly isPastCutoff: boolean
