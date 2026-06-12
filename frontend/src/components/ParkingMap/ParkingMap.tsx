@@ -259,7 +259,6 @@ export const ParkingMap = forwardRef<ParkingMapHandle, ParkingMapProps>(
       zoomIn,
       zoomOut,
       resetZoom,
-      handleWheel,
       handlePointerDown,
       handlePointerMove,
       handlePointerUp,
@@ -280,7 +279,6 @@ export const ParkingMap = forwardRef<ParkingMapHandle, ParkingMapProps>(
         ref={containerRef}
         className="relative h-full w-full overflow-hidden"
         style={{ touchAction: 'none' }}
-        onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

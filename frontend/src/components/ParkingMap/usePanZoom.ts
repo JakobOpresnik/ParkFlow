@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 // — types —
 
@@ -30,38 +30,55 @@ export function usePanZoom() {
   /**
    * Apply a zoom step anchored at a specific point in container-local px.
    * Uses zoomRef so the pan updater sees the correct current scale.
+   * Stable (useCallback) so the native wheel-listener effect below never re-runs.
    */
-  function applyZoom(factor: number, zoomPoint: { x: number; y: number }) {
-    const prevZoom = zoomRef.current
-    const nextZoom = Math.min(4, Math.max(0.5, prevZoom * factor))
+  const applyZoom = useCallback(
+    (factor: number, zoomPoint: { x: number; y: number }) => {
+      const prevZoom = zoomRef.current
+      const nextZoom = Math.min(4, Math.max(0.5, prevZoom * factor))
 
-    if (nextZoom === prevZoom) return
+      if (nextZoom === prevZoom) return
 
-    const ratio = nextZoom / prevZoom
-    zoomRef.current = nextZoom
-    setView((prev: PanZoomViewState) => ({
-      zoom: nextZoom,
-      pan: {
-        x: zoomPoint.x - ratio * (zoomPoint.x - prev.pan.x),
-        y: zoomPoint.y - ratio * (zoomPoint.y - prev.pan.y),
-      },
-    }))
-  }
+      const ratio = nextZoom / prevZoom
+      zoomRef.current = nextZoom
+      setView((prev: PanZoomViewState) => ({
+        zoom: nextZoom,
+        pan: {
+          x: zoomPoint.x - ratio * (zoomPoint.x - prev.pan.x),
+          y: zoomPoint.y - ratio * (zoomPoint.y - prev.pan.y),
+        },
+      }))
+    },
+    [],
+  )
 
   function containerCenter() {
     const rect = containerRef.current?.getBoundingClientRect()
     return rect ? { x: rect.width / 2, y: rect.height / 2 } : { x: 0, y: 0 }
   }
 
-  function handleWheel(e: React.WheelEvent) {
-    e.preventDefault()
-    const rect = containerRef.current?.getBoundingClientRect()
-    if (!rect) return
-    applyZoom(e.deltaY < 0 ? 1.05 : 1 / 1.05, {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    })
-  }
+  // Wheel zoom must be a NATIVE non-passive listener: browsers treat wheel
+  // listeners on React's delegated root as passive, so preventDefault() from a
+  // React onWheel prop is ignored (and warns) — the page would scroll while
+  // zooming. Attaching directly to the container with passive: false lets us
+  // actually consume the gesture.
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+
+    function onWheel(e: WheelEvent) {
+      e.preventDefault()
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      applyZoom(e.deltaY < 0 ? 1.05 : 1 / 1.05, {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      })
+    }
+
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [applyZoom])
 
   function handlePointerDown(e: React.PointerEvent) {
     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
@@ -136,7 +153,6 @@ export function usePanZoom() {
       zoomRef.current = 1
       setView({ zoom: 1, pan: { x: 0, y: 0 } })
     },
-    handleWheel,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
