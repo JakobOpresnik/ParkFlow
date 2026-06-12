@@ -3,6 +3,7 @@ import type { Server } from "node:http";
 import request from "supertest";
 import {
   afterAll,
+  afterEach,
   beforeAll,
   beforeEach,
   describe,
@@ -69,6 +70,20 @@ beforeEach(() => {
   vi.resetAllMocks();
   process.env.ROCKETCHAT_WEBHOOK_TOKEN = WEBHOOK_TOKEN;
 });
+
+// Some loopback tests freeze Date (see pinClock) — always restore. No-op when
+// timers were never faked.
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+// Pin the route's `new Date()` inside working hours. Tests that reserve "today"
+// hit the workDayOver guard ("No working time left today") when the suite runs
+// after 17:00 Ljubljana time — exactly what happens in evening CI runs. Only
+// Date is faked so supertest/loopback timers keep working.
+function pinClock() {
+  vi.useFakeTimers({ now: NOW, toFake: ["Date"] });
+}
 
 // --- parseCommand -----------------------------------------------------------
 
@@ -1393,6 +1408,7 @@ describe("POST /api/integrations/rocketchat (loopback)", () => {
   });
 
   it("tells the user when a reserved spot does not exist", async () => {
+    pinClock();
     process.env.ROCKETCHAT_WEBHOOK_TOKEN = WEBHOOK_TOKEN;
     mockQuery
       .mockResolvedValueOnce({ rows: [] }) // expire stale (bookings/my)
@@ -1413,6 +1429,7 @@ describe("POST /api/integrations/rocketchat (loopback)", () => {
   });
 
   it("warns instead of replacing when you already have a booking that day", async () => {
+    pinClock();
     process.env.ROCKETCHAT_WEBHOOK_TOKEN = WEBHOOK_TOKEN;
     const today = new Date().toISOString().slice(0, 10);
     mockQuery
