@@ -108,7 +108,7 @@ describe('reminder catalog', () => {
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run: `cd backend && bun test src/__tests__/reminders.test.ts`
+Run: `cd backend && bun run test src/__tests__/reminders.test.ts`
 Expected: FAIL — cannot find module `../lib/reminders.js`.
 
 - [ ] **Step 3: Implement the catalog**
@@ -140,7 +140,7 @@ export function isReminderType(value: string): boolean {
 
 - [ ] **Step 4: Run it to verify it passes**
 
-Run: `cd backend && bun test src/__tests__/reminders.test.ts`
+Run: `cd backend && bun run test src/__tests__/reminders.test.ts`
 Expected: PASS (2 tests).
 
 - [ ] **Step 5: Commit**
@@ -281,7 +281,7 @@ describe('runReminderTick', () => {
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run: `cd backend && bun test src/__tests__/reminderScheduler.test.ts`
+Run: `cd backend && bun run test src/__tests__/reminderScheduler.test.ts`
 Expected: FAIL — cannot find module `../lib/reminderScheduler.js`.
 
 - [ ] **Step 3: Implement the scheduler**
@@ -433,7 +433,7 @@ export function stopReminderScheduler(): void {
 
 - [ ] **Step 4: Run it to verify it passes**
 
-Run: `cd backend && bun test src/__tests__/reminderScheduler.test.ts`
+Run: `cd backend && bun run test src/__tests__/reminderScheduler.test.ts`
 Expected: PASS (4 tests).
 
 - [ ] **Step 5: Commit**
@@ -550,7 +550,7 @@ describe('PUT /api/notifications/prefs/:type', () => {
 
 - [ ] **Step 2: Run to verify failure**
 
-Run: `cd backend && bun test src/__tests__/notifications.routes.test.ts`
+Run: `cd backend && bun run test src/__tests__/notifications.routes.test.ts`
 Expected: FAIL — GET/PUT `/prefs` 404s (routes not defined).
 
 - [ ] **Step 3: Implement the endpoints**
@@ -618,7 +618,7 @@ router.put(
 
 - [ ] **Step 4: Run to verify pass**
 
-Run: `cd backend && bun test src/__tests__/notifications.routes.test.ts`
+Run: `cd backend && bun run test src/__tests__/notifications.routes.test.ts`
 Expected: PASS (original 4 + 5 new = 9 tests).
 
 - [ ] **Step 5: Commit**
@@ -659,7 +659,7 @@ describe('parseCommand — reminders', () => {
 
 - [ ] **Step 2: Run to verify failure**
 
-Run: `cd backend && bun test src/__tests__/integrations.routes.test.ts`
+Run: `cd backend && bun run test src/__tests__/integrations.routes.test.ts`
 Expected: FAIL — `parseCommand('reminders')` returns `{ command: 'unknown', rest: ['reminders'] }`.
 
 - [ ] **Step 3: Extend the command union and parser**
@@ -682,7 +682,7 @@ Add a case in `parseCommand`'s switch (after the `case "owners":` block, before 
 
 - [ ] **Step 4: Run to verify the parser test passes**
 
-Run: `cd backend && bun test src/__tests__/integrations.routes.test.ts`
+Run: `cd backend && bun run test src/__tests__/integrations.routes.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Add the handler**
@@ -769,7 +769,7 @@ The same toggles live in the app under **Profile → Preferences**.
 
 - [ ] **Step 8: Verify build + tests**
 
-Run: `cd backend && bun run build && bun test`
+Run: `cd backend && bun run build && bun run test`
 Expected: PASS.
 
 - [ ] **Step 9: Commit**
@@ -1081,7 +1081,7 @@ git commit -m "feat(reminders): server-backed reminders in Settings, drop dead l
 
 - [ ] **Step 1: Backend — build, lint, tests**
 
-Run: `cd backend && bun run build && bun run lint && bun test`
+Run: `cd backend && bun run build && bun run lint && bun run test`
 Expected: PASS — all suites green.
 
 - [ ] **Step 2: Frontend — build + lint:all**
