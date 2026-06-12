@@ -102,9 +102,9 @@ export function Layout({ children, noPadding }: LayoutProps) {
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <MobileHeader />
         {noPadding ? (
-          <main className="flex-1 overflow-hidden">{children}</main>
+          <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
         ) : (
-          <main className="bg-muted/40 flex-1 overflow-y-auto p-4 pb-20 sm:p-6 sm:pb-6">
+          <main className="bg-muted/40 min-h-0 flex-1 overflow-y-auto p-4 pb-20 sm:p-6 sm:pb-6">
             <div className="mx-auto max-w-6xl">{children}</div>
           </main>
         )}

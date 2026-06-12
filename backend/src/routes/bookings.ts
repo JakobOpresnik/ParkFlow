@@ -522,13 +522,21 @@ router.patch(
         client.release();
       }
 
-      // Best-effort proactive DM after commit — failure must not affect the response.
+      // Best-effort proactive DM after commit — failure must not affect the
+      // response (the cancel is already committed). Swallow any delivery error.
       if (notifId) {
-        const ok = await pushChatMessage(notifUserId, `⚠️ ${notifBody}`);
-        if (ok) {
-          await pool.query(
-            `UPDATE notifications SET pushed_at = now() WHERE id = $1`,
-            [notifId],
+        try {
+          const ok = await pushChatMessage(notifUserId, `⚠️ ${notifBody}`);
+          if (ok) {
+            await pool.query(
+              `UPDATE notifications SET pushed_at = now() WHERE id = $1`,
+              [notifId],
+            );
+          }
+        } catch (err) {
+          console.error(
+            "[bookings] post-cancel notification delivery failed:",
+            err instanceof Error ? err.message : String(err),
           );
         }
       }
