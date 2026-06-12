@@ -72,3 +72,52 @@ describe('PATCH /api/notifications/read-all', () => {
     expect(res.body).toEqual({ ok: true })
   })
 })
+
+describe('GET /api/notifications/prefs', () => {
+  it('returns the catalog and per-type state (absent = enabled)', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ reminder_type: 'reservation_today', enabled: false }],
+    })
+    const res = await request(app).get('/api/notifications/prefs')
+    expect(res.status).toBe(200)
+    expect(
+      res.body.catalog.some((c: { type: string }) => c.type === 'reservation_today'),
+    ).toBe(true)
+    expect(res.body.prefs.reservation_today).toBe(false)
+  })
+
+  it('defaults an absent type to enabled', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] })
+    const res = await request(app).get('/api/notifications/prefs')
+    expect(res.body.prefs.reservation_today).toBe(true)
+  })
+})
+
+describe('PUT /api/notifications/prefs/:type', () => {
+  it('upserts a known type', async () => {
+    mockQuery.mockResolvedValueOnce({ rowCount: 1 })
+    const res = await request(app)
+      .put('/api/notifications/prefs/reservation_today')
+      .send({ enabled: false })
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ ok: true })
+    expect(mockQuery).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO notification_prefs'),
+      ['jsernec', 'reservation_today', false],
+    )
+  })
+
+  it('rejects an unknown type', async () => {
+    const res = await request(app)
+      .put('/api/notifications/prefs/nope')
+      .send({ enabled: true })
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects a non-boolean enabled', async () => {
+    const res = await request(app)
+      .put('/api/notifications/prefs/reservation_today')
+      .send({ enabled: 'yes' })
+    expect(res.status).toBe(400)
+  })
+})
