@@ -1,15 +1,16 @@
-import { Router } from 'express';
+import { Router } from "express";
 
-import { pool } from '../db/pool.js';
-import { broadcast } from '../lib/broadcast.js';
-import { fetchWeekPresence, isOwnerAbsent } from '../lib/presence.js';
-import { requireAuth, requireNonGuest } from '../middleware/auth.js';
+import { pool } from "../db/pool.js";
+import { broadcast } from "../lib/broadcast.js";
+import { pushChatMessage } from "../lib/rocketchatNotify.js";
+import { fetchWeekPresence, isOwnerAbsent } from "../lib/presence.js";
+import { requireAuth, requireNonGuest } from "../middleware/auth.js";
 
 const router = Router();
 
 // ACEX-owned spots are company spots displayed as 'free' on the map regardless of db status.
 // Must match the constant in spots.ts to keep booking logic consistent with map display.
-const ACEX_OWNER_NAME = 'ACEX - kdor prej pride, prej melje';
+const ACEX_OWNER_NAME = "ACEX - kdor prej pride, prej melje";
 
 // Mirror of the frontend isCurrentUserOwner check. A user counts as a co-owner
 // if either signal matches: their SSO username appears in the admin-linked
@@ -24,11 +25,14 @@ function isUserCoOwner(
 ): boolean {
   const usernameMatch =
     !!ownerUserId &&
-    ownerUserId.split(',').map((u) => u.trim()).includes(username);
+    ownerUserId
+      .split(",")
+      .map((u) => u.trim())
+      .includes(username);
   const displayNameMatch =
     !!ownerName &&
     ownerName
-      .split('/')
+      .split("/")
       .map((n) => n.trim().toLowerCase())
       .includes(displayName.toLowerCase());
   return usernameMatch || displayNameMatch;
@@ -62,7 +66,7 @@ async function expireStaleBookings(): Promise<void> {
 }
 
 // GET /api/bookings/my — current user's bookings (active first, then history)
-router.get('/my', requireAuth, requireNonGuest, async (req, res, next) => {
+router.get("/my", requireAuth, requireNonGuest, async (req, res, next) => {
   try {
     await expireStaleBookings();
 
@@ -94,7 +98,7 @@ router.get('/my', requireAuth, requireNonGuest, async (req, res, next) => {
 });
 
 // POST /api/bookings — book a free spot
-router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
+router.post("/", requireAuth, requireNonGuest, async (req, res, next) => {
   try {
     await expireStaleBookings();
 
@@ -104,7 +108,7 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
       expires_at?: string;
     };
     if (!spot_id) {
-      res.status(400).json({ error: 'spot_id is required' });
+      res.status(400).json({ error: "spot_id is required" });
       return;
     }
 
@@ -113,7 +117,7 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
       ? new Date(expires_at)
       : new Date(Date.now() + 8 * 3_600_000);
     if (Number.isNaN(expiresAt.getTime())) {
-      res.status(400).json({ error: 'Invalid expires_at' });
+      res.status(400).json({ error: "Invalid expires_at" });
       return;
     }
 
@@ -131,7 +135,7 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
     // Single transaction: auto-cancel old booking + check availability + create new booking
     const client = await pool.connect();
     try {
-      await client.query('BEGIN');
+      await client.query("BEGIN");
 
       // Lock the target spot row to prevent concurrent bookings
       const spotResult = await client.query(
@@ -144,8 +148,8 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
         [spot_id],
       );
       if (spotResult.rows.length === 0) {
-        await client.query('ROLLBACK');
-        res.status(404).json({ error: 'Spot not found' });
+        await client.query("ROLLBACK");
+        res.status(404).json({ error: "Spot not found" });
         return;
       }
 
@@ -202,11 +206,11 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
         [spot_id, expiresAt.toISOString()],
       );
       if (conflict.rows.length > 0) {
-        await client.query('ROLLBACK');
+        await client.query("ROLLBACK");
         console.log(
           `[booking] 409 CONFLICT: spot ${spotRow.number} already has active booking on ${targetDate}`,
         );
-        res.status(409).json({ error: 'Spot is not available for booking' });
+        res.status(409).json({ error: "Spot is not available for booking" });
         return;
       }
 
@@ -218,12 +222,12 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
       let isBookable: boolean;
       if (overrideResult.rows.length > 0) {
         // Owner override is authoritative
-        isBookable = overrideResult.rows[0].status === 'free';
+        isBookable = overrideResult.rows[0].status === "free";
       } else if (spotRow.owner_name === ACEX_OWNER_NAME) {
         // ACEX-owned spots are company spots — always bookable (map shows them as 'free'
         // regardless of their db status, booking logic must stay consistent).
         isBookable = true;
-      } else if (spotRow.status === 'occupied' && spotRow.owner_name) {
+      } else if (spotRow.status === "occupied" && spotRow.owner_name) {
         // Co-owners can always book their own spot, regardless of presence —
         // clicking Reserve on an unconfirmed shared spot resolves the ambiguity
         // into a concrete booking under this co-owner's name.
@@ -234,7 +238,7 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
           // Support shared spots: owner_name may be "Name1 / Name2 / Name3".
           // Bookable only when ALL co-owners are absent (same logic as the frontend).
           const ownerNames = spotRow.owner_name
-            .split('/')
+            .split("/")
             .map((n: string) => n.trim())
             .filter(Boolean);
           isBookable =
@@ -247,15 +251,15 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
       } else {
         // No override — use spot's base status.
         // 'reserved' with no active-booking conflict (already checked above) is bookable.
-        isBookable = spotRow.status === 'free' || spotRow.status === 'reserved';
+        isBookable = spotRow.status === "free" || spotRow.status === "reserved";
       }
 
       if (!isBookable) {
-        await client.query('ROLLBACK');
+        await client.query("ROLLBACK");
         console.log(
-          `[booking] 409 NOT BOOKABLE: spot ${spotRow.number}, status=${spotRow.status}, owner=${spotRow.owner_name}, targetDate=${targetDate}, presenceData=${presenceData ? 'loaded' : 'null'}`,
+          `[booking] 409 NOT BOOKABLE: spot ${spotRow.number}, status=${spotRow.status}, owner=${spotRow.owner_name}, targetDate=${targetDate}, presenceData=${presenceData ? "loaded" : "null"}`,
         );
-        res.status(409).json({ error: 'Spot is not available for booking' });
+        res.status(409).json({ error: "Spot is not available for booking" });
         return;
       }
 
@@ -285,7 +289,7 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
           bookedByOwner,
         ],
       );
-      await client.query('COMMIT');
+      await client.query("COMMIT");
 
       const b = booking.rows[0];
       broadcast();
@@ -297,7 +301,7 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
         spot_floor: spotRow.floor,
       });
     } catch (err) {
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
       throw err;
     } finally {
       client.release();
@@ -308,99 +312,122 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
 });
 
 // PATCH /api/bookings/:id/times — update reservation interval
-router.patch('/:id/times', requireAuth, requireNonGuest, async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { starts_at, expires_at } = req.body as {
-      starts_at?: string;
-      expires_at?: string;
-    };
-    if (!starts_at && !expires_at) {
-      res
-        .status(400)
-        .json({ error: 'At least one of starts_at or expires_at is required' });
-      return;
-    }
-
-    const newStartsAt = starts_at ? new Date(starts_at) : null;
-    const newExpiresAt = expires_at ? new Date(expires_at) : null;
-
-    if (newStartsAt && Number.isNaN(newStartsAt.getTime())) {
-      res.status(400).json({ error: 'Invalid starts_at' });
-      return;
-    }
-    if (newExpiresAt && Number.isNaN(newExpiresAt.getTime())) {
-      res.status(400).json({ error: 'Invalid expires_at' });
-      return;
-    }
-
-    // Lock-then-update in a single transaction to prevent lost updates
-    const client = await pool.connect();
+router.patch(
+  "/:id/times",
+  requireAuth,
+  requireNonGuest,
+  async (req, res, next) => {
     try {
-      await client.query('BEGIN');
-
-      const bookingResult = await client.query(
-        `SELECT id, user_id, spot_id, status, starts_at, expires_at FROM bookings WHERE id = $1 FOR UPDATE`,
-        [id],
-      );
-      if (bookingResult.rows.length === 0) {
-        await client.query('ROLLBACK');
-        res.status(404).json({ error: 'Booking not found' });
-        return;
-      }
-      const booking = bookingResult.rows[0];
-
-      if (booking.user_id !== req.user!.userId && req.user!.role !== 'admin') {
-        await client.query('ROLLBACK');
-        res.status(403).json({ error: 'Not your booking' });
-        return;
-      }
-      if (booking.status !== 'active') {
-        await client.query('ROLLBACK');
-        res.status(409).json({ error: 'Booking is not active' });
+      const { id } = req.params;
+      const { starts_at, expires_at } = req.body as {
+        starts_at?: string;
+        expires_at?: string;
+      };
+      if (!starts_at && !expires_at) {
+        res
+          .status(400)
+          .json({
+            error: "At least one of starts_at or expires_at is required",
+          });
         return;
       }
 
-      const result = await client.query(
-        `UPDATE bookings
+      const newStartsAt = starts_at ? new Date(starts_at) : null;
+      const newExpiresAt = expires_at ? new Date(expires_at) : null;
+
+      if (newStartsAt && Number.isNaN(newStartsAt.getTime())) {
+        res.status(400).json({ error: "Invalid starts_at" });
+        return;
+      }
+      if (newExpiresAt && Number.isNaN(newExpiresAt.getTime())) {
+        res.status(400).json({ error: "Invalid expires_at" });
+        return;
+      }
+
+      // Lock-then-update in a single transaction to prevent lost updates
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+
+        const bookingResult = await client.query(
+          `SELECT id, user_id, spot_id, status, starts_at, expires_at FROM bookings WHERE id = $1 FOR UPDATE`,
+          [id],
+        );
+        if (bookingResult.rows.length === 0) {
+          await client.query("ROLLBACK");
+          res.status(404).json({ error: "Booking not found" });
+          return;
+        }
+        const booking = bookingResult.rows[0];
+
+        if (
+          booking.user_id !== req.user!.userId &&
+          req.user!.role !== "admin"
+        ) {
+          await client.query("ROLLBACK");
+          res.status(403).json({ error: "Not your booking" });
+          return;
+        }
+        if (booking.status !== "active") {
+          await client.query("ROLLBACK");
+          res.status(409).json({ error: "Booking is not active" });
+          return;
+        }
+
+        const result = await client.query(
+          `UPDATE bookings
          SET starts_at  = COALESCE($1, starts_at),
              expires_at = COALESCE($2, expires_at)
          WHERE id = $3
          RETURNING id, status, booked_at, starts_at, expires_at, ended_at`,
-        [
-          newStartsAt ? newStartsAt.toISOString() : null,
-          newExpiresAt ? newExpiresAt.toISOString() : null,
-          id,
-        ],
-      );
-      await client.query('COMMIT');
+          [
+            newStartsAt ? newStartsAt.toISOString() : null,
+            newExpiresAt ? newExpiresAt.toISOString() : null,
+            id,
+          ],
+        );
+        await client.query("COMMIT");
 
-      broadcast();
-      res.json(result.rows[0]);
+        broadcast();
+        res.json(result.rows[0]);
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
+      }
     } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
+      next(err);
     }
-  } catch (err) {
-    next(err);
-  }
-});
+  },
+);
 
 // PATCH /api/bookings/:id/cancel — cancel an active booking
 // Allowed by: booking owner, admin, or spot owner
-router.patch('/:id/cancel', requireAuth, requireNonGuest, async (req, res, next) => {
-  try {
-    const { id } = req.params;
-
-    const client = await pool.connect();
+router.patch(
+  "/:id/cancel",
+  requireAuth,
+  requireNonGuest,
+  async (req, res, next) => {
     try {
-      await client.query('BEGIN');
+      const { id } = req.params;
 
-      // Lock the booking row to prevent concurrent cancel/modify
-      const bookingResult = await client.query(
-        `SELECT b.id, b.user_id, b.spot_id, b.status, b.booked_by_owner,
+      // Set when someone OTHER than the booking owner cancels — used to notify
+      // the bumped user after the transaction commits.
+      let notifId: string | null = null;
+      let notifBody = "";
+      let notifUserId = "";
+
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+
+        // Lock the booking row to prevent concurrent cancel/modify
+        const bookingResult = await client.query(
+          `SELECT b.id, b.user_id, b.spot_id, b.status, b.booked_by_owner,
+                b.expires_at,
+                s.label  AS spot_label,
+                s.number AS spot_number,
                 o.user_id AS spot_owner_username,
                 o.name    AS spot_owner_name
          FROM bookings b
@@ -408,74 +435,110 @@ router.patch('/:id/cancel', requireAuth, requireNonGuest, async (req, res, next)
          LEFT JOIN owners o ON o.id = s.owner_id
          WHERE b.id = $1
          FOR UPDATE OF b`,
-        [id],
-      );
-      if (bookingResult.rows.length === 0) {
-        await client.query('ROLLBACK');
-        res.status(404).json({ error: 'Booking not found' });
-        return;
-      }
-      const booking = bookingResult.rows[0];
+          [id],
+        );
+        if (bookingResult.rows.length === 0) {
+          await client.query("ROLLBACK");
+          res.status(404).json({ error: "Booking not found" });
+          return;
+        }
+        const booking = bookingResult.rows[0];
 
-      const isBookingOwner = booking.user_id === req.user!.userId;
-      const isAdmin = req.user!.role === 'admin';
-      // Match the booking-creation co-owner check: accept either user_id
-      // linkage or a displayName match against owner.name segments.
-      const isSpotOwner = isUserCoOwner(
-        booking.spot_owner_username as string | null,
-        booking.spot_owner_name as string | null,
-        req.user!.username,
-        req.user!.displayName,
-      );
+        const isBookingOwner = booking.user_id === req.user!.userId;
+        const isAdmin = req.user!.role === "admin";
+        // Match the booking-creation co-owner check: accept either user_id
+        // linkage or a displayName match against owner.name segments.
+        const isSpotOwner = isUserCoOwner(
+          booking.spot_owner_username as string | null,
+          booking.spot_owner_name as string | null,
+          req.user!.username,
+          req.user!.displayName,
+        );
 
-      // Spot owners may cancel squatter bookings, but never another co-owner's booking.
-      const canCancel =
-        isBookingOwner ||
-        isAdmin ||
-        (isSpotOwner && !booking.booked_by_owner);
-      if (!canCancel) {
-        await client.query('ROLLBACK');
-        res.status(403).json({ error: 'Not your booking' });
-        return;
-      }
-      if (booking.status !== 'active') {
-        await client.query('ROLLBACK');
-        res
-          .status(409)
-          .json({ error: 'Booking is already cancelled or expired' });
-        return;
+        // Spot owners may cancel squatter bookings, but never another co-owner's booking.
+        const canCancel =
+          isBookingOwner ||
+          isAdmin ||
+          (isSpotOwner && !booking.booked_by_owner);
+        if (!canCancel) {
+          await client.query("ROLLBACK");
+          res.status(403).json({ error: "Not your booking" });
+          return;
+        }
+        if (booking.status !== "active") {
+          await client.query("ROLLBACK");
+          res
+            .status(409)
+            .json({ error: "Booking is already cancelled or expired" });
+          return;
+        }
+
+        // Record who cancelled: null = self, otherwise the canceller's display name
+        const cancelledBy = isBookingOwner ? null : req.user!.displayName;
+
+        await client.query(
+          `UPDATE bookings SET status = 'cancelled', ended_at = now(), cancelled_by = $2 WHERE id = $1`,
+          [id, cancelledBy],
+        );
+        // Only free the spot if this was its last active booking
+        const remaining = await client.query(
+          `SELECT id FROM bookings WHERE spot_id = $1 AND status = 'active' AND id != $2 LIMIT 1`,
+          [booking.spot_id, id],
+        );
+        if (remaining.rows.length === 0) {
+          await client.query(`UPDATE spots SET status = 'free' WHERE id = $1`, [
+            booking.spot_id,
+          ]);
+        }
+
+        // If someone other than the booking owner cancelled (spot owner reclaiming,
+        // or an admin), record a notification for the bumped user.
+        if (!isBookingOwner) {
+          const label = booking.spot_label ?? `#${booking.spot_number}`;
+          const dateStr = booking.expires_at
+            ? String(booking.expires_at).slice(0, 10)
+            : "";
+          notifBody = `Your reservation for ${label}${dateStr ? ` on ${dateStr}` : ""} was cancelled because the spot owner reclaimed it.`;
+          notifUserId = booking.user_id;
+          const notif = await client.query(
+            `INSERT INTO notifications (user_id, type, title, body, data)
+           VALUES ($1, 'reservation_released', $2, $3, $4)
+           RETURNING id`,
+            [
+              booking.user_id,
+              "Reservation released",
+              notifBody,
+              JSON.stringify({ spot_id: booking.spot_id, booking_id: id }),
+            ],
+          );
+          notifId = notif.rows[0].id as string;
+        }
+
+        await client.query("COMMIT");
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
       }
 
-      // Record who cancelled: null = self, otherwise the canceller's display name
-      const cancelledBy = isBookingOwner ? null : req.user!.displayName;
-
-      await client.query(
-        `UPDATE bookings SET status = 'cancelled', ended_at = now(), cancelled_by = $2 WHERE id = $1`,
-        [id, cancelledBy],
-      );
-      // Only free the spot if this was its last active booking
-      const remaining = await client.query(
-        `SELECT id FROM bookings WHERE spot_id = $1 AND status = 'active' AND id != $2 LIMIT 1`,
-        [booking.spot_id, id],
-      );
-      if (remaining.rows.length === 0) {
-        await client.query(`UPDATE spots SET status = 'free' WHERE id = $1`, [
-          booking.spot_id,
-        ]);
+      // Best-effort proactive DM after commit — failure must not affect the response.
+      if (notifId) {
+        const ok = await pushChatMessage(notifUserId, `⚠️ ${notifBody}`);
+        if (ok) {
+          await pool.query(
+            `UPDATE notifications SET pushed_at = now() WHERE id = $1`,
+            [notifId],
+          );
+        }
       }
-      await client.query('COMMIT');
+
+      broadcast();
+      res.json({ ok: true, notified: notifId !== null });
     } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
+      next(err);
     }
-
-    broadcast();
-    res.json({ ok: true });
-  } catch (err) {
-    next(err);
-  }
-});
+  },
+);
 
 export default router;
