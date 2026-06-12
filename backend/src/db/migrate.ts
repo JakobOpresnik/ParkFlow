@@ -18,6 +18,8 @@ const REPLAYABLE_MIGRATIONS = new Set(["015_spot_coordinates.sql"]);
 // therefore be idempotent and non-destructive. Add a probe here for every new
 // migration that changes the schema.
 const SCHEMA_PROBES: Record<string, string> = {
+  "024_notifications.sql": `
+    SELECT (to_regclass('public.notifications') IS NOT NULL) AS present`,
   "025_booking_date.sql": `
     SELECT EXISTS (
       SELECT 1 FROM information_schema.columns
