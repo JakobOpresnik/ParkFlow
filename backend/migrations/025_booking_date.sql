@@ -1,4 +1,4 @@
--- 024_booking_date.sql
+-- 025_booking_date.sql
 -- Attribute each booking to a single LOCAL (Europe/Ljubljana) calendar day.
 --
 -- Day-keyed logic (conflict detection, same-day auto-cancel, per-day map
