@@ -60,6 +60,10 @@ const en = {
     profile: 'View profile',
     more: 'More',
   },
+  notifications: {
+    title: 'Notifications',
+    empty: 'No notifications.',
+  },
   auth: {
     sessionExpired: 'Session expired — redirecting back to sign in…',
     logOut: 'Log out',

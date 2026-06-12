@@ -10,6 +10,7 @@ import changesRouter from './routes/changes.js';
 import feedbackRouter from './routes/feedback.js';
 import integrationsRouter from './routes/integrations.js';
 import lotsRouter from './routes/lots.js';
+import notificationsRouter from './routes/notifications.js';
 import ownersRouter from './routes/owners.js';
 import presenceRouter from './routes/presence.js';
 import spotsRouter from './routes/spots.js';
@@ -44,6 +45,7 @@ export function createApp() {
   app.use('/api/feedback', feedbackRouter);
   app.use('/api/stats', statsRouter);
   app.use('/api/integrations', integrationsRouter);
+  app.use('/api/notifications', notificationsRouter);
 
   app.use(errorHandler);
 

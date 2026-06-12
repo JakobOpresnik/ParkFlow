@@ -233,6 +233,17 @@ export interface FeatureRequest {
   created_at: string
 }
 
+export interface AppNotification {
+  id: string
+  type: string
+  title: string
+  body: string
+  data: Record<string, unknown> | null
+  created_at: string
+  read_at: string | null
+  pushed_at: string | null
+}
+
 export type LabelPosition = 'top' | 'bottom' | 'left' | 'right'
 
 export interface SpotCoordinates {

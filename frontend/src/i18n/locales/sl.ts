@@ -60,6 +60,10 @@ const sl = {
     profile: 'Ogled profila',
     more: 'Več',
   },
+  notifications: {
+    title: 'Obvestila',
+    empty: 'Ni obvestil.',
+  },
   auth: {
     sessionExpired: 'Seja je potekla — preusmerjanje na ponovno prijavo…',
     logOut: 'Odjava',

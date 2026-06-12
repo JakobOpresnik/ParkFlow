@@ -277,6 +277,86 @@ describe('PATCH /api/bookings/:id/cancel', () => {
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
   });
+
+  it('notifies the booking user when someone else (owner/admin) cancels their reservation', async () => {
+    const mockClient = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 'bk-1',
+              user_id: 'bostjan', // NOT TEST_USER.userId → isBookingOwner false
+              spot_id: 'spot-1',
+              status: 'active',
+              booked_by_owner: false,
+              expires_at: '2026-06-12T15:00:00.000Z',
+              spot_label: 'Z-17',
+              spot_number: 17,
+              spot_owner_username: null,
+              spot_owner_name: 'ACEX',
+            },
+          ],
+        }) // SELECT booking
+        .mockResolvedValueOnce({}) // UPDATE bookings cancel
+        .mockResolvedValueOnce({ rows: [] }) // SELECT remaining active
+        .mockResolvedValueOnce({}) // UPDATE spots free
+        .mockResolvedValueOnce({ rows: [{ id: 'notif-1' }] }) // INSERT notification
+        .mockResolvedValueOnce({}), // COMMIT
+      release: vi.fn(),
+    };
+    mockConnect.mockResolvedValueOnce(mockClient);
+
+    const res = await request(app)
+      .patch('/api/bookings/bk-1/cancel')
+      .set('Authorization', AUTH_HEADER);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true, notified: true });
+    expect(mockClient.query).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO notifications'),
+      expect.arrayContaining(['bostjan']),
+    );
+  });
+
+  it('does NOT notify when the user cancels their own booking', async () => {
+    const mockClient = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 'b1',
+              user_id: TEST_USER.userId, // self-cancel → isBookingOwner true
+              spot_id: 's1',
+              status: 'active',
+              booked_by_owner: false,
+              spot_owner_username: null,
+              spot_owner_name: null,
+            },
+          ],
+        }) // SELECT booking
+        .mockResolvedValueOnce({}) // UPDATE bookings cancel
+        .mockResolvedValueOnce({ rows: [] }) // SELECT remaining active
+        .mockResolvedValueOnce({}) // UPDATE spots free
+        .mockResolvedValueOnce({}), // COMMIT  (NO notification insert)
+      release: vi.fn(),
+    };
+    mockConnect.mockResolvedValueOnce(mockClient);
+
+    const res = await request(app)
+      .patch('/api/bookings/b1/cancel')
+      .set('Authorization', AUTH_HEADER);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true, notified: false });
+    expect(mockClient.query).not.toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO notifications'),
+      expect.anything(),
+    );
+  });
 });
 
 describe('GET /api/bookings/my', () => {
