@@ -365,7 +365,8 @@ export function BookingCta({
                 : spot.active_booking_reserved_by}
             </span>
           )}
-          {spot.active_booking_expires_at?.slice(0, 10) === selectedDate ? (
+          {spot.active_booking_date === selectedDate &&
+          spot.active_booking_expires_at ? (
             <>
               <Clock className="size-4" />
               <ReservationTimer

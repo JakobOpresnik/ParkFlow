@@ -20,6 +20,11 @@ const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET ?? "dev-secret-change-in-production";
 // Short-lived: the token only needs to live for the loopback call.
 const MINTED_TOKEN_TTL = "5m";
+// Identity minted for the auth-required presence proxy when a webhook arrives
+// without user_name — read-only commands (spots/owners/stats) must keep
+// working without one. Role is "user", so it gets the PII-stripped presence
+// shape; the bot only ever reads parking_available.
+const PRESENCE_SERVICE_USER = "parkflow-bot";
 
 // Working hours a chat reservation holds a spot for (Slovenian local time).
 export const WORK_START_HOUR = 9;
@@ -306,6 +311,15 @@ export interface SpotLike {
   owner_name?: string | null;
   active_booking_id?: string | null;
   active_booking_expires_at?: string | null;
+  active_booking_date?: string | null;
+}
+
+// The local day a spot's active booking is for — prefers the authoritative
+// booking_date, falling back to the UTC date of expires_at.
+function spotBookingDay(s: SpotLike): string {
+  return (
+    s.active_booking_date ?? (s.active_booking_expires_at ?? "").slice(0, 10)
+  );
 }
 
 // A per-day status override for one spot (from GET /api/spots/day-overrides).
@@ -333,7 +347,17 @@ export interface BookingLike {
   status: string;
   booked_at?: string;
   expires_at?: string;
+  // Local (Europe/Ljubljana) day the booking is for — authoritative. Falls back
+  // to the UTC date of expires_at for safety (correct for the bot's own
+  // 09:00–17:00 bookings, which never cross midnight).
+  booking_date?: string | null;
   building?: string;
+}
+
+// The local day a booking belongs to, preferring the server-supplied
+// booking_date over slicing expires_at (whose UTC date rolls for late bookings).
+function bookingDay(b: BookingLike): string {
+  return b.booking_date ?? (b.expires_at ?? "").slice(0, 10);
 }
 
 function spotLabel(s: { number: number; label: string | null }): string {
@@ -367,9 +391,7 @@ export function activeBookingOnDate(
   bookings: BookingLike[],
   date: string,
 ): BookingLike | undefined {
-  return bookings.find(
-    (b) => b.status === "active" && (b.expires_at ?? "").slice(0, 10) === date,
-  );
+  return bookings.find((b) => b.status === "active" && bookingDay(b) === date);
 }
 
 // Decide which active booking a "cancel" command refers to. `rest` may hold a
@@ -395,8 +417,7 @@ export function selectCancelTarget(
   const date = dateArg ? (parseDate(dateArg, now) ?? undefined) : undefined;
 
   let active = bookings.filter((b) => b.status === "active");
-  if (date)
-    active = active.filter((b) => (b.expires_at ?? "").slice(0, 10) === date);
+  if (date) active = active.filter((b) => bookingDay(b) === date);
 
   let booking: BookingLike | undefined;
   if (spotName !== undefined) {
@@ -482,10 +503,7 @@ export function spotStatusOnDate(
   const baseFallback: SpotDayStatus = spot.status === "free" ? "free" : "taken";
 
   // An active booking for that day → taken, regardless of everything else.
-  if (
-    spot.active_booking_id &&
-    (spot.active_booking_expires_at ?? "").slice(0, 10) === date
-  ) {
+  if (spot.active_booking_id && spotBookingDay(spot) === date) {
     return "taken";
   }
   // A per-day override is authoritative ('occupied' reads as taken).
@@ -523,8 +541,7 @@ export function dedupeSpotsForDate(
   spots: SpotLike[],
   date: string,
 ): SpotLike[] {
-  const onDate = (s: SpotLike): boolean =>
-    (s.active_booking_expires_at ?? "").slice(0, 10) === date;
+  const onDate = (s: SpotLike): boolean => spotBookingDay(s) === date;
   const byId = new Map<string, SpotLike>();
   const noId: SpotLike[] = [];
   for (const s of spots) {
@@ -992,7 +1009,13 @@ router.post("/rocketchat", async (req, res, next) => {
             "GET",
             `/api/spots/day-overrides?date=${targetDate}`,
           ),
-          call<WeekPresenceResponse>("GET", `/api/presence?date=${targetDate}`),
+          call<WeekPresenceResponse>(
+            "GET",
+            `/api/presence?date=${targetDate}`,
+            {
+              token: mintUserToken(username ?? PRESENCE_SERVICE_USER),
+            },
+          ),
         ]);
         const overrideBySpot = new Map(
           overrides.map((o) => [o.spot_id, o.status]),
@@ -1060,7 +1083,9 @@ router.post("/rocketchat", async (req, res, next) => {
             "GET",
             `/api/spots/day-overrides?date=${date}`,
           ),
-          call<WeekPresenceResponse>("GET", `/api/presence?date=${date}`),
+          call<WeekPresenceResponse>("GET", `/api/presence?date=${date}`, {
+            token: mintUserToken(username ?? PRESENCE_SERVICE_USER),
+          }),
         ]);
         const overrideBySpot = new Map(
           overrides.map((o) => [o.spot_id, o.status]),
@@ -1116,7 +1141,9 @@ router.post("/rocketchat", async (req, res, next) => {
             "GET",
             `/api/spots/day-overrides?date=${date}`,
           ),
-          call<WeekPresenceResponse>("GET", `/api/presence?date=${date}`),
+          call<WeekPresenceResponse>("GET", `/api/presence?date=${date}`, {
+            token: mintUserToken(username ?? PRESENCE_SERVICE_USER),
+          }),
         ]);
         const overrideBySpot = new Map(
           overrides.map((o) => [o.spot_id, o.status]),

@@ -118,10 +118,7 @@ export function computeDayStatus(
 ): DayStatus {
   const hasBooking = weekBookings.some(
     (b) =>
-      b.spot_id === spot.id &&
-      b.status === 'active' &&
-      b.expires_at.slice(0, 10) >= date &&
-      (b.starts_at ?? b.booked_at).slice(0, 10) <= date,
+      b.spot_id === spot.id && b.status === 'active' && b.booking_date === date,
   )
   if (hasBooking) return 'reserved'
 

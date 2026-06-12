@@ -1,7 +1,8 @@
 import { ArrowRightLeft, Loader2, ParkingCircle } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { dedupeSpotsById } from '@/lib/dedupeSpots'
 import { useAuthStore } from '@/store/authStore'
 import type { OwnerSpot } from '@/types'
 
@@ -37,7 +38,7 @@ export function OwnerParkingPage() {
     owner,
     isOwnerLoading,
     ownerError,
-    spots,
+    spots: rawSpots,
     isSpotsLoading,
     workFreeDays,
     weekBookings,
@@ -45,6 +46,14 @@ export function OwnerParkingPage() {
     presenceMap,
     myBookingElsewhere,
   } = useOwnerParkingData(selectedDate, today, days[6] ?? today)
+
+  // One row per spot — the endpoint emits one per active booking, so a spot
+  // booked on multiple days arrives duplicated. Prefer the selected day's row so
+  // the card's active_booking_* (and its cancel button) target that day.
+  const spots = useMemo(
+    () => dedupeSpotsById(rawSpots, selectedDate),
+    [rawSpots, selectedDate],
+  )
 
   function handlePrevWeek() {
     const newMonday = getAdjacentWeek(days, 'prev')
@@ -220,6 +229,7 @@ export function OwnerParkingPage() {
                 key={spot.id}
                 spot={spot}
                 status={status}
+                selectedDate={selectedDate}
                 isOverridden={isOverridden}
                 isNonWorkDay={isNonWorkDay(selectedDate, today, workFreeDays)}
                 isPastCutoff={isPastBookingCutoff(selectedDate, today)}

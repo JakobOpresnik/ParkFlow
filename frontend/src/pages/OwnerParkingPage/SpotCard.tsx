@@ -30,6 +30,7 @@ const STATUS_LABEL_KEYS: Record<DayStatus, string> = {
 export function SpotCard({
   spot,
   status,
+  selectedDate,
   isOverridden,
   isNonWorkDay,
   isPastCutoff,
@@ -50,7 +51,13 @@ export function SpotCard({
   // A co-owner's booking may only be cancelled by themselves or an admin (handled
   // server-side). Hide the button entirely when another co-owner holds the booking.
   const isMyBooking = spot.active_booking_user_id === currentUserId
-  const canCancelBooking = isMyBooking || !spot.active_booking_booked_by_owner
+  // Only cancel a booking that is actually for the day being viewed — the joined
+  // active booking can belong to another day (a spot booked on several days), and
+  // cancelling that one would silently kill the wrong day's reservation.
+  const bookingIsForSelectedDay = spot.active_booking_date === selectedDate
+  const canCancelBooking =
+    bookingIsForSelectedDay &&
+    (isMyBooking || !spot.active_booking_booked_by_owner)
 
   return (
     <div className={`bg-card overflow-hidden rounded-2xl border ${border}`}>

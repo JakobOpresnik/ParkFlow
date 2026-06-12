@@ -138,7 +138,7 @@ export function SpotModal() {
           s.active_booking_user_id === user.id &&
           s.active_booking_id !== null &&
           s.id !== spot.id &&
-          s.active_booking_expires_at?.slice(0, 10) === selectedDate,
+          s.active_booking_date === selectedDate,
       )
     : undefined
 
@@ -147,7 +147,7 @@ export function SpotModal() {
     !!spot.active_booking_id &&
     !!user &&
     spot.active_booking_user_id === user.id &&
-    spot.active_booking_expires_at?.slice(0, 10) === selectedDate
+    spot.active_booking_date === selectedDate
 
   // Whether the active booking was made by a co-owner (not the current user).
   // Used to show context and suppress cancel for the other co-owner.
@@ -164,7 +164,7 @@ export function SpotModal() {
     !!spot.active_booking_id &&
     !!user &&
     (spot.active_booking_user_id === user.id || user.role === 'admin') &&
-    spot.active_booking_expires_at?.slice(0, 10) === selectedDate
+    spot.active_booking_date === selectedDate
 
   // Show reserved (yellow) for the user's own booking or the owner's own spot.
   // Someone else's reservation should display as occupied (red).

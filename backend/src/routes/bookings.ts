@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import { pool } from "../db/pool.js";
 import { broadcast } from "../lib/broadcast.js";
+import { ljubljanaDate } from "../lib/localDate.js";
 import { pushChatMessage } from "../lib/rocketchatNotify.js";
 import { fetchWeekPresence, isOwnerAbsent } from "../lib/presence.js";
 import { requireAuth, requireNonGuest } from "../middleware/auth.js";
@@ -76,7 +77,9 @@ router.get("/my", requireAuth, requireNonGuest, async (req, res, next) => {
         b.id,
         b.status,
         b.booked_at,
+        b.starts_at,
         b.expires_at,
+        to_char(b.booking_date, 'YYYY-MM-DD') AS booking_date,
         b.ended_at,
         b.cancelled_by,
         s.id AS spot_id,
@@ -121,9 +124,19 @@ router.post("/", requireAuth, requireNonGuest, async (req, res, next) => {
       return;
     }
 
+    const startsAt = starts_at ? new Date(starts_at) : null;
+    if (startsAt && Number.isNaN(startsAt.getTime())) {
+      res.status(400).json({ error: "Invalid starts_at" });
+      return;
+    }
+
+    // The day this booking belongs to is the LOCAL (Slovenian) calendar day of
+    // its start — NOT the UTC date of expires_at, which rolls to the next day for
+    // a late/long booking and previously let two users book the same spot/day.
+    const targetDate = ljubljanaDate(startsAt ?? expiresAt);
+
     // Pre-fetch owner presence outside the transaction (external HTTP call)
     // to avoid holding the lock during a network request.
-    const targetDate = expiresAt.toISOString().slice(0, 10);
     let presenceData: Awaited<ReturnType<typeof fetchWeekPresence>> | null =
       null;
     try {
@@ -177,9 +190,9 @@ router.post("/", requireAuth, requireNonGuest, async (req, res, next) => {
       const existing = await client.query(
         `SELECT b.id, b.spot_id FROM bookings b
          WHERE b.user_id = $1 AND b.status = 'active'
-           AND b.expires_at::date = $2::date
+           AND b.booking_date = $2::date
          FOR UPDATE`,
-        [req.user!.userId, expiresAt.toISOString()],
+        [req.user!.userId, targetDate],
       );
       if (existing.rows.length > 0) {
         const old = existing.rows[0] as { id: string; spot_id: string };
@@ -202,8 +215,8 @@ router.post("/", requireAuth, requireNonGuest, async (req, res, next) => {
       // Check for active booking conflict on the target date
       const conflict = await client.query(
         `SELECT id FROM bookings
-         WHERE spot_id = $1 AND status = 'active' AND expires_at::date = $2::date`,
-        [spot_id, expiresAt.toISOString()],
+         WHERE spot_id = $1 AND status = 'active' AND booking_date = $2::date`,
+        [spot_id, targetDate],
       );
       if (conflict.rows.length > 0) {
         await client.query("ROLLBACK");
@@ -275,16 +288,17 @@ router.post("/", requireAuth, requireNonGuest, async (req, res, next) => {
       await client.query(`UPDATE spots SET status = 'reserved' WHERE id = $1`, [
         spot_id,
       ]);
-      const startsAt = starts_at ? new Date(starts_at) : null;
       const booking = await client.query(
-        `INSERT INTO bookings (user_id, spot_id, starts_at, expires_at, reserved_by, booked_by_owner)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING id, status, booked_at, starts_at, expires_at, ended_at`,
+        `INSERT INTO bookings (user_id, spot_id, starts_at, expires_at, booking_date, reserved_by, booked_by_owner)
+         VALUES ($1, $2, $3, $4, $5::date, $6, $7)
+         RETURNING id, status, booked_at, starts_at, expires_at,
+                   to_char(booking_date, 'YYYY-MM-DD') AS booking_date, ended_at`,
         [
           req.user!.userId,
           spot_id,
           startsAt ? startsAt.toISOString() : null,
           expiresAt.toISOString(),
+          targetDate,
           req.user!.displayName,
           bookedByOwner,
         ],
@@ -307,6 +321,18 @@ router.post("/", requireAuth, requireNonGuest, async (req, res, next) => {
       client.release();
     }
   } catch (err) {
+    // Unique-index violation on (spot_id, booking_date) WHERE active — a
+    // concurrent booking won the race for this spot/day. Surface as a clean 409
+    // rather than a 500. This is the DB-level guarantee behind the conflict check.
+    if (
+      err !== null &&
+      typeof err === "object" &&
+      "code" in err &&
+      (err as { code?: string }).code === "23505"
+    ) {
+      res.status(409).json({ error: "Spot is not available for booking" });
+      return;
+    }
     next(err);
   }
 });
@@ -374,12 +400,20 @@ router.patch(
           return;
         }
 
+        // Keep booking_date in sync with the new interval — derive it from the
+        // local (Slovenian) day of starts_at (preferred) so the day a booking
+        // belongs to always tracks its start, even if the end time crosses midnight.
         const result = await client.query(
           `UPDATE bookings
          SET starts_at  = COALESCE($1, starts_at),
-             expires_at = COALESCE($2, expires_at)
+             expires_at = COALESCE($2, expires_at),
+             booking_date = (
+               COALESCE($1::timestamptz, starts_at, $2::timestamptz, expires_at)
+               AT TIME ZONE 'Europe/Ljubljana'
+             )::date
          WHERE id = $3
-         RETURNING id, status, booked_at, starts_at, expires_at, ended_at`,
+         RETURNING id, status, booked_at, starts_at, expires_at,
+                   to_char(booking_date, 'YYYY-MM-DD') AS booking_date, ended_at`,
           [
             newStartsAt ? newStartsAt.toISOString() : null,
             newExpiresAt ? newExpiresAt.toISOString() : null,
@@ -397,6 +431,17 @@ router.patch(
         client.release();
       }
     } catch (err) {
+      // Moving an interval onto a day the spot is already booked trips the
+      // one-active-booking-per-spot-per-day index — report it as a conflict.
+      if (
+        err !== null &&
+        typeof err === "object" &&
+        "code" in err &&
+        (err as { code?: string }).code === "23505"
+      ) {
+        res.status(409).json({ error: "Spot is not available for booking" });
+        return;
+      }
       next(err);
     }
   },

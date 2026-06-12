@@ -34,7 +34,10 @@ export function useIntervalEditor(spot: Spot, arrivalTime: string) {
 
   function handleSaveInterval() {
     if (!spot.active_booking_id || !spot.active_booking_expires_at) return
-    const bookingDate = spot.active_booking_expires_at.slice(0, 10)
+    // Rebuild the interval on the booking's own local day — not the UTC date of
+    // expires_at, which can roll to the next day for a late/long booking.
+    const bookingDate =
+      spot.active_booking_date ?? spot.active_booking_expires_at.slice(0, 10)
     const [sh, sm] = editStart.split(':').map(Number)
     const [eh, em] = editEnd.split(':').map(Number)
     const newStart = new Date(bookingDate + 'T12:00:00')

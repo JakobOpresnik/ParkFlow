@@ -37,7 +37,11 @@ export interface Booking {
   id: string
   status: BookingStatus
   booked_at: string
+  starts_at: string | null
   expires_at: string
+  // Local (Europe/Ljubljana) calendar day the booking is for — the authoritative
+  // day key. Use this instead of slicing expires_at, whose UTC date can roll.
+  booking_date: string
   ended_at: string | null
   cancelled_by: string | null
   spot_id: string
@@ -107,6 +111,9 @@ export interface Spot {
   active_booking_reserved_by: string | null
   active_booking_starts_at: string | null
   active_booking_expires_at: string | null
+  // Local (Europe/Ljubljana) day the active booking is for — the authoritative
+  // day key. Compare against the selected date instead of slicing expires_at.
+  active_booking_date: string | null
   active_booking_booked_by_owner: boolean | null
   // active user "this spot is taken" report (if any) — reporter name is not exposed
   spotted_reported_at: string | null
@@ -146,7 +153,9 @@ export type PresenceStatus = (typeof PRESENCE_STATUSES)[number]
 
 export interface PresenceDayEntry {
   date: string
-  status: PresenceStatus
+  // Only returned to admins — the leave/health reason is stripped for everyone
+  // else by the backend, so it's optional here. The UI reads parking_available.
+  status?: PresenceStatus
   is_work_free_day: boolean
   parking_available: boolean
 }
@@ -179,6 +188,7 @@ export interface OwnerSpot {
   active_booking_reserved_by: string | null
   active_booking_starts_at: string | null
   active_booking_expires_at: string | null
+  active_booking_date: string | null
   active_booking_booked_by_owner: boolean | null
 }
 
@@ -198,6 +208,7 @@ export interface OwnerWeekBooking {
   booked_at: string
   starts_at: string | null
   expires_at: string
+  booking_date: string
   ended_at: string | null
   cancelled_by: string | null
 }
