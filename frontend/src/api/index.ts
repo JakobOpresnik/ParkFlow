@@ -6,6 +6,7 @@ import type {
   FeatureRequest,
   FeedbackCategory,
   FeedbackStatus,
+  NotificationPrefs,
   Owner,
   OwnerSpot,
   OwnerWeekBooking,
@@ -268,5 +269,12 @@ export const api = {
   markAllNotificationsRead: () =>
     request<{ ok: boolean }>('/api/notifications/read-all', {
       method: 'PATCH',
+    }),
+  getNotificationPrefs: () =>
+    request<NotificationPrefs>('/api/notifications/prefs'),
+  setNotificationPref: (type: string, enabled: boolean) =>
+    request<{ ok: boolean }>(`/api/notifications/prefs/${type}`, {
+      method: 'PUT',
+      body: JSON.stringify({ enabled }),
     }),
 }

@@ -7,15 +7,9 @@ export function useProfilePage() {
   const user = useAuthStore((s) => s.user)
   const { data: lots = [] } = useLots()
 
-  const notifyOnBooking = usePrefsStore((s) => s.notifyOnBooking)
-  const notifyOnAvailability = usePrefsStore((s) => s.notifyOnAvailability)
   const preferredLotId = usePrefsStore((s) => s.preferredLotId)
   const arrivalTime = usePrefsStore((s) => s.arrivalTime)
   const reservationDuration = usePrefsStore((s) => s.reservationDuration)
-  const setNotifyOnBooking = usePrefsStore((s) => s.setNotifyOnBooking)
-  const setNotifyOnAvailability = usePrefsStore(
-    (s) => s.setNotifyOnAvailability,
-  )
   const setPreferredLotId = usePrefsStore((s) => s.setPreferredLotId)
   const setArrivalTime = usePrefsStore((s) => s.setArrivalTime)
   const setReservationDuration = usePrefsStore((s) => s.setReservationDuration)
@@ -29,13 +23,9 @@ export function useProfilePage() {
   return {
     user,
     lots,
-    notifyOnBooking,
-    notifyOnAvailability,
     preferredLotId,
     arrivalTime,
     reservationDuration,
-    setNotifyOnBooking,
-    setNotifyOnAvailability,
     setArrivalTime,
     setReservationDuration,
     handlePreferredLotChange,

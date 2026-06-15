@@ -364,12 +364,14 @@ const en = {
     expiredNote: '{{count}} booking expired without cancellation',
     expiredNotePlural: '{{count}} bookings expired without cancellation',
     preferences: 'Preferences',
-    prefsSavedLocally: 'Saved locally on this device',
-    notifyOnBooking: 'Reservation confirmations',
-    notifyOnBookingDesc: 'Get notified when you book or cancel a spot',
-    notifyOnAvailability: 'Availability alerts',
-    notifyOnAvailabilityDesc:
-      'Get notified when preferred spots become available',
+    prefsSavedLocally:
+      'Reminders sync to your account; other preferences stay on this device',
+    reminders: {
+      reservation_today: {
+        label: 'Morning reminder',
+        desc: 'Get a reminder when you have a reservation today',
+      },
+    },
     preferredLot: 'Preferred parking lot',
     preferredLotDesc: 'Default lot shown when browsing the map',
     anyLot: 'Any lot',

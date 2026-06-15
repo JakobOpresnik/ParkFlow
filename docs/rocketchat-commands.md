@@ -307,3 +307,14 @@ valid JSON matching the existing `switch`:
 - **Scope boundary:** this is a *parser*, not an agent. Multi-turn conversational booking
   ("something near the entrance tomorrow afternoon") would be a separate, larger step (a
   tool-using agent calling the same endpoints) — out of scope for this addon.
+
+### `reminders` — manage scheduled reminders
+
+ParkFlow can DM you a morning heads-up ("you have a reservation today"). These
+are **on by default**.
+
+- `reminders` — list each reminder type and whether it's on (🔔) or off (🔕).
+- `reminders off <type|all>` — turn a reminder off (e.g. `reminders off reservation_today`, or `reminders off all`).
+- `reminders on <type|all>` — turn it back on.
+
+The same toggles live in the app under **Profile → Preferences**.

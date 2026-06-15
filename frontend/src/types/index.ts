@@ -255,6 +255,17 @@ export interface AppNotification {
   pushed_at: string | null
 }
 
+export interface ReminderTypeDef {
+  type: string
+  label: string
+  description: string
+}
+
+export interface NotificationPrefs {
+  catalog: ReminderTypeDef[]
+  prefs: Record<string, boolean>
+}
+
 export type LabelPosition = 'top' | 'bottom' | 'left' | 'right'
 
 export interface SpotCoordinates {
