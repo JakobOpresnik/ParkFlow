@@ -383,3 +383,13 @@ After implementing the in-process ticker, we switched the **trigger** mechanism
 Why: a single tiny morning job doesn't need an always-on timer; an explicit cron
 schedule is more ops-visible, and the logic stays in the backend (Celery /
 BullMQ / a separate worker would be overkill — no broker or job queue needed).
+
+**Verified (2026-06-15) — cron timezone:** an empirical test reproducing the exact
+`reminders-cron` setup (`alpine:3.20` + `-e TZ=Europe/Ljubljana` + `apk add tzdata`
++ busybox `crond`) confirmed busybox `crond` schedules in **local time** — a job set
+for the current Ljubljana clock minute fired at that wall-clock instant (10:19:00
+CEST), not 2h later. So `35 7 * * 1-5` = 07:35 Ljubljana, with DST handled
+automatically by tzdata. **Residual dependency:** the container's `apk add tzdata`
+must succeed at startup (needs network to the apk repo); if it can't, musl
+`localtime` falls back to UTC (times 1–2h off). To eliminate that, bake `tzdata`
+into a prebuilt image instead of installing at start.
