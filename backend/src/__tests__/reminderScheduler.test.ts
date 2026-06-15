@@ -90,6 +90,30 @@ describe('runReminderTick', () => {
     expect(client.release).toHaveBeenCalled()
   })
 
+  it('dry run selects candidates but does not insert or push', async () => {
+    const client = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [{ ok: true }] }) // advisory lock
+        .mockResolvedValueOnce({ rows: [due] }) // candidates
+        .mockResolvedValueOnce({ rows: [] }), // advisory unlock
+      release: vi.fn(),
+    }
+    mockConnect.mockResolvedValue(client)
+
+    const result = await runReminderTick(new Date('2026-06-12T06:00:00.000Z'), {
+      dryRun: true,
+    })
+
+    expect(result).toEqual({ count: 1, dryRun: true })
+    expect(client.query).not.toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO notifications'),
+      expect.anything(),
+    )
+    expect(mockPush).not.toHaveBeenCalled()
+    expect(client.release).toHaveBeenCalled()
+  })
+
   it('selects only active bookings, dedups, and respects opt-out (SQL shape)', async () => {
     const client = {
       query: vi

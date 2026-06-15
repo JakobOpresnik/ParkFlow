@@ -31,6 +31,16 @@ describe('POST /api/internal/reminders/run', () => {
     expect(mockTick).toHaveBeenCalledTimes(1)
   })
 
+  it('passes dryRun=true on ?dry=1 and reports the result', async () => {
+    mockTick.mockResolvedValueOnce({ count: 2, dryRun: true })
+    const res = await request(app)
+      .post('/api/internal/reminders/run?dry=1')
+      .set('X-Reminder-Token', 'secret')
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ ok: true, count: 2, dryRun: true })
+    expect(mockTick).toHaveBeenCalledWith(expect.any(Date), { dryRun: true })
+  })
+
   it('rejects a wrong token with 401 and does not run', async () => {
     const res = await request(app)
       .post('/api/internal/reminders/run')

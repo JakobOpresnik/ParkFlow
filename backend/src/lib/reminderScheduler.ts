@@ -48,7 +48,11 @@ const MORNING_SQL = `
     )
 `
 
-export async function runReminderTick(now: Date = new Date()): Promise<void> {
+export async function runReminderTick(
+  now: Date = new Date(),
+  opts: { dryRun?: boolean } = {},
+): Promise<{ count: number; dryRun: boolean }> {
+  const dryRun = opts.dryRun ?? false
   const client = await pool.connect()
   try {
     const lock = await client.query('SELECT pg_try_advisory_lock($1) AS ok', [
@@ -56,7 +60,7 @@ export async function runReminderTick(now: Date = new Date()): Promise<void> {
     ])
     if (!lock.rows[0]?.ok) {
       console.log('[reminders] another tick holds the lock; skipping')
-      return
+      return { count: 0, dryRun }
     }
     try {
       const { rows } = await client.query<MorningRow>(MORNING_SQL, [
@@ -64,6 +68,15 @@ export async function runReminderTick(now: Date = new Date()): Promise<void> {
         TZ,
         MORNING_TIME,
       ])
+      if (dryRun) {
+        console.log(
+          '[reminders] DRY RUN — would notify ' +
+            rows.length +
+            ': ' +
+            rows.map((r) => r.user_id).join(', '),
+        )
+        return { count: rows.length, dryRun }
+      }
       for (const r of rows) {
         try {
           const title = 'Reservation today'
@@ -99,6 +112,7 @@ export async function runReminderTick(now: Date = new Date()): Promise<void> {
       if (rows.length > 0) {
         console.log(`[reminders] sent ${rows.length} morning reminder(s)`)
       }
+      return { count: rows.length, dryRun }
     } finally {
       await client.query('SELECT pg_advisory_unlock($1)', [LOCK_KEY])
     }

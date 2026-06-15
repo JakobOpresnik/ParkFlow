@@ -18,8 +18,11 @@ router.post("/reminders/run", async (req, res, next) => {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
-    await runReminderTick(new Date());
-    res.json({ ok: true });
+    const dryRun =
+      req.query.dry === "1" ||
+      (req.body as { dryRun?: unknown })?.dryRun === true;
+    const result = await runReminderTick(new Date(), { dryRun });
+    res.json({ ok: true, ...result });
   } catch (err) {
     next(err);
   }
