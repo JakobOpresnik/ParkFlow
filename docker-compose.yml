@@ -65,9 +65,12 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+    # Reads REMINDER_TRIGGER_TOKEN from the same gitignored backend/.env the
+    # backend uses — single source of truth, no GitLab CI var or root .env needed.
+    env_file:
+      - ./backend/.env
     environment:
       - TZ=Europe/Ljubljana
-      - REMINDER_TRIGGER_TOKEN=${REMINDER_TRIGGER_TOKEN}
       - BACKEND_URL=http://backend:3001
     entrypoint:
       - /bin/sh
