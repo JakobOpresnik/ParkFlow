@@ -51,6 +51,28 @@ services:
     networks:
       - parkflow
 
+  reminders-cron:
+    image: alpine:3.20
+    restart: unless-stopped
+    depends_on:
+      - backend
+    # Reads REMINDER_TRIGGER_TOKEN from the same backend/.env the backend uses —
+    # single source of truth, no GitLab CI var or root .env needed.
+    env_file:
+      - backend/.env
+    environment:
+      - TZ=Europe/Ljubljana
+      - BACKEND_URL=http://backend:3001
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache curl tzdata >/dev/null
+        printf '35 7 * * 1-5 curl -fsS -X POST -H "X-Reminder-Token: %s" %s/api/internal/reminders/run\n' "$REMINDER_TRIGGER_TOKEN" "$BACKEND_URL" > /etc/crontabs/root
+        crond -f -l 2
+    networks:
+      - parkflow
+
 networks:
   parkflow:
     driver: bridge
