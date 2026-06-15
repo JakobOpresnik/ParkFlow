@@ -364,7 +364,8 @@ const en = {
     expiredNote: '{{count}} booking expired without cancellation',
     expiredNotePlural: '{{count}} bookings expired without cancellation',
     preferences: 'Preferences',
-    prefsSavedLocally: 'Saved locally on this device',
+    prefsSavedLocally:
+      'Reminders sync to your account; other preferences stay on this device',
     reminders: {
       reservation_today: {
         label: 'Morning reminder',

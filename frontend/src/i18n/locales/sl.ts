@@ -366,7 +366,8 @@ const sl = {
     expiredNote: '{{count}} rezervacija potekla brez preklica',
     expiredNotePlural: '{{count}} rezervacij poteklo brez preklica',
     preferences: 'Nastavitve',
-    prefsSavedLocally: 'Shranjeno lokalno na tej napravi',
+    prefsSavedLocally:
+      'Opomniki se shranijo v račun; ostale nastavitve ostanejo na tej napravi',
     reminders: {
       reservation_today: {
         label: 'Jutranji opomnik',
