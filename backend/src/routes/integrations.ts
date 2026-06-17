@@ -822,7 +822,7 @@ export function formatHistory(bookings: BookingLike[]): string {
     const icon = STATUS_ICON[b.status] ?? "•";
     return `${icon} ${(b.booked_at ?? "").slice(0, 10)} — ${bookingLabel(b)}`;
   });
-  return `Your last ${lines.length} booking(s):\n${lines.join("\n")}`;
+  return `Your last ${lines.length} ${lines.length === 1 ? "booking" : "bookings"}:\n${lines.join("\n")}`;
 }
 
 // --- Loopback to the existing REST API -------------------------------------
@@ -1452,7 +1452,9 @@ router.post("/rocketchat", async (req, res, next) => {
               }),
             ),
           );
-          reply(`✅ Reminders turned ${sub} for: ${targets.join(", ")}.`);
+          reply(
+            `${enabled ? "🔔" : "🔕"} Reminders for your reservations turned ${sub}.`,
+          );
           return;
         }
 

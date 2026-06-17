@@ -689,7 +689,7 @@ describe("formatHistory", () => {
       },
     ];
     expect(formatHistory(bookings)).toBe(
-      "Your last 2 booking(s):\n✅ 2026-05-28 — A2\n❌ 2026-05-20 — A1",
+      "Your last 2 bookings:\n✅ 2026-05-28 — A2\n❌ 2026-05-20 — A1",
     );
   });
 });
