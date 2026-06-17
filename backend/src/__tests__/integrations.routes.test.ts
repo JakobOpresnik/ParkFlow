@@ -475,7 +475,7 @@ describe("formatFreeSpotsByBuilding", () => {
       { number: 23, label: "K1-23", status: "free", lot_id: "l2" },
     ];
     expect(formatFreeSpotsByBuilding(spots, LOTS, "tomorrow")).toBe(
-      "Free spots (2) — tomorrow:\n• Zunanje parkirišče (1): Z-3\n• Klet -1 (1): K1-23",
+      "Free spots (2) — tomorrow:\n• Zunanje parkirišče *(1)*: Z-3\n• Klet -1 *(1)*: K1-23",
     );
   });
 
@@ -485,7 +485,7 @@ describe("formatFreeSpotsByBuilding", () => {
       { number: 99, label: "X-99", status: "free", lot_id: "lx" },
     ];
     expect(formatFreeSpotsByBuilding(spots, LOTS, "today")).toBe(
-      "Free spots (2) — today:\n• Zunanje parkirišče (1): Z-3\n• Other (1): X-99",
+      "Free spots (2) — today:\n• Zunanje parkirišče *(1)*: Z-3\n• Other *(1)*: X-99",
     );
   });
 
@@ -624,7 +624,7 @@ describe("formatStatus", () => {
         [{ status: "active", spot_label: "A12", spot_number: 12 }],
         [],
       ),
-    ).toBe("• You have A12 reserved.");
+    ).toBe("• You have *A12* reserved.");
   });
 
   it("includes the expiry time on an active reservation", () => {
@@ -640,7 +640,7 @@ describe("formatStatus", () => {
         ],
         [],
       ),
-    ).toBe("• You have A12 reserved until 17:00 on 01.06.2026.");
+    ).toBe("• You have *A12* reserved *until 17:00 on 01.06.2026*.");
   });
 
   it("reports an owned free spot and one in use by a co-owner", () => {
@@ -964,9 +964,9 @@ describe("formatOccupancy", () => {
     ];
     expect(formatOccupancy(spots, LOTS, byStatus, "today")).toBe(
       "Parking occupancy — today:\n" +
-        "• Overall: 50% full — 2 of 4 free\n" +
-        "• Zunanje parkirišče: 50% full (1/2 free)\n" +
-        "• Klet -1: 50% full (1/2 free)",
+        "• Overall: *50%* full — 2 of 4 free\n" +
+        "• Zunanje parkirišče: *50%* full (1/2 free)\n" +
+        "• Klet -1: *50%* full (1/2 free)",
     );
   });
 
@@ -976,7 +976,7 @@ describe("formatOccupancy", () => {
       { number: 4, label: "K1-2", status: "free", lot_id: "l2" },
     ];
     expect(formatOccupancy(spots, LOTS, byStatus, "today", "Klet -1")).toBe(
-      "Parking occupancy in Klet -1 — today:\n• 50% full — 1 of 2 free",
+      "Parking occupancy in Klet -1 — today:\n• *50%* full — 1 of 2 free",
     );
   });
 

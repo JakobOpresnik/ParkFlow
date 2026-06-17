@@ -466,13 +466,13 @@ export function formatFreeSpotsByBuilding(
     inLot.forEach((s) => grouped.add(s));
     if (inLot.length > 0) {
       lines.push(
-        `• ${lot.name} (${inLot.length}): ${inLot.map(spotLabel).join(", ")}`,
+        `• ${lot.name} *(${inLot.length})*: ${inLot.map(spotLabel).join(", ")}`,
       );
     }
   }
   const other = spots.filter((s) => !grouped.has(s));
   if (other.length > 0) {
-    lines.push(`• Other (${other.length}): ${other.map(spotLabel).join(", ")}`);
+    lines.push(`• Other *(${other.length})*: ${other.map(spotLabel).join(", ")}`);
   }
   return `Free spots (${spots.length}) — ${when}:\n${lines.join("\n")}`;
 }
@@ -675,7 +675,7 @@ export function formatOccupancy(
 
   const total = spots.length;
   const free = spots.filter(isFree).length;
-  const overall = `${computePct(total - free, total)}% full — ${free} of ${total} free`;
+  const overall = `*${computePct(total - free, total)}%* full — ${free} of ${total} free`;
   if (building) return `${header}\n• ${overall}`;
 
   const lines = [`• Overall: ${overall}`];
@@ -684,7 +684,7 @@ export function formatOccupancy(
     if (inLot.length === 0) continue;
     const lotFree = inLot.filter(isFree).length;
     lines.push(
-      `• ${lot.name}: ${computePct(inLot.length - lotFree, inLot.length)}% full (${lotFree}/${inLot.length} free)`,
+      `• ${lot.name}: *${computePct(inLot.length - lotFree, inLot.length)}%* full (${lotFree}/${inLot.length} free)`,
     );
   }
   return `${header}\n${lines.join("\n")}`;
@@ -782,8 +782,8 @@ export function formatStatus(
   for (const b of bookings) {
     if (b.status === "active") {
       const where = b.building ? ` (${b.building})` : "";
-      const until = b.expires_at ? ` until ${formatUntil(b.expires_at)}` : "";
-      lines.push(`• You have ${bookingLabel(b)}${where} reserved${until}.`);
+      const until = b.expires_at ? ` *until ${formatUntil(b.expires_at)}*` : "";
+      lines.push(`• You have *${bookingLabel(b)}*${where} reserved${until}.`);
     }
   }
   for (const s of owned) {
