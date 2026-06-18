@@ -106,6 +106,16 @@ describe("parseCommand", () => {
     expect(parseCommand("free")).toEqual({ command: "spots", rest: [] });
   });
 
+  it('treats "free spaces" / "spaces" as aliases of the list command', () => {
+    expect(parseCommand("free spaces")).toEqual({ command: "spots", rest: [] });
+    expect(parseCommand("free space")).toEqual({ command: "spots", rest: [] });
+    expect(parseCommand("spaces")).toEqual({ command: "spots", rest: [] });
+    expect(parseCommand("free spaces klet1")).toEqual({
+      command: "spots",
+      rest: ["klet1"],
+    });
+  });
+
   it("keeps a building filter as rest for the list command", () => {
     expect(parseCommand("free spots zunaj")).toEqual({
       command: "spots",
@@ -460,7 +470,7 @@ describe("formatFreeSpots", () => {
         ],
         "tomorrow",
       ),
-    ).toBe("Free spots (2) — tomorrow: A12, C09");
+    ).toBe("Free spots *(2)* — tomorrow: A12, C09");
   });
 
   it("reports when there are no free spots for the day", () => {
@@ -475,7 +485,7 @@ describe("formatFreeSpotsByBuilding", () => {
       { number: 23, label: "K1-23", status: "free", lot_id: "l2" },
     ];
     expect(formatFreeSpotsByBuilding(spots, LOTS, "tomorrow")).toBe(
-      "Free spots (2) — tomorrow:\n• Zunanje parkirišče *(1)*: Z-3\n• Klet -1 *(1)*: K1-23",
+      "Free spots *(2)* — tomorrow:\n• Zunanje parkirišče *(1)*: Z-3\n• Klet -1 *(1)*: K1-23",
     );
   });
 
@@ -485,7 +495,7 @@ describe("formatFreeSpotsByBuilding", () => {
       { number: 99, label: "X-99", status: "free", lot_id: "lx" },
     ];
     expect(formatFreeSpotsByBuilding(spots, LOTS, "today")).toBe(
-      "Free spots (2) — today:\n• Zunanje parkirišče *(1)*: Z-3\n• Other *(1)*: X-99",
+      "Free spots *(2)* — today:\n• Zunanje parkirišče *(1)*: Z-3\n• Other *(1)*: X-99",
     );
   });
 

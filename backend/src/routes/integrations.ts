@@ -38,9 +38,9 @@ export const HELP_TEXT = [
   "*ParkFlow* — your parking assistant. Here's what I can do:",
   "",
   "*status* — see your current reservation and your owned spot",
-  "*free spots* `[building] [today|tomorrow|dd.mm.yyyy]` — what's free (default today)",
+  "*free spots* (or *free spaces*) `[building] [today|tomorrow|dd.mm.yyyy]` — what's free (default today)",
   "      _building:_ `zunaj` · `klet1` · `klet2`",
-  "      _e.g._ `free spots tomorrow` · `free spots klet1 tomorrow`",
+  "      _e.g._ `free spots tomorrow` · `free spaces klet1 tomorrow`",
   "*reserve* `<spot|building|any> [today|tomorrow|dd.mm.yyyy]`",
   `      Holds a spot for the working day (${WORK_HOURS_LABEL}). Give a building name or \`any\` to grab a random free one.`,
   "      _e.g._ `reserve A12` · `reserve zunaj tomorrow` · `reserve any`",
@@ -114,6 +114,7 @@ export function parseCommand(text: string): {
     case "me":
       return { command: "status", rest: after(1) };
     case "spots":
+    case "spaces":
     case "available":
       return { command: "spots", rest: after(1) };
     case "reserve":
@@ -145,8 +146,8 @@ export function parseCommand(text: string): {
     }
     case "free": {
       const w1 = tokens[1]?.toLowerCase();
-      // "free spot"/"free spots" → list free spots; "free <building>" filters.
-      if (w1 === "spots" || w1 === "spot")
+      // "free spot(s)"/"free space(s)" → list free spots; "free <building>" filters.
+      if (w1 === "spots" || w1 === "spot" || w1 === "spaces" || w1 === "space")
         return { command: "spots", rest: after(2) };
       if (w1 === undefined) return { command: "spots", rest: [] };
       // "free zunaj" → list filtered by a building
@@ -446,7 +447,7 @@ export function selectCancelTarget(
 // spotStatusOnDate); `when` is the day label (today / tomorrow / DD.MM.YYYY).
 export function formatFreeSpots(spots: SpotLike[], when: string): string {
   if (spots.length === 0) return `No free spots for ${when}.`;
-  return `Free spots (${spots.length}) — ${when}: ${spots
+  return `Free spots *(${spots.length})* — ${when}: ${spots
     .map(spotLabel)
     .join(", ")}`;
 }
@@ -474,7 +475,7 @@ export function formatFreeSpotsByBuilding(
   if (other.length > 0) {
     lines.push(`• Other *(${other.length})*: ${other.map(spotLabel).join(", ")}`);
   }
-  return `Free spots (${spots.length}) — ${when}:\n${lines.join("\n")}`;
+  return `Free spots *(${spots.length})* — ${when}:\n${lines.join("\n")}`;
 }
 
 // A spot's effective availability for a day, from the owners-list point of view.
