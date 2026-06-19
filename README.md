@@ -1,6 +1,17 @@
+<div align="center">
+
 # 🅿️ ParkFlow
 
-> 🚗 Smart parking management for multi-lot facilities — real-time spot tracking, presence-aware booking, and administration.
+**🚗 Smart parking management for multi-lot facilities.**
+Real-time spot tracking, presence-aware booking, and administration.
+
+![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Express](https://img.shields.io/badge/Express-5-000000?style=flat-square&logo=express&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![Bun](https://img.shields.io/badge/Bun-runtime-000000?style=flat-square&logo=bun&logoColor=white)
+
+</div>
 
 ParkFlow is a full-stack web application built for internal parking management at facilities with multiple parking lots or floors. It solves a common workplace problem: reserved spots sitting empty when their owners are working remotely or on leave, while other employees have nowhere to park.
 
@@ -17,7 +28,7 @@ Beyond presence-aware availability, ParkFlow provides:
 
 ---
 
-## 📋 Table of Contents
+## 📑 Contents
 
 - [✨ Features](#-features)
 - [🛠️ Tech Stack](#️-tech-stack)
@@ -32,6 +43,7 @@ Beyond presence-aware availability, ParkFlow provides:
 - [🧪 Testing](#-testing)
 - [✅ Code Quality](#-code-quality)
 - [🗺️ Roadmap](#️-roadmap)
+- [🎨 Interface Design System](#-interface-design-system)
 - [🤝 Contributing](#-contributing)
 
 ---
@@ -217,7 +229,8 @@ Deployment to production is handled automatically by the GitLab CI/CD pipeline o
 
 Database migrations run automatically on first startup.
 
-> ℹ️ Login is handled via Authentik SSO. Configure the OAuth environment variables before starting (see [🔑 Environment Variables](#-environment-variables)).
+> [!IMPORTANT]
+> Login is handled via Authentik SSO. Configure the OAuth environment variables before starting (see [🔑 Environment Variables](#-environment-variables)).
 
 ---
 
@@ -380,16 +393,18 @@ All write endpoints require an `Authorization: Bearer <token>` header. Admin-onl
 
 ## 🗄️ Database Schema
 
-Seven PostgreSQL tables managed via ordered SQL migrations in `backend/migrations/`. Migrations run automatically at backend startup.
+Eight PostgreSQL tables managed via ordered SQL migrations in `backend/migrations/`.
 
 ```bash
 cd backend
 bun run migrate   # apply manually if needed
 ```
 
----
+> [!NOTE]
+> Migrations run automatically at backend startup — the manual command is only for ad-hoc runs.
 
-### 👤 `owners`
+<details>
+<summary><strong>👤 <code>owners</code></strong></summary>
 
 Vehicle owners linked to reserved parking spots.
 
@@ -404,9 +419,10 @@ Vehicle owners linked to reserved parking spots.
 | `user_id`       | TEXT UNIQUE   | SSO username; enables owner self-service login |
 | `created_at`    | TIMESTAMPTZ   | `now()`                                    |
 
----
+</details>
 
-### 🅿️ `spots`
+<details>
+<summary><strong>🅿️ <code>spots</code></strong></summary>
 
 Individual parking spots with status, type, and optional SVG coordinates.
 
@@ -423,9 +439,10 @@ Individual parking spots with status, type, and optional SVG coordinates.
 | `coordinates` | JSONB         | `{x, y, width, height, rotation, labelPosition, labelRotation}` for SVG overlay |
 | `created_at`  | TIMESTAMPTZ   | `now()`                                                            |
 
----
+</details>
 
-### 🏢 `parking_lots`
+<details>
+<summary><strong>🏢 <code>parking_lots</code></strong></summary>
 
 Multi-lot groupings — each lot has its own floor plan image.
 
@@ -440,9 +457,10 @@ Multi-lot groupings — each lot has its own floor plan image.
 | `sort_order`     | INTEGER       | Default `0` — controls display order      |
 | `created_at`     | TIMESTAMPTZ   | `now()`                                   |
 
----
+</details>
 
-### 🔑 `app_users`
+<details>
+<summary><strong>🔑 <code>app_users</code></strong></summary>
 
 Application users, synced from Authentik on first login.
 
@@ -454,9 +472,10 @@ Application users, synced from Authentik on first login.
 | `role`         | TEXT          | `user` \| `admin` — default `user` |
 | `created_at`   | TIMESTAMPTZ   | `now()`                            |
 
----
+</details>
 
-### 📅 `bookings`
+<details>
+<summary><strong>📅 <code>bookings</code></strong></summary>
 
 Parking reservations with automatic expiry.
 
@@ -474,9 +493,10 @@ Parking reservations with automatic expiry.
 | `cancelled_by`   | TEXT          | Display name of canceller; null if self-cancelled                    |
 | `booked_by_owner`| BOOLEAN       | `true` if booked by the spot's owner — prevents co-owner cancellation |
 
----
+</details>
 
-### 📋 `spot_changes`
+<details>
+<summary><strong>📋 <code>spot_changes</code></strong></summary>
 
 Full audit log of every spot status/ownership change.
 
@@ -490,9 +510,10 @@ Full audit log of every spot status/ownership change.
 | `new_value`   | TEXT          |                                                                        |
 | `changed_at`  | TIMESTAMPTZ   | `now()` — indexed DESC                                                 |
 
----
+</details>
 
-### 📆 `spot_day_status`
+<details>
+<summary><strong>📆 <code>spot_day_status</code></strong></summary>
 
 Per-day status overrides for individual spots (bypasses presence logic for that day).
 
@@ -505,9 +526,10 @@ Per-day status overrides for individual spots (bypasses presence logic for that 
 | `set_by`   | TEXT          | Username who set the override               |
 | `created_at` | TIMESTAMPTZ | `now()`                                     |
 
----
+</details>
 
-### 💬 `feature_requests`
+<details>
+<summary><strong>💬 <code>feature_requests</code></strong></summary>
 
 User-submitted feedback, bug reports, and feature requests.
 
@@ -522,7 +544,7 @@ User-submitted feedback, bug reports, and feature requests.
 | `status`       | TEXT          | `open` \| `in_progress` \| `done` \| `dismissed` — default `open` |
 | `created_at`   | TIMESTAMPTZ   | `now()`                                                          |
 
----
+</details>
 
 ## 🧪 Testing
 
@@ -555,6 +577,9 @@ bun run lint:fix    # Auto-fix lint issues
 bun run format      # Prettier formatting
 bun run lint:all    # lint:fix + format in one step (frontend only)
 ```
+
+> [!TIP]
+> `bun run lint:all` (frontend) runs lint fixes and Prettier formatting in one step — run it before every commit.
 
 **Enforced rules:**
 
@@ -616,3 +641,11 @@ When building or modifying frontend UI:
 2. 📝 Follow the conventional commit format (`feat:`, `fix:`, etc.)
 3. ✅ Run `bun lint` and `bun test` before opening a PR
 4. 🎯 Target `main` for pull requests
+
+---
+
+<div align="center">
+
+[Repository](https://github.com/JakobOpresnik/ParkFlow) · [Report an issue](https://github.com/JakobOpresnik/ParkFlow/issues)
+
+</div>
