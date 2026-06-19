@@ -1,4 +1,12 @@
 const sl = {
+  onboarding: {
+    reminders: {
+      title: 'Jutranji opomniki za parkiranje',
+      body: 'ParkFlow ti zdaj vsako jutro, ko imaš rezervirano parkirno mesto, pošlje sporočilo na RocketChat — da nikoli ne pozabiš na svoje rezervirano parkirno mesto. Privzeto je nastavitev vklopljeno; izklopiš ali urejaš ga lahko kadar koli v Profil → Nastavitve, ali z ukazom "reminders [on|off]" v botu v RocketChatu.',
+      manage: 'Odpri nastavitve',
+      dismiss: 'Razumem',
+    },
+  },
   about: {
     buttonTitle: 'O aplikaciji ParkFlow',
     title: 'O aplikaciji ParkFlow',
