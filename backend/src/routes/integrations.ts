@@ -352,6 +352,7 @@ export interface BookingLike {
   spot_label: string | null;
   status: string;
   booked_at?: string;
+  starts_at?: string | null;
   expires_at?: string;
   // Local (Europe/Ljubljana) day the booking is for — authoritative. Falls back
   // to the UTC date of expires_at for safety (correct for the bot's own
@@ -783,8 +784,22 @@ export function formatStatus(
   for (const b of bookings) {
     if (b.status === "active") {
       const where = b.building ? ` (${b.building})` : "";
-      const until = b.expires_at ? ` *until ${formatUntil(b.expires_at)}*` : "";
-      lines.push(`• You have *${bookingLabel(b)}*${where} reserved${until}.`);
+      let span = "";
+      if (b.expires_at) {
+        const until = formatUntil(b.expires_at); // "17:00 on 22.06.2026"
+        if (b.starts_at) {
+          // Show arrival too. formatUntil yields "HH:MM on DD.MM.YYYY"; keep it
+          // compact when arrival and departure are the same local day (the usual
+          // 09:00–17:00 case), otherwise spell out both dates.
+          const arrival = formatUntil(b.starts_at);
+          const sameDay = arrival.split(" on ")[1] === until.split(" on ")[1];
+          const from = sameDay ? arrival.split(" on ")[0] : arrival;
+          span = ` *from ${from} until ${until}*`;
+        } else {
+          span = ` *until ${until}*`;
+        }
+      }
+      lines.push(`• You have *${bookingLabel(b)}*${where} reserved${span}.`);
     }
   }
   for (const s of owned) {
