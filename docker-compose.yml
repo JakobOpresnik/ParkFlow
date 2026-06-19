@@ -77,7 +77,10 @@ services:
       - -c
       - |
         apk add --no-cache curl tzdata >/dev/null
-        printf '35 7 * * 1-5 curl -fsS -X POST -H "X-Reminder-Token: %s" %s/api/internal/reminders/run\n' "$REMINDER_TRIGGER_TOKEN" "$BACKEND_URL" > /etc/crontabs/root
+        # $$ escapes Compose interpolation so the CONTAINER shell expands these
+        # from backend/.env / environment. With a single $, Compose substitutes
+        # them from the (empty) deploy shell at parse time → empty token + URL.
+        printf '35 7 * * 1-5 curl -fsS -X POST -H "X-Reminder-Token: %s" %s/api/internal/reminders/run\n' "$$REMINDER_TRIGGER_TOKEN" "$$BACKEND_URL" > /etc/crontabs/root
         crond -f -l 2
 
 volumes:
