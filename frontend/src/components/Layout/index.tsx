@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 
 import { AboutModal } from '@/components/AboutModal'
 import { HelpFeedbackDialog } from '@/components/HelpFeedbackDialog'
+import { ReminderOnboardingModal } from '@/components/ReminderOnboardingModal'
 import { useRealtimeSync } from '@/hooks/useRealtimeSync'
 import { useAuthStore } from '@/store/authStore'
 import { useUIStore } from '@/store/uiStore'
@@ -128,6 +129,8 @@ export function Layout({ children, noPadding }: LayoutProps) {
       <HelpFeedbackDialog open={helpOpen} onOpenChange={setHelpOpen} />
 
       <AboutModal open={aboutOpen} onOpenChange={setAboutOpen} />
+
+      <ReminderOnboardingModal />
     </div>
   )
 }
