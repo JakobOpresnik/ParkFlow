@@ -2,8 +2,8 @@ const en = {
   onboarding: {
     reminders: {
       title: 'Morning parking reminders',
-      body: "ParkFlow now sends a RocketChat message each morning you have a parking reservation — so you never forget your spot. It's on by default; turn it off or manage it anytime under Profile → Preferences.",
-      manage: 'Open Profile',
+      body: 'ParkFlow now sends you a RocketChat message every morning you have a parking reservation — so you never forget your reserved spot. The setting is on by default; you can turn it off or manage it anytime under Profile → Preferences, or with the "reminders [on|off]" command in the RocketChat bot.',
+      manage: 'Open settings',
       dismiss: 'Got it',
     },
   },
