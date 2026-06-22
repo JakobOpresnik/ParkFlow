@@ -2,6 +2,7 @@ import { MapPin } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Badge } from '@/components/ui/badge'
+import { useRelativeTime } from '@/hooks/useRelativeTime'
 import type { Booking, BookingStatus } from '@/types'
 
 import { formatDate } from './utils'
@@ -24,6 +25,7 @@ const STATUS_BADGE: Record<BookingStatus, string> = {
 
 export function BookingRow({ booking }: BookingRowProps) {
   const { t } = useTranslation()
+  const relativeTime = useRelativeTime()
   const STATUS_LABELS: Record<BookingStatus, string> = {
     active: t('bookings.statusActive'),
     cancelled: t('bookings.statusCancelled'),
@@ -39,8 +41,11 @@ export function BookingRow({ booking }: BookingRowProps) {
           <p className="text-sm font-medium">
             Spot {booking.spot_label ?? `#${booking.spot_number}`}
           </p>
-          <p className="text-muted-foreground text-xs">
-            {booking.spot_floor} · {formatDate(booking.booked_at)}
+          <p
+            className="text-muted-foreground text-xs"
+            title={formatDate(booking.booked_at)}
+          >
+            {booking.spot_floor} · {relativeTime(booking.booked_at)}
           </p>
         </div>
       </div>

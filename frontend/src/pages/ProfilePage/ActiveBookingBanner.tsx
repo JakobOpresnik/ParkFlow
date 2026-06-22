@@ -1,6 +1,8 @@
 import { Clock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { ExpiryProgress } from '@/components/ExpiryProgress'
+import { expiryProgressPct } from '@/lib/datetime'
 import type { Booking } from '@/types'
 
 import { formatDate, timeRemaining } from './utils'
@@ -40,6 +42,14 @@ export function ActiveBookingBanner({ booking }: ActiveBookingBannerProps) {
           </p>
         </div>
       </div>
+
+      <ExpiryProgress
+        pct={expiryProgressPct(
+          booking.starts_at ?? booking.booked_at,
+          booking.expires_at,
+        )}
+        className="mt-3"
+      />
     </div>
   )
 }

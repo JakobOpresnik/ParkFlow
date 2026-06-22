@@ -2,9 +2,12 @@ import { notifications } from '@mantine/notifications'
 import { Calendar, Clock, MapPin, XCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { ExpiryProgress } from '@/components/ExpiryProgress'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useCancelBooking, useMyBookings } from '@/hooks/useBookings'
+import { useRelativeTime } from '@/hooks/useRelativeTime'
+import { expiryProgressPct } from '@/lib/datetime'
 import { useAuthStore } from '@/store/authStore'
 import type { Booking, BookingStatus } from '@/types'
 
@@ -51,6 +54,7 @@ function BookingCard({ booking }: BookingCardProps) {
   const { t } = useTranslation()
   const cancelBooking = useCancelBooking()
   const timeRemaining = useTimeRemaining()
+  const relativeTime = useRelativeTime()
 
   function handleCancel() {
     cancelBooking.mutate(booking.id, {
@@ -90,9 +94,12 @@ function BookingCard({ booking }: BookingCardProps) {
             {booking.spot_floor}
           </div>
 
-          <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
+          <div
+            className="text-muted-foreground flex items-center gap-1.5 text-sm"
+            title={formatDate(booking.booked_at)}
+          >
             <Calendar className="size-3.5" />
-            {t('bookings.booked', { date: formatDate(booking.booked_at) })}
+            {t('bookings.booked', { date: relativeTime(booking.booked_at) })}
           </div>
 
           {booking.status === 'active' && (
@@ -104,9 +111,12 @@ function BookingCard({ booking }: BookingCardProps) {
           )}
 
           {booking.ended_at && booking.status !== 'active' && (
-            <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
+            <div
+              className="text-muted-foreground flex items-center gap-1.5 text-sm"
+              title={formatDate(booking.ended_at)}
+            >
               <Clock className="size-3.5" />
-              {t('bookings.ended', { date: formatDate(booking.ended_at) })}
+              {t('bookings.ended', { date: relativeTime(booking.ended_at) })}
             </div>
           )}
 
@@ -122,7 +132,8 @@ function BookingCard({ booking }: BookingCardProps) {
           <Button
             size="sm"
             variant="ghost"
-            className="text-destructive hover:text-destructive w-full gap-2 sm:w-auto sm:shrink-0"
+            color="red.7"
+            className="w-full gap-2 sm:w-auto sm:shrink-0"
             disabled={cancelBooking.isPending}
             onClick={handleCancel}
           >
@@ -131,6 +142,16 @@ function BookingCard({ booking }: BookingCardProps) {
           </Button>
         )}
       </div>
+
+      {booking.status === 'active' && (
+        <ExpiryProgress
+          pct={expiryProgressPct(
+            booking.starts_at ?? booking.booked_at,
+            booking.expires_at,
+          )}
+          className="mt-3"
+        />
+      )}
     </div>
   )
 }
