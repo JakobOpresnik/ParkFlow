@@ -13,6 +13,12 @@ export const REMINDER_TYPES: readonly ReminderTypeDef[] = [
     label: 'Morning reminder',
     description: 'Notify me in the morning when I have a reservation today.',
   },
+  {
+    type: 'owner_release_spot',
+    label: 'Free-your-spot reminder',
+    description:
+      'Remind me in the afternoon to free my owned parking spot when I won’t need it.',
+  },
   // Future: { type: 'reservation_ending', label: 'Expiry warning', ... }
 ]
 

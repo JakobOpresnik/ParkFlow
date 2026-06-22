@@ -1,12 +1,16 @@
 import { pool } from '../db/pool.js'
 import { pushChatMessage } from './rocketchatNotify.js'
 
-// Constant advisory-lock key — guards against overlapping ticks / multiple
-// app instances running the batch at the same time.
+// Constant advisory-lock keys — guard against overlapping ticks / multiple
+// app instances running a batch at the same time. One key per batch so the
+// morning and owner ticks never block each other.
 const LOCK_KEY = 4730247
+const OWNER_LOCK_KEY = 4730248
 
 const TZ = process.env.REMINDER_TZ ?? 'Europe/Ljubljana'
 const MORNING_TIME = process.env.REMINDER_MORNING_TIME ?? '07:30'
+// Afternoon nudge to every spot owner — "free your spot if you won't need it".
+const OWNER_TIME = process.env.REMINDER_OWNER_TIME ?? '15:00'
 
 interface MorningRow {
   booking_id: string
@@ -46,6 +50,42 @@ const MORNING_SQL = `
         AND p.reminder_type = 'reservation_today'
         AND p.enabled = false
     )
+`
+
+interface OwnerRow {
+  user_id: string
+}
+
+// Every linked parking-spot owner (one row per SSO username, owners.user_id
+// holds a comma-separated co-owner list — split + de-duplicated, mirroring
+// GET /api/owners/user-ids). Same DST-safe gate/dedup/opt-out shape as
+// MORNING_SQL. Params: $1 = now (ISO), $2 = tz, $3 = HH:MM, $4 = local date.
+// The gate fires the batch only once the afternoon time has passed locally;
+// the dedup is one send per owner per local day (notifications.data->>'date').
+const OWNER_SQL = `
+  WITH owner_users AS (
+    SELECT DISTINCT TRIM(uid) AS user_id
+    FROM owners o,
+         unnest(string_to_array(o.user_id, ',')) AS uid
+    WHERE o.user_id IS NOT NULL
+      AND TRIM(uid) <> ''
+  )
+  SELECT ou.user_id
+  FROM owner_users ou
+  WHERE $1::timestamptz >= (date_trunc('day', $1::timestamptz AT TIME ZONE $2) + $3::interval) AT TIME ZONE $2
+    AND NOT EXISTS (
+      SELECT 1 FROM notifications n
+      WHERE n.type = 'owner_release_spot'
+        AND n.user_id = ou.user_id
+        AND n.data->>'date' = $4
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM notification_prefs p
+      WHERE p.user_id = ou.user_id
+        AND p.reminder_type = 'owner_release_spot'
+        AND p.enabled = false
+    )
+  ORDER BY ou.user_id
 `
 
 export async function runReminderTick(
@@ -115,6 +155,83 @@ export async function runReminderTick(
       return { count: rows.length, dryRun }
     } finally {
       await client.query('SELECT pg_advisory_unlock($1)', [LOCK_KEY])
+    }
+  } finally {
+    client.release()
+  }
+}
+
+// Afternoon batch: DM every parking-spot owner a nudge to free their spot when
+// they won't need it. Same structure as runReminderTick (advisory lock, dry
+// run, best-effort DM, pushed_at on success) — only the audience, message, and
+// dedup key differ.
+export async function runOwnerReminderTick(
+  now: Date = new Date(),
+  opts: { dryRun?: boolean } = {},
+): Promise<{ count: number; dryRun: boolean }> {
+  const dryRun = opts.dryRun ?? false
+  // Local Slovenian calendar date (YYYY-MM-DD) — the dedup key AND the value
+  // stored in the notification's data.date. en-CA renders as ISO yyyy-mm-dd.
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now)
+  const client = await pool.connect()
+  try {
+    const lock = await client.query('SELECT pg_try_advisory_lock($1) AS ok', [
+      OWNER_LOCK_KEY,
+    ])
+    if (!lock.rows[0]?.ok) {
+      console.log('[reminders] another owner tick holds the lock; skipping')
+      return { count: 0, dryRun }
+    }
+    try {
+      const { rows } = await client.query<OwnerRow>(OWNER_SQL, [
+        now.toISOString(),
+        TZ,
+        OWNER_TIME,
+        today,
+      ])
+      if (dryRun) {
+        console.log(
+          '[reminders] DRY RUN — would remind ' +
+            rows.length +
+            ' owner(s): ' +
+            rows.map((r) => r.user_id).join(', '),
+        )
+        return { count: rows.length, dryRun }
+      }
+      const title = 'Free your parking spot?'
+      const body =
+        'If you won’t be needing your parking spot, please mark it as available so a colleague can use it.'
+      for (const r of rows) {
+        try {
+          const ins = await client.query<{ id: string }>(
+            `INSERT INTO notifications (user_id, type, title, body, data)
+             VALUES ($1, 'owner_release_spot', $2, $3, $4::jsonb)
+             RETURNING id`,
+            [r.user_id, title, body, JSON.stringify({ date: today })],
+          )
+          const notifId = ins.rows[0]?.id
+          const ok = await pushChatMessage(r.user_id, '🅿️ ' + body)
+          if (ok && notifId) {
+            await client.query(
+              'UPDATE notifications SET pushed_at = now() WHERE id = $1',
+              [notifId],
+            )
+          }
+        } catch (err) {
+          console.error('[reminders] failed for owner', r.user_id, err)
+        }
+      }
+      if (rows.length > 0) {
+        console.log(`[reminders] sent ${rows.length} owner reminder(s)`)
+      }
+      return { count: rows.length, dryRun }
+    } finally {
+      await client.query('SELECT pg_advisory_unlock($1)', [OWNER_LOCK_KEY])
     }
   } finally {
     client.release()
