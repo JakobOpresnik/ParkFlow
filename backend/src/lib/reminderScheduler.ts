@@ -205,7 +205,7 @@ export async function runOwnerReminderTick(
       }
       const title = 'Free your parking spot?'
       const body =
-        'If you won’t be needing your parking spot, please mark it as available so a colleague can use it.'
+        'If you won’t be needing your parking spot at some point in the following week, please mark it as available so another colleague can use it.'
       for (const r of rows) {
         try {
           const ins = await client.query<{ id: string }>(
