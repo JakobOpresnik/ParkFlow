@@ -10,6 +10,7 @@ import { useRealtimeSync } from '@/hooks/useRealtimeSync'
 import { useAuthStore } from '@/store/authStore'
 import { useUIStore } from '@/store/uiStore'
 
+import { ActiveBookingBar } from './ActiveBookingBar'
 import { DesktopSidebar } from './DesktopSidebar'
 import { MobileBottomNav } from './MobileBottomNav'
 import { MobileHeader } from './MobileHeader'
@@ -102,6 +103,7 @@ export function Layout({ children, noPadding }: LayoutProps) {
       {/* Main column: mobile top bar (sm:hidden) above the content area */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <MobileHeader />
+        <ActiveBookingBar />
         {noPadding ? (
           <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
         ) : (

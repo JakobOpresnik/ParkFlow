@@ -12,9 +12,11 @@ import {
   useMarkAllNotificationsRead,
   useNotifications,
 } from '@/hooks/useNotifications'
+import { useRelativeTime } from '@/hooks/useRelativeTime'
 
 export function NotificationBell() {
   const { t } = useTranslation()
+  const relativeTime = useRelativeTime()
   const [open, setOpen] = useState(false)
   const { data: notifications = [] } = useNotifications()
   const markAll = useMarkAllNotificationsRead()
@@ -59,8 +61,11 @@ export function NotificationBell() {
                 >
                   <p className="font-medium">{n.title}</p>
                   <p className="text-muted-foreground">{n.body}</p>
-                  <p className="text-muted-foreground/60 mt-1 text-xs">
-                    {new Date(n.created_at).toLocaleString()}
+                  <p
+                    className="text-muted-foreground/60 mt-1 text-xs"
+                    title={new Date(n.created_at).toLocaleString()}
+                  >
+                    {relativeTime(n.created_at)}
                   </p>
                 </li>
               ))}

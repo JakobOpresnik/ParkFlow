@@ -1,4 +1,4 @@
-import { CalendarCheck, Clock, TrendingUp, XCircle } from 'lucide-react'
+import { CalendarCheck, Clock, XCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { StatCard } from '@/components/StatCard/StatCard'
@@ -9,6 +9,7 @@ import { RecentBookingsCard } from './RecentBookingsCard'
 import { useBookingStats } from './useBookingStats'
 import { useProfilePage } from './useProfilePage'
 import { UserProfileCard } from './UserProfileCard'
+import { UtilizationRing } from './UtilizationRing'
 
 // — main component —
 
@@ -77,11 +78,10 @@ export function ProfilePage() {
           icon={XCircle}
           colorClass="bg-muted text-muted-foreground"
         />
-        <StatCard
+        <UtilizationRing
           label={t('profile.utilization')}
-          value={isLoading ? '—' : `${utilizationPct}%`}
-          icon={TrendingUp}
-          colorClass="bg-orange-500/15 text-orange-600 dark:text-orange-400"
+          utilizationPct={utilizationPct}
+          isLoading={isLoading}
         />
       </div>
 

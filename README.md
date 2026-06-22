@@ -646,6 +646,6 @@ When building or modifying frontend UI:
 
 <div align="center">
 
-[Repository](https://github.com/JakobOpresnik/ParkFlow) · [Report an issue](https://github.com/JakobOpresnik/ParkFlow/issues)
+[Repository](https://git.matheo.si/jakobo/parkflow) · [Report an issue](https://git.matheo.si/jakobo/parkflow/-/issues)
 
 </div>
