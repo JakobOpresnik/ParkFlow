@@ -104,6 +104,7 @@ const en = {
     bookedSpots: 'booked spots',
     totalSpots: 'Total spots',
     acrossAllLots: 'across all lots',
+    bookingsTrend: 'Bookings · last 7 days',
     recentActivity: 'Recent activity',
     activitySubtitle: 'Last 50 · auto-refreshes every 15s',
     noActivity:

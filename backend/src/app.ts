@@ -9,8 +9,8 @@ import bookingsRouter from './routes/bookings.js';
 import changesRouter from './routes/changes.js';
 import feedbackRouter from './routes/feedback.js';
 import integrationsRouter from './routes/integrations.js';
-import lotsRouter from './routes/lots.js';
 import internalRouter from './routes/internal.js';
+import lotsRouter from './routes/lots.js';
 import notificationsRouter from './routes/notifications.js';
 import ownersRouter from './routes/owners.js';
 import presenceRouter from './routes/presence.js';
@@ -21,11 +21,17 @@ import subscribeRouter from './routes/subscribe.js';
 export function createApp() {
   const app = express();
 
+  // Allowed browser origins: local dev (any localhost port) and the Abelium
+  // timesheet app, which calls the token-gated GET /api/owners/user-ids endpoint
+  // (and so must also be allowed to send the X-Owners-Token header).
   app.use(
     cors({
-      origin: /^https?:\/\/localhost(:\d+)?$/,
+      origin: [
+        /^https?:\/\/localhost(:\d+)?$/,
+        'https://timesheet.abelium.com',
+      ],
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Owners-Token'],
     }),
   );
 

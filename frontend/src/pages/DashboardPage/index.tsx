@@ -2,15 +2,17 @@ import { Activity, CheckCircle2, ParkingCircle } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { Sparkline } from '@/components/Sparkline'
 import { useChanges } from '@/hooks/useChanges'
 import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
 import { useLots } from '@/hooks/useLots'
+import { useStatsHistory } from '@/hooks/useStatsHistory'
 
 import { ActivityFeed } from './ActivityFeed'
 import { HotSpots } from './HotSpots'
 import { LotBreakdown } from './LotBreakdown'
 import { RecentlyFreed } from './RecentlyFreed'
-import { countByStatus } from './utils'
+import { countByStatus, lastNDayCounts } from './utils'
 
 // — types —
 
@@ -58,8 +60,10 @@ export function DashboardPage() {
     useEffectiveSpots(TODAY)
   const { data: lots = [], isLoading: lotsLoading } = useLots()
   const { data: changes = [], isLoading: changesLoading } = useChanges()
+  const { data: stats } = useStatsHistory(undefined, 7)
 
   const isLoading = spotsLoading || lotsLoading
+  const sparkValues = lastNDayCounts(stats?.daily ?? [], 7)
 
   const totalFree = countByStatus(allSpots, 'free')
   const totalOccupied = countByStatus(allSpots, 'occupied')
@@ -127,6 +131,15 @@ export function DashboardPage() {
                 {t('dashboard.ofTotal', { total, pct: occupancyPct })}
               </p>
             </div>
+
+            {sparkValues.some((v) => v > 0) && (
+              <div className="text-muted-foreground ml-auto hidden flex-col items-end gap-1 sm:flex">
+                <Sparkline values={sparkValues} />
+                <span className="text-[11px]">
+                  {t('dashboard.bookingsTrend')}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Supporting */}

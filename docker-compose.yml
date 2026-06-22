@@ -81,6 +81,8 @@ services:
         # from backend/.env / environment. With a single $, Compose substitutes
         # them from the (empty) deploy shell at parse time → empty token + URL.
         printf '35 7 * * 1-5 curl -fsS -X POST -H "X-Reminder-Token: %s" %s/api/internal/reminders/run\n' "$$REMINDER_TRIGGER_TOKEN" "$$BACKEND_URL" > /etc/crontabs/root
+        # 15:00 Fridays (TZ above) — nudge every spot owner to free their spot.
+        printf '0 15 * * 5 curl -fsS -X POST -H "X-Reminder-Token: %s" %s/api/internal/reminders/owners/run\n' "$$REMINDER_TRIGGER_TOKEN" "$$BACKEND_URL" >> /etc/crontabs/root
         crond -f -l 2
 
 volumes:

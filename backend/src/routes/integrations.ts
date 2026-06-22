@@ -1,8 +1,8 @@
-import { Router } from "express";
-import jwt from "jsonwebtoken";
+import { Router } from 'express';
+import jwt from 'jsonwebtoken';
 
-import type { WeekPresenceResponse } from "../lib/presence.types.js";
-import type { AuthPayload } from "../middleware/auth.js";
+import type { WeekPresenceResponse } from '../lib/presence.types.js';
+import type { AuthPayload } from '../middleware/auth.js';
 
 // Rocket.Chat integration.
 //
@@ -17,79 +17,79 @@ import type { AuthPayload } from "../middleware/auth.js";
 
 const router = Router();
 
-const JWT_SECRET = process.env.JWT_SECRET ?? "dev-secret-change-in-production";
+const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-secret-change-in-production';
 // Short-lived: the token only needs to live for the loopback call.
-const MINTED_TOKEN_TTL = "5m";
+const MINTED_TOKEN_TTL = '5m';
 // Identity minted for the auth-required presence proxy when a webhook arrives
 // without user_name — read-only commands (spots/owners/stats) must keep
 // working without one. Role is "user", so it gets the PII-stripped presence
 // shape; the bot only ever reads parking_available.
-const PRESENCE_SERVICE_USER = "parkflow-bot";
+const PRESENCE_SERVICE_USER = 'parkflow-bot';
 
 // Working hours a chat reservation holds a spot for (Slovenian local time).
 export const WORK_START_HOUR = 9;
 export const WORK_END_HOUR = 17;
 // Human label like "07:00–17:00" — derived so messages never drift from the hours.
-const WORK_HOURS_LABEL = `${String(WORK_START_HOUR).padStart(2, "0")}:00–${String(
+const WORK_HOURS_LABEL = `${String(WORK_START_HOUR).padStart(2, '0')}:00–${String(
   WORK_END_HOUR,
-).padStart(2, "0")}:00`;
+).padStart(2, '0')}:00`;
 
 export const HELP_TEXT = [
   "*ParkFlow* — your parking assistant. Here's what I can do:",
-  "",
-  "*status* — see your current reservation and your owned spot",
+  '',
+  '*status* — see your current reservation and your owned spot',
   "*free spots* (or *free spaces*) `[building] [today|tomorrow|dd.mm.yyyy]` — what's free (default today)",
-  "      _building:_ `zunaj` · `klet1` · `klet2`",
-  "      _e.g._ `free spots tomorrow` · `free spaces klet1 tomorrow`",
-  "*reserve* `<spot|building|any> [today|tomorrow|dd.mm.yyyy]`",
+  '      _building:_ `zunaj` · `klet1` · `klet2`',
+  '      _e.g._ `free spots tomorrow` · `free spaces klet1 tomorrow`',
+  '*reserve* `<spot|building|any> [today|tomorrow|dd.mm.yyyy]`',
   `      Holds a spot for the working day (${WORK_HOURS_LABEL}). Give a building name or \`any\` to grab a random free one.`,
-  "      _e.g._ `reserve A12` · `reserve zunaj tomorrow` · `reserve any`",
-  "*cancel* `[spot]` — cancel your current reservation",
-  "*history* — see your last 5 bookings",
-  "*owners* `[building] [today|tomorrow|dd.mm.yyyy]` — who owns which spot (🟩 free / 🟥 taken / 🟪 maybe in — shared)",
-  "*stats* `[building] [today|tomorrow|dd.mm.yyyy]` — how full parking is",
-  "*peak hours* `[building]` — busiest times (last 90 days)",
-  "*map* `[spot]` / *where* `<spot>` — get a map link (highlighting the spot)",
-  "*reminders* `[on|off] [type|all]` — manage your scheduled reminders",
-  "*help* — show this list",
-  "",
-  "_Dates accept_ `today`, `tomorrow` _or_ `dd.mm.yyyy`.",
-  "_Buildings are_ `zunaj`, `klet1` _or_ `klet2`.",
-].join("\n");
+  '      _e.g._ `reserve A12` · `reserve zunaj tomorrow` · `reserve any`',
+  '*cancel* `[spot]` — cancel your current reservation',
+  '*history* — see your last 5 bookings',
+  '*owners* `[building] [today|tomorrow|dd.mm.yyyy]` — who owns which spot (🟩 free / 🟥 taken / 🟪 maybe in — shared)',
+  '*stats* `[building] [today|tomorrow|dd.mm.yyyy]` — how full parking is',
+  '*peak hours* `[building]` — busiest times (last 90 days)',
+  '*map* `[spot]` / *where* `<spot>` — get a map link (highlighting the spot)',
+  '*reminders* `[on|off] [type|all]` — manage your scheduled reminders',
+  '*help* — show this list',
+  '',
+  '_Dates accept_ `today`, `tomorrow` _or_ `dd.mm.yyyy`.',
+  '_Buildings are_ `zunaj`, `klet1` _or_ `klet2`.',
+].join('\n');
 
 // --- Command parsing (pure, unit-tested) -----------------------------------
 
 export type Command =
-  | "help"
-  | "greet"
-  | "status"
-  | "spots"
-  | "reserve"
-  | "cancel"
-  | "history"
-  | "map"
-  | "owners"
-  | "stats"
-  | "peak-hours"
-  | "reminders"
-  | "unknown";
+  | 'help'
+  | 'greet'
+  | 'status'
+  | 'spots'
+  | 'reserve'
+  | 'cancel'
+  | 'history'
+  | 'map'
+  | 'owners'
+  | 'stats'
+  | 'peak-hours'
+  | 'reminders'
+  | 'unknown';
 
 // Greetings the bot answers in kind (Slovenian + English).
 const GREETINGS = new Set([
-  "hi",
-  "hey",
-  "hej",
-  "hello",
-  "zivjo",
-  "živjo",
-  "zdravo",
-  "servus",
-  "sergus",
-  "oj",
-  "lp",
-  "pozdrav",
-  "pozdravljen",
-  "pozdravljeni",
+  'hi',
+  'hey',
+  'hej',
+  'hello',
+  'zivjo',
+  'živjo',
+  'zdravo',
+  'servus',
+  'sergus',
+  'oj',
+  'lp',
+  'pozdrav',
+  'pozdravljen',
+  'pozdravljeni',
 ]);
 
 // The command keyword must be the first word. "free spot(s)" → list free spots.
@@ -98,63 +98,63 @@ export function parseCommand(text: string): {
   rest: string[];
 } {
   const tokens = text.trim().split(/\s+/).filter(Boolean);
-  if (tokens.length === 0) return { command: "unknown", rest: [] };
+  if (tokens.length === 0) return { command: 'unknown', rest: [] };
 
-  const w0 = (tokens[0] ?? "").toLowerCase();
+  const w0 = (tokens[0] ?? '').toLowerCase();
   const after = (n: number): string[] => tokens.slice(n);
 
-  if (GREETINGS.has(w0)) return { command: "greet", rest: [] };
+  if (GREETINGS.has(w0)) return { command: 'greet', rest: [] };
 
   switch (w0) {
-    case "help":
-    case "info":
-    case "?":
-      return { command: "help", rest: [] };
-    case "status":
-    case "me":
-      return { command: "status", rest: after(1) };
-    case "spots":
-    case "spaces":
-    case "available":
-      return { command: "spots", rest: after(1) };
-    case "reserve":
-    case "book":
-      return { command: "reserve", rest: after(1) };
-    case "history":
-    case "log":
-      return { command: "history", rest: after(1) };
-    case "map":
-    case "where":
-      return { command: "map", rest: after(1) };
-    case "owners":
-      return { command: "owners", rest: after(1) };
-    case "reminders":
-    case "reminder":
-      return { command: "reminders", rest: after(1) };
-    case "stats":
-      return { command: "stats", rest: after(1) };
-    case "peak": {
+    case 'help':
+    case 'info':
+    case '?':
+      return { command: 'help', rest: [] };
+    case 'status':
+    case 'me':
+      return { command: 'status', rest: after(1) };
+    case 'spots':
+    case 'spaces':
+    case 'available':
+      return { command: 'spots', rest: after(1) };
+    case 'reserve':
+    case 'book':
+      return { command: 'reserve', rest: after(1) };
+    case 'history':
+    case 'log':
+      return { command: 'history', rest: after(1) };
+    case 'map':
+    case 'where':
+      return { command: 'map', rest: after(1) };
+    case 'owners':
+      return { command: 'owners', rest: after(1) };
+    case 'reminders':
+    case 'reminder':
+      return { command: 'reminders', rest: after(1) };
+    case 'stats':
+      return { command: 'stats', rest: after(1) };
+    case 'peak': {
       // Single trigger phrase "peak hours" — "peak" alone isn't a command.
-      if (tokens[1]?.toLowerCase() === "hours")
-        return { command: "peak-hours", rest: after(2) };
-      return { command: "unknown", rest: tokens };
+      if (tokens[1]?.toLowerCase() === 'hours')
+        return { command: 'peak-hours', rest: after(2) };
+      return { command: 'unknown', rest: tokens };
     }
-    case "cancel": {
+    case 'cancel': {
       const rest = after(1);
-      if (rest[0]?.toLowerCase() === "reservation") rest.shift();
-      return { command: "cancel", rest };
+      if (rest[0]?.toLowerCase() === 'reservation') rest.shift();
+      return { command: 'cancel', rest };
     }
-    case "free": {
+    case 'free': {
       const w1 = tokens[1]?.toLowerCase();
       // "free spot(s)"/"free space(s)" → list free spots; "free <building>" filters.
-      if (w1 === "spots" || w1 === "spot" || w1 === "spaces" || w1 === "space")
-        return { command: "spots", rest: after(2) };
-      if (w1 === undefined) return { command: "spots", rest: [] };
+      if (w1 === 'spots' || w1 === 'spot' || w1 === 'spaces' || w1 === 'space')
+        return { command: 'spots', rest: after(2) };
+      if (w1 === undefined) return { command: 'spots', rest: [] };
       // "free zunaj" → list filtered by a building
-      return { command: "spots", rest: after(1) };
+      return { command: 'spots', rest: after(1) };
     }
     default:
-      return { command: "unknown", rest: tokens };
+      return { command: 'unknown', rest: tokens };
   }
 }
 
@@ -163,11 +163,11 @@ export function parseCommand(text: string): {
 // The local calendar date (YYYY-MM-DD) in Slovenia for a given instant.
 // Used so "today"/"tomorrow" resolve to the user's day, not the UTC day.
 export function localDate(now: Date): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Ljubljana",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Ljubljana',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
   }).format(now);
 }
 
@@ -180,19 +180,19 @@ function addDays(date: string, n: number): string {
 // The Europe/Ljubljana UTC offset (minutes) at a given instant — handles CET vs
 // CEST without hardcoding a fixed offset.
 function ljubljanaOffsetMinutes(at: Date): number {
-  const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Europe/Ljubljana",
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Ljubljana',
     hour12: false,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
   });
   const p: Record<string, number> = {};
   for (const part of fmt.formatToParts(at))
-    if (part.type !== "literal") p[part.type] = Number(part.value);
+    if (part.type !== 'literal') p[part.type] = Number(part.value);
   const hour = p.hour === 24 ? 0 : (p.hour ?? 0); // some runtimes report midnight as 24
   const asUTC = Date.UTC(
     p.year ?? 0,
@@ -209,7 +209,7 @@ function ljubljanaOffsetMinutes(at: Date): number {
 // instant. DST switches happen overnight, so a single offset correction is safe
 // for working-hours times like 09:00/17:00.
 export function ljubljanaInstant(date: string, hour: number): string {
-  const hh = String(hour).padStart(2, "0");
+  const hh = String(hour).padStart(2, '0');
   const naive = new Date(`${date}T${hh}:00:00.000Z`);
   const offsetMin = ljubljanaOffsetMinutes(naive);
   return new Date(naive.getTime() - offsetMin * 60_000).toISOString();
@@ -229,8 +229,8 @@ export function workDayOver(date: string, now: Date): boolean {
 export function parseDate(token: string | undefined, now: Date): string | null {
   if (!token) return localDate(now);
   const t = token.toLowerCase();
-  if (t === "today") return localDate(now);
-  if (t === "tomorrow") return addDays(localDate(now), 1);
+  if (t === 'today') return localDate(now);
+  if (t === 'tomorrow') return addDays(localDate(now), 1);
 
   const m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(token);
   if (!m) return null;
@@ -256,9 +256,9 @@ export interface Lot {
 }
 
 const LOT_ALIASES: Record<string, string[]> = {
-  "Zunanje parkirišče": ["outside", "out", "zunaj", "zunanje"],
-  "Klet -1": ["-1", "k-1", "klet-1", "klet1", "basement1", "b1"],
-  "Klet -2": ["-2", "k-2", "klet-2", "klet2", "basement2", "b2"],
+  'Zunanje parkirišče': ['outside', 'out', 'zunaj', 'zunanje'],
+  'Klet -1': ['-1', 'k-1', 'klet-1', 'klet1', 'basement1', 'b1'],
+  'Klet -2': ['-2', 'k-2', 'klet-2', 'klet2', 'basement2', 'b2'],
 };
 
 export function resolveLot(token: string, lots: Lot[]): Lot | undefined {
@@ -274,13 +274,13 @@ export function pickRandomFree(
   spots: SpotLike[],
   rand: () => number = Math.random,
 ): SpotLike | undefined {
-  const free = spots.filter((s) => s.status === "free");
+  const free = spots.filter((s) => s.status === 'free');
   if (free.length === 0) return undefined;
   return free[Math.floor(rand() * free.length)];
 }
 
 // The ACEX company pool ("first come, first served") — public, not a personal spot.
-const ACEX_OWNER_NAME = "ACEX - kdor prej pride, prej melje";
+const ACEX_OWNER_NAME = 'ACEX - kdor prej pride, prej melje';
 
 // Owner rows that are NOT ACEX employees — the public pool, placeholders/
 // vehicles, and external companies/rentals. The `owners` roster lists only real
@@ -289,19 +289,19 @@ const ACEX_OWNER_NAME = "ACEX - kdor prej pride, prej melje";
 // they are created (see migrations/005_real_parking_data.sql for the seed set).
 const NOT_ACEX_OWNERS = new Set<string>([
   ACEX_OWNER_NAME,
-  "kontejner - prenova",
-  "Tesla S",
-  "Tesla X",
-  "oddano v najem: MIK",
-  "ARHEA",
-  "Reduxi",
+  'kontejner - prenova',
+  'Tesla S',
+  'Tesla X',
+  'oddano v najem: MIK',
+  'ARHEA',
+  'Reduxi',
 ]);
 
 // A spot anyone can grab without taking someone's personal/shared spot:
 // free, and either unowned or part of the ACEX public pool.
 export function isGrabbable(s: SpotLike): boolean {
   return (
-    s.status === "free" && (!s.owner_id || s.owner_name === ACEX_OWNER_NAME)
+    s.status === 'free' && (!s.owner_id || s.owner_name === ACEX_OWNER_NAME)
   );
 }
 
@@ -324,7 +324,7 @@ export interface SpotLike {
 // booking_date, falling back to the UTC date of expires_at.
 function spotBookingDay(s: SpotLike): string {
   return (
-    s.active_booking_date ?? (s.active_booking_expires_at ?? "").slice(0, 10)
+    s.active_booking_date ?? (s.active_booking_expires_at ?? '').slice(0, 10)
   );
 }
 
@@ -364,7 +364,7 @@ export interface BookingLike {
 // The local day a booking belongs to, preferring the server-supplied
 // booking_date over slicing expires_at (whose UTC date rolls for late bookings).
 function bookingDay(b: BookingLike): string {
-  return b.booking_date ?? (b.expires_at ?? "").slice(0, 10);
+  return b.booking_date ?? (b.expires_at ?? '').slice(0, 10);
 }
 
 function spotLabel(s: { number: number; label: string | null }): string {
@@ -373,13 +373,13 @@ function spotLabel(s: { number: number; label: string | null }): string {
 
 // Format an ISO timestamp as "HH:MM on DD.MM.YYYY" in local (Slovenian) time.
 function formatUntil(iso: string): string {
-  const fmt = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Ljubljana",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
+  const fmt = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Ljubljana',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
     hour12: false,
   });
   const p: Record<string, string> = {};
@@ -398,7 +398,7 @@ export function activeBookingOnDate(
   bookings: BookingLike[],
   date: string,
 ): BookingLike | undefined {
-  return bookings.find((b) => b.status === "active" && bookingDay(b) === date);
+  return bookings.find((b) => b.status === 'active' && bookingDay(b) === date);
 }
 
 // Decide which active booking a "cancel" command refers to. `rest` may hold a
@@ -406,9 +406,9 @@ export function activeBookingOnDate(
 // "cancel", "cancel A12", "cancel today", "cancel A12 tomorrow". Without this,
 // a date token like "today" was mistaken for a spot label. Pure + unit-tested.
 export type CancelSelection =
-  | { kind: "target"; booking: BookingLike }
-  | { kind: "ambiguous"; active: BookingLike[] }
-  | { kind: "none"; spotName?: string; date?: string };
+  | { kind: 'target'; booking: BookingLike }
+  | { kind: 'ambiguous'; active: BookingLike[] }
+  | { kind: 'none'; spotName?: string; date?: string };
 
 export function selectCancelTarget(
   bookings: BookingLike[],
@@ -423,7 +423,7 @@ export function selectCancelTarget(
   }
   const date = dateArg ? (parseDate(dateArg, now) ?? undefined) : undefined;
 
-  let active = bookings.filter((b) => b.status === "active");
+  let active = bookings.filter((b) => b.status === 'active');
   if (date) active = active.filter((b) => bookingDay(b) === date);
 
   let booking: BookingLike | undefined;
@@ -438,10 +438,10 @@ export function selectCancelTarget(
   } else if (active.length === 1) {
     booking = active[0];
   } else if (active.length > 1) {
-    return { kind: "ambiguous", active };
+    return { kind: 'ambiguous', active };
   }
-  if (booking?.id) return { kind: "target", booking };
-  return { kind: "none", spotName, date };
+  if (booking?.id) return { kind: 'target', booking };
+  return { kind: 'none', spotName, date };
 }
 
 // `spots` is the already-available list (the caller filters via
@@ -450,7 +450,7 @@ export function formatFreeSpots(spots: SpotLike[], when: string): string {
   if (spots.length === 0) return `No free spots for ${when}.`;
   return `Free spots *(${spots.length})* — ${when}: ${spots
     .map(spotLabel)
-    .join(", ")}`;
+    .join(', ')}`;
 }
 
 // Group the given (already-available) spots by building, in the given lot order.
@@ -468,30 +468,32 @@ export function formatFreeSpotsByBuilding(
     inLot.forEach((s) => grouped.add(s));
     if (inLot.length > 0) {
       lines.push(
-        `• ${lot.name} *(${inLot.length})*: ${inLot.map(spotLabel).join(", ")}`,
+        `• ${lot.name} *(${inLot.length})*: ${inLot.map(spotLabel).join(', ')}`,
       );
     }
   }
   const other = spots.filter((s) => !grouped.has(s));
   if (other.length > 0) {
-    lines.push(`• Other *(${other.length})*: ${other.map(spotLabel).join(", ")}`);
+    lines.push(
+      `• Other *(${other.length})*: ${other.map(spotLabel).join(', ')}`,
+    );
   }
-  return `Free spots *(${spots.length})* — ${when}:\n${lines.join("\n")}`;
+  return `Free spots *(${spots.length})* — ${when}:\n${lines.join('\n')}`;
 }
 
 // A spot's effective availability for a day, from the owners-list point of view.
-export type SpotDayStatus = "free" | "taken" | "unconfirmed";
+export type SpotDayStatus = 'free' | 'taken' | 'unconfirmed';
 
 // How an owner reads on the timesheet for a given day.
-export type OwnerPresence = "in_office" | "absent" | "unknown";
+export type OwnerPresence = 'in_office' | 'absent' | 'unknown';
 
 // Icons shown after each spot label in the `owners` list. Squares (not circles):
 // the colour-circle emojis are from different Unicode generations and render at
 // mismatched sizes in Rocket.Chat; 🟩/🟥/🟪 are a matched set (same size).
 const SPOT_STATUS_ICON: Record<SpotDayStatus, string> = {
-  free: "🟩", // free for someone else to use that day
-  taken: "🟥", // a co-owner is in / spot is otherwise occupied or reserved
-  unconfirmed: "🟪", // shared spot, 2+ co-owners may be in — can't tell who
+  free: '🟩', // free for someone else to use that day
+  taken: '🟥', // a co-owner is in / spot is otherwise occupied or reserved
+  unconfirmed: '🟪', // shared spot, 2+ co-owners may be in — can't tell who
 };
 
 // Effective availability of `spot` for `date`, mirroring the frontend's
@@ -507,32 +509,32 @@ export function spotStatusOnDate(
   overrideStatus: string | undefined,
   ownerPresence: (ownerName: string) => OwnerPresence,
 ): SpotDayStatus {
-  const baseFallback: SpotDayStatus = spot.status === "free" ? "free" : "taken";
+  const baseFallback: SpotDayStatus = spot.status === 'free' ? 'free' : 'taken';
 
   // An active booking for that day → taken, regardless of everything else.
   if (spot.active_booking_id && spotBookingDay(spot) === date) {
-    return "taken";
+    return 'taken';
   }
   // A per-day override is authoritative ('occupied' reads as taken).
   if (overrideStatus !== undefined) {
-    return overrideStatus === "free" ? "free" : "taken";
+    return overrideStatus === 'free' ? 'free' : 'taken';
   }
   // The ACEX public pool is always free (normally filtered out of this list).
-  if (spot.owner_name === ACEX_OWNER_NAME) return "free";
+  if (spot.owner_name === ACEX_OWNER_NAME) return 'free';
   // Owned spot: decide from how many co-owners are in office that day.
   if (spot.owner_name) {
     const ownerNames = spot.owner_name
-      .split("/")
+      .split('/')
       .map((n) => n.trim())
       .filter(Boolean);
     if (ownerNames.length === 0) return baseFallback;
     const presences = ownerNames.map((n) => ownerPresence(n));
     // No presence data for any co-owner → fall back to the stored status.
-    if (presences.every((p) => p === "unknown")) return baseFallback;
-    const inOffice = presences.filter((p) => p === "in_office").length;
-    if (inOffice >= 2) return "unconfirmed";
-    if (inOffice === 1) return "taken";
-    return "free";
+    if (presences.every((p) => p === 'unknown')) return baseFallback;
+    const inOffice = presences.filter((p) => p === 'in_office').length;
+    if (inOffice >= 2) return 'unconfirmed';
+    if (inOffice === 1) return 'taken';
+    return 'free';
   }
   // Unowned spot.
   return baseFallback;
@@ -572,23 +574,23 @@ function makeOwnerPresence(
   date: string,
 ): (ownerName: string) => OwnerPresence {
   return (name: string): OwnerPresence => {
-    if (!presence) return "unknown";
+    if (!presence) return 'unknown';
     const entry = presence.employees.find(
       (e) => e.name.toLowerCase() === name.toLowerCase(),
     );
-    if (!entry) return "unknown";
-    if (presence.work_free_days.includes(date)) return "absent";
+    if (!entry) return 'unknown';
+    if (presence.work_free_days.includes(date)) return 'absent';
     const day = entry.week.find((d) => d.date === date);
-    if (!day) return "unknown";
-    return day.parking_available ? "absent" : "in_office";
+    if (!day) return 'unknown';
+    return day.parking_available ? 'absent' : 'in_office';
   };
 }
 
 // A human label for a date relative to now: "today", "tomorrow", or DD.MM.YYYY.
 export function dayLabel(date: string, now: Date): string {
-  if (date === localDate(now)) return "today";
-  if (date === addDays(localDate(now), 1)) return "tomorrow";
-  const [y, m, d] = date.split("-");
+  if (date === localDate(now)) return 'today';
+  if (date === addDays(localDate(now), 1)) return 'tomorrow';
+  const [y, m, d] = date.split('-');
   return `${d}.${m}.${y}`;
 }
 
@@ -614,7 +616,7 @@ export function formatOwners(
   if (owned.length === 0) {
     return building
       ? `No assigned parking spots in ${building}.`
-      : "No parking spots have an assigned owner.";
+      : 'No parking spots have an assigned owner.';
   }
 
   const byOwner = new Map<string, SpotLike[]>();
@@ -630,7 +632,7 @@ export function formatOwners(
       const ownedSpots = byOwner.get(name)!.sort((a, b) => a.number - b.number);
       const labels = ownedSpots
         .map((s) => `${spotLabel(s)} ${SPOT_STATUS_ICON[statusOf(s)]}`)
-        .join(", ");
+        .join(', ');
       // With a building filter the scope is already in the header, so skip the
       // redundant per-owner building suffix.
       const buildings = building
@@ -642,12 +644,12 @@ export function formatOwners(
                 .filter((n): n is string => Boolean(n)),
             ),
           ];
-      const where = buildings.length === 1 ? ` (${buildings[0]})` : "";
+      const where = buildings.length === 1 ? ` (${buildings[0]})` : '';
       return `• ${name} — ${labels}${where}`;
     });
 
-  const scope = building ? ` in ${building}` : "";
-  return `Parking spot owners${scope} (${byOwner.size}) — ${when}:\n${lines.join("\n")}`;
+  const scope = building ? ` in ${building}` : '';
+  return `Parking spot owners${scope} (${byOwner.size}) — ${when}:\n${lines.join('\n')}`;
 }
 
 // Percentage of n out of total, rounded; 0 when total is 0.
@@ -669,10 +671,10 @@ export function formatOccupancy(
   if (spots.length === 0) {
     return building
       ? `No parking spots in ${building}.`
-      : "No parking spots found.";
+      : 'No parking spots found.';
   }
-  const isFree = (s: SpotLike): boolean => statusOf(s) === "free";
-  const scope = building ? ` in ${building}` : "";
+  const isFree = (s: SpotLike): boolean => statusOf(s) === 'free';
+  const scope = building ? ` in ${building}` : '';
   const header = `Parking occupancy${scope} — ${when}:`;
 
   const total = spots.length;
@@ -689,7 +691,7 @@ export function formatOccupancy(
       `• ${lot.name}: *${computePct(inLot.length - lotFree, inLot.length)}%* full (${lotFree}/${inLot.length} free)`,
     );
   }
-  return `${header}\n${lines.join("\n")}`;
+  return `${header}\n${lines.join('\n')}`;
 }
 
 // One occupancy tally for a (weekday, hour) bucket from GET /api/stats/history.
@@ -700,17 +702,17 @@ export interface HeatmapCell {
 }
 
 const WEEKDAY_NAMES = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
 ];
 
 function hourLabel(h: number): string {
-  return `${String(((h % 24) + 24) % 24).padStart(2, "0")}:00`;
+  return `${String(((h % 24) + 24) % 24).padStart(2, '0')}:00`;
 }
 
 // Summarise the occupancy heatmap into the peak demand bucket, busiest weekday,
@@ -723,7 +725,7 @@ export function formatPeakHours(
   if (cells.length === 0) {
     return building
       ? `No historical parking data yet for ${building}.`
-      : "No historical parking data yet.";
+      : 'No historical parking data yet.';
   }
 
   const peak = cells.reduce((a, b) => (b.count > a.count ? b : a));
@@ -741,13 +743,13 @@ export function formatPeakHours(
     b[1] > a[1] ? b : a,
   )[0];
 
-  const scope = building ? ` · ${building}` : "";
+  const scope = building ? ` · ${building}` : '';
   return [
     `Busiest parking times — last 90 days${scope}:`,
     `• Peak: ${WEEKDAY_NAMES[peak.weekday]} around ${hourLabel(peak.hour)}`,
     `• Busiest day: ${WEEKDAY_NAMES[busiestDay]}`,
     `• Busiest hour: ${hourLabel(busiestHour)}–${hourLabel(busiestHour + 1)}`,
-  ].join("\n");
+  ].join('\n');
 }
 
 export function formatReserveResult(
@@ -757,7 +759,7 @@ export function formatReserveResult(
   date: string,
   building?: string,
 ): string {
-  const where = building ? ` in ${building}` : "";
+  const where = building ? ` in ${building}` : '';
   if (status === 201)
     return body.expires_at
       ? `Reserved spot ${label}${where} until ${formatUntil(body.expires_at)}.`
@@ -782,9 +784,9 @@ export function formatStatus(
 ): string {
   const lines: string[] = [];
   for (const b of bookings) {
-    if (b.status === "active") {
-      const where = b.building ? ` (${b.building})` : "";
-      let span = "";
+    if (b.status === 'active') {
+      const where = b.building ? ` (${b.building})` : '';
+      let span = '';
       if (b.expires_at) {
         const until = formatUntil(b.expires_at); // "17:00 on 22.06.2026"
         if (b.starts_at) {
@@ -792,8 +794,8 @@ export function formatStatus(
           // compact when arrival and departure are the same local day (the usual
           // 09:00–17:00 case), otherwise spell out both dates.
           const arrival = formatUntil(b.starts_at);
-          const sameDay = arrival.split(" on ")[1] === until.split(" on ")[1];
-          const from = sameDay ? arrival.split(" on ")[0] : arrival;
+          const sameDay = arrival.split(' on ')[1] === until.split(' on ')[1];
+          const from = sameDay ? arrival.split(' on ')[0] : arrival;
           span = ` *from ${from} until ${until}*`;
         } else {
           span = ` *until ${until}*`;
@@ -804,41 +806,41 @@ export function formatStatus(
   }
   for (const s of owned) {
     const label = spotLabel(s);
-    const where = s.lot_name ? ` (${s.lot_name})` : "";
+    const where = s.lot_name ? ` (${s.lot_name})` : '';
     if (s.active_booking_id) {
       lines.push(
         s.active_booking_booked_by_owner
           ? `• Your spot ${label}${where}: reserved by you.`
-          : `• Your spot ${label}${where}: in use by ${s.active_booking_reserved_by ?? "someone"} today.`,
+          : `• Your spot ${label}${where}: in use by ${s.active_booking_reserved_by ?? 'someone'} today.`,
       );
-    } else if (s.status === "free") {
+    } else if (s.status === 'free') {
       lines.push(`• Your spot ${label}${where}: free for you today.`);
     } else {
       lines.push(`• Your spot ${label}${where}: ${s.status}.`);
     }
   }
   if (lines.length === 0)
-    return "You have no active reservation and no owned spot.";
-  return lines.join("\n");
+    return 'You have no active reservation and no owned spot.';
+  return lines.join('\n');
 }
 
 const STATUS_ICON: Record<string, string> = {
-  active: "✅",
-  cancelled: "❌",
-  expired: "⏰",
+  active: '✅',
+  cancelled: '❌',
+  expired: '⏰',
 };
 
 export function formatHistory(bookings: BookingLike[]): string {
-  if (bookings.length === 0) return "No booking history yet.";
+  if (bookings.length === 0) return 'No booking history yet.';
   const sorted = [...bookings].sort((a, b) =>
-    (a.booked_at ?? "") < (b.booked_at ?? "") ? 1 : -1,
+    (a.booked_at ?? '') < (b.booked_at ?? '') ? 1 : -1,
   );
   const top = sorted.slice(0, 5);
   const lines = top.map((b) => {
-    const icon = STATUS_ICON[b.status] ?? "•";
-    return `${icon} ${(b.booked_at ?? "").slice(0, 10)} — ${bookingLabel(b)}`;
+    const icon = STATUS_ICON[b.status] ?? '•';
+    return `${icon} ${(b.booked_at ?? '').slice(0, 10)} — ${bookingLabel(b)}`;
   });
-  return `Your last ${lines.length} ${lines.length === 1 ? "booking" : "bookings"}:\n${lines.join("\n")}`;
+  return `Your last ${lines.length} ${lines.length === 1 ? 'booking' : 'bookings'}:\n${lines.join('\n')}`;
 }
 
 // --- Loopback to the existing REST API -------------------------------------
@@ -852,9 +854,9 @@ function internalBase(): string {
 
 // Public URL of the ParkFlow frontend, used to build clickable map deep-links.
 function frontendBase(): string {
-  return (process.env.PUBLIC_FRONTEND_URL ?? "http://localhost:3000").replace(
+  return (process.env.PUBLIC_FRONTEND_URL ?? 'http://localhost:3000').replace(
     /\/$/,
-    "",
+    '',
   );
 }
 
@@ -863,7 +865,7 @@ function frontendBase(): string {
 // for a future day so the link doesn't land the user on today's map.
 export function spotLink(spotId: string, date?: string): string {
   const params = new URLSearchParams({ spot: spotId });
-  if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) params.set("date", date);
+  if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) params.set('date', date);
   return `${frontendBase()}/?${params.toString()}`;
 }
 
@@ -874,7 +876,7 @@ function mintUserToken(username: string): string {
     userId: username,
     username,
     displayName: username,
-    role: "user",
+    role: 'user',
   };
   return jwt.sign(payload, JWT_SECRET, { expiresIn: MINTED_TOKEN_TTL });
 }
@@ -886,7 +888,7 @@ async function call<T = unknown>(
 ): Promise<{ status: number; data: T | null }> {
   const headers: Record<string, string> = {};
   if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
-  if (opts.body !== undefined) headers["Content-Type"] = "application/json";
+  if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
   const res = await fetch(internalBase() + path, {
     method,
     headers,
@@ -923,19 +925,19 @@ function matchesLabel(
 
 // Map of lot id → building name, for showing where a spot is.
 async function lotNameMap(): Promise<Map<string, string>> {
-  const lots = await callArray<Lot>("GET", "/api/lots");
+  const lots = await callArray<Lot>('GET', '/api/lots');
   return new Map(lots.map((l) => [l.id, l.name]));
 }
 
 // --- Route -----------------------------------------------------------------
 
-router.post("/rocketchat", async (req, res, next) => {
+router.post('/rocketchat', async (req, res, next) => {
   try {
     const expected = process.env.ROCKETCHAT_WEBHOOK_TOKEN;
     if (!expected) {
       res
         .status(500)
-        .json({ text: "Rocket.Chat integration is not configured." });
+        .json({ text: 'Rocket.Chat integration is not configured.' });
       return;
     }
 
@@ -945,11 +947,11 @@ router.post("/rocketchat", async (req, res, next) => {
       text?: string;
     };
     if (body.token !== expected) {
-      res.status(401).json({ text: "Unauthorized." });
+      res.status(401).json({ text: 'Unauthorized.' });
       return;
     }
 
-    const { command, rest } = parseCommand(body.text ?? "");
+    const { command, rest } = parseCommand(body.text ?? '');
     const username = body.user_name;
     const now = new Date();
     const reply = (text: string): void => {
@@ -957,30 +959,30 @@ router.post("/rocketchat", async (req, res, next) => {
     };
     const needUser = (): boolean => {
       if (!username) {
-        reply("I could not identify you.");
+        reply('I could not identify you.');
         return false;
       }
       return true;
     };
 
     switch (command) {
-      case "help":
+      case 'help':
         reply(HELP_TEXT);
         return;
 
-      case "greet":
+      case 'greet':
         reply(
-          "👋 Hi! I’m *ParkFlowBot* — I help you find and reserve parking. Type `help` to see everything I can do.",
+          '👋 Hi! I’m *ParkFlowBot* — I help you find and reserve parking. Type `help` to see everything I can do.',
         );
         return;
 
-      case "map": {
+      case 'map': {
         const arg = rest[0];
         if (!arg) {
           reply(`Open the parking map: ${frontendBase()}/`);
           return;
         }
-        const spots = await callArray<SpotLike>("GET", "/api/spots");
+        const spots = await callArray<SpotLike>('GET', '/api/spots');
         const spot = spots.find((s) => matchesLabel(s, arg));
         if (!spot?.id) {
           reply(`I couldn’t find spot ${arg}. Type "free spots" to see them.`);
@@ -992,11 +994,11 @@ router.post("/rocketchat", async (req, res, next) => {
         return;
       }
 
-      case "spots": {
+      case 'spots': {
         // `free spots [building] [date]` — real availability for a day, not just
         // live status. Mirrors the `owners` command: same sources, same
         // spotStatusOnDate rule. Tokens are order-independent.
-        const lots = await callArray<Lot>("GET", "/api/lots");
+        const lots = await callArray<Lot>('GET', '/api/lots');
 
         let date: string | null = null;
         let lot: Lot | undefined;
@@ -1023,15 +1025,15 @@ router.post("/rocketchat", async (req, res, next) => {
 
         const [spots, overrides, presenceRes] = await Promise.all([
           callArray<SpotLike>(
-            "GET",
-            lot ? `/api/spots?lot_id=${lot.id}` : "/api/spots",
+            'GET',
+            lot ? `/api/spots?lot_id=${lot.id}` : '/api/spots',
           ),
           callArray<DayOverride>(
-            "GET",
+            'GET',
             `/api/spots/day-overrides?date=${targetDate}`,
           ),
           call<WeekPresenceResponse>(
-            "GET",
+            'GET',
             `/api/presence?date=${targetDate}`,
             {
               token: mintUserToken(username ?? PRESENCE_SERVICE_USER),
@@ -1053,15 +1055,15 @@ router.post("/rocketchat", async (req, res, next) => {
               targetDate,
               s.id ? overrideBySpot.get(s.id) : undefined,
               ownerPresence,
-            ) === "free",
+            ) === 'free',
         );
 
         // Without presence, owner-occupied spots may be wrongly omitted — flag
         // it rather than implying the list is complete.
         const note =
           presence === null
-            ? "\n⚠️ List may be incomplete — I couldn’t check owner spots right now."
-            : "";
+            ? '\n⚠️ List may be incomplete — I couldn’t check owner spots right now.'
+            : '';
 
         reply(
           lot
@@ -1071,15 +1073,15 @@ router.post("/rocketchat", async (req, res, next) => {
         return;
       }
 
-      case "owners": {
+      case 'owners': {
         // Public read (no auth) — lists who owns which spot, grouped by owner,
         // with a per-day availability icon. Optional args, in any order: a
         // building filter (zunaj/klet1/klet2) and/or a date (default today).
         // Pulls that day's per-day overrides and presence so the icon reflects
         // real availability (owner away / freed), mirroring useEffectiveSpots.
         const [lots, spots] = await Promise.all([
-          callArray<Lot>("GET", "/api/lots"),
-          callArray<SpotLike>("GET", "/api/spots"),
+          callArray<Lot>('GET', '/api/lots'),
+          callArray<SpotLike>('GET', '/api/spots'),
         ]);
         let date = localDate(now);
         let lotFilter: Lot | undefined;
@@ -1101,10 +1103,10 @@ router.post("/rocketchat", async (req, res, next) => {
         }
         const [overrides, presenceRes] = await Promise.all([
           callArray<DayOverride>(
-            "GET",
+            'GET',
             `/api/spots/day-overrides?date=${date}`,
           ),
-          call<WeekPresenceResponse>("GET", `/api/presence?date=${date}`, {
+          call<WeekPresenceResponse>('GET', `/api/presence?date=${date}`, {
             token: mintUserToken(username ?? PRESENCE_SERVICE_USER),
           }),
         ]);
@@ -1131,13 +1133,13 @@ router.post("/rocketchat", async (req, res, next) => {
         return;
       }
 
-      case "stats": {
+      case 'stats': {
         // Public read — live occupancy snapshot. Optional building filter and/or
         // date (any order, default today), computed with the same presence-aware
         // effective status as the owners command.
         const [lots, spots] = await Promise.all([
-          callArray<Lot>("GET", "/api/lots"),
-          callArray<SpotLike>("GET", "/api/spots"),
+          callArray<Lot>('GET', '/api/lots'),
+          callArray<SpotLike>('GET', '/api/spots'),
         ]);
         let date = localDate(now);
         let lotFilter: Lot | undefined;
@@ -1159,10 +1161,10 @@ router.post("/rocketchat", async (req, res, next) => {
         }
         const [overrides, presenceRes] = await Promise.all([
           callArray<DayOverride>(
-            "GET",
+            'GET',
             `/api/spots/day-overrides?date=${date}`,
           ),
-          call<WeekPresenceResponse>("GET", `/api/presence?date=${date}`, {
+          call<WeekPresenceResponse>('GET', `/api/presence?date=${date}`, {
             token: mintUserToken(username ?? PRESENCE_SERVICE_USER),
           }),
         ]);
@@ -1193,13 +1195,13 @@ router.post("/rocketchat", async (req, res, next) => {
         return;
       }
 
-      case "peak-hours": {
+      case 'peak-hours': {
         // Public read — busiest times from the historical occupancy heatmap.
         // Optional building filter; no date (the heatmap covers ~90 days).
         const tok = rest[0];
         let lotFilter: Lot | undefined;
         if (tok) {
-          lotFilter = resolveLot(tok, await callArray<Lot>("GET", "/api/lots"));
+          lotFilter = resolveLot(tok, await callArray<Lot>('GET', '/api/lots'));
           if (!lotFilter) {
             reply(
               `I don’t know the building "${tok}". Try: zunaj, klet1, klet2.`,
@@ -1209,13 +1211,13 @@ router.post("/rocketchat", async (req, res, next) => {
         }
         const path = lotFilter
           ? `/api/stats/history?lot_id=${lotFilter.id}`
-          : "/api/stats/history";
-        const { data } = await call<{ heatmap: HeatmapCell[] }>("GET", path);
+          : '/api/stats/history';
+        const { data } = await call<{ heatmap: HeatmapCell[] }>('GET', path);
         reply(formatPeakHours(data?.heatmap ?? [], lotFilter?.name));
         return;
       }
 
-      case "reserve": {
+      case 'reserve': {
         const spotName = rest[0];
         if (!spotName) {
           reply(
@@ -1228,12 +1230,12 @@ router.post("/rocketchat", async (req, res, next) => {
         const date = parseDate(dateArg, now);
         if (date === null) {
           reply(
-            `I didn’t understand the date "${dateArg ?? ""}". Use today, tomorrow, or dd.mm.yyyy.`,
+            `I didn’t understand the date "${dateArg ?? ''}". Use today, tomorrow, or dd.mm.yyyy.`,
           );
           return;
         }
         if (date < localDate(now)) {
-          reply("That date is in the past — pick today or later.");
+          reply('That date is in the past — pick today or later.');
           return;
         }
         // No working time left today (past 17:00) — refuse rather than create a
@@ -1247,8 +1249,8 @@ router.post("/rocketchat", async (req, res, next) => {
         // Warn instead of silently replacing: you can hold one spot per day.
         const reserveToken = mintUserToken(username!);
         const myBookings = await callArray<BookingLike>(
-          "GET",
-          "/api/bookings/my",
+          'GET',
+          '/api/bookings/my',
           { token: reserveToken },
         );
         const existing = activeBookingOnDate(myBookings, date);
@@ -1259,13 +1261,13 @@ router.post("/rocketchat", async (req, res, next) => {
           );
           return;
         }
-        const spots = await callArray<SpotLike>("GET", "/api/spots");
+        const spots = await callArray<SpotLike>('GET', '/api/spots');
         let spot: SpotLike | undefined;
-        if (spotName.toLowerCase() === "any") {
+        if (spotName.toLowerCase() === 'any') {
           // "reserve any" — grab any free, non-personal/non-shared spot.
           spot = pickRandomFree(spots.filter(isGrabbable));
           if (!spot) {
-            reply("No free spots available to grab right now.");
+            reply('No free spots available to grab right now.');
             return;
           }
         } else {
@@ -1275,7 +1277,7 @@ router.post("/rocketchat", async (req, res, next) => {
             // random free spot in that building (e.g. "reserve zunaj").
             const lot = resolveLot(
               spotName,
-              await callArray<Lot>("GET", "/api/lots"),
+              await callArray<Lot>('GET', '/api/lots'),
             );
             if (lot) {
               // Only grab public spots in that building, not someone's personal one.
@@ -1308,8 +1310,8 @@ router.post("/rocketchat", async (req, res, next) => {
           expires_at: ljubljanaInstant(date, WORK_END_HOUR),
         };
         const { status, data } = await call<{ error?: string }>(
-          "POST",
-          "/api/bookings",
+          'POST',
+          '/api/bookings',
           { token: reserveToken, body: reserveBody },
         );
         let building: string | undefined;
@@ -1333,36 +1335,36 @@ router.post("/rocketchat", async (req, res, next) => {
         return;
       }
 
-      case "cancel": {
+      case 'cancel': {
         if (!needUser()) return;
         const token = mintUserToken(username!);
         const bookings = await callArray<BookingLike>(
-          "GET",
-          "/api/bookings/my",
+          'GET',
+          '/api/bookings/my',
           { token },
         );
         const selection = selectCancelTarget(bookings, rest, now);
-        if (selection.kind === "ambiguous") {
+        if (selection.kind === 'ambiguous') {
           reply(
             `You have ${selection.active.length} reservations. Say e.g. "cancel ${bookingLabel(selection.active[0]!)}".`,
           );
           return;
         }
-        if (selection.kind === "none") {
+        if (selection.kind === 'none') {
           const when = selection.date
             ? dayLabel(selection.date, now)
             : undefined;
           reply(
             selection.spotName
-              ? `You don’t have a reservation on ${selection.spotName}${when ? ` for ${when}` : ""}.`
+              ? `You don’t have a reservation on ${selection.spotName}${when ? ` for ${when}` : ''}.`
               : when
                 ? `You have no active reservation for ${when} to cancel.`
-                : "You have no active reservation to cancel.",
+                : 'You have no active reservation to cancel.',
           );
           return;
         }
         const { status } = await call(
-          "PATCH",
+          'PATCH',
           `/api/bookings/${selection.booking.id}/cancel`,
           { token },
         );
@@ -1370,37 +1372,37 @@ router.post("/rocketchat", async (req, res, next) => {
         return;
       }
 
-      case "history": {
+      case 'history': {
         if (!needUser()) return;
         const bookings = await callArray<BookingLike>(
-          "GET",
-          "/api/bookings/my",
+          'GET',
+          '/api/bookings/my',
           { token: mintUserToken(username!) },
         );
         reply(formatHistory(bookings));
         return;
       }
 
-      case "status": {
+      case 'status': {
         if (!needUser()) return;
         const token = mintUserToken(username!);
         const bookings = await callArray<BookingLike>(
-          "GET",
-          "/api/bookings/my",
+          'GET',
+          '/api/bookings/my',
           { token },
         );
         const { status: ownStatus, data: ownedData } = await call<
           OwnedSpotLike[]
-        >("GET", "/api/owners/me/spots", { token });
+        >('GET', '/api/owners/me/spots', { token });
         const owned =
           ownStatus === 200 && Array.isArray(ownedData) ? ownedData : [];
         // Attach the building name to each active reservation so the user knows
         // where the spot is (bookings/my doesn't carry the lot name).
-        const active = bookings.filter((b) => b.status === "active");
+        const active = bookings.filter((b) => b.status === 'active');
         let enriched = bookings;
         if (active.length > 0) {
           const [spots, lots] = await Promise.all([
-            callArray<SpotLike>("GET", "/api/spots"),
+            callArray<SpotLike>('GET', '/api/spots'),
             lotNameMap(),
           ]);
           const lotBySpotLabel = new Map<string, string | undefined>(
@@ -1419,16 +1421,16 @@ router.post("/rocketchat", async (req, res, next) => {
         // Fallback delivery: prepend any unread notice that was never pushed
         // (proactive DM failed or the handle couldn't be resolved), then mark read.
         const notices = await callArray<{ id: string; body: string }>(
-          "GET",
-          "/api/notifications?undelivered=1",
+          'GET',
+          '/api/notifications?undelivered=1',
           { token },
         );
-        let prefix = "";
+        let prefix = '';
         if (notices.length > 0) {
-          prefix = notices.map((n) => `⚠️ ${n.body}`).join("\n") + "\n\n";
+          prefix = notices.map((n) => `⚠️ ${n.body}`).join('\n') + '\n\n';
           await Promise.all(
             notices.map((n) =>
-              call("PATCH", `/api/notifications/${n.id}/read`, { token }),
+              call('PATCH', `/api/notifications/${n.id}/read`, { token }),
             ),
           );
         }
@@ -1436,55 +1438,55 @@ router.post("/rocketchat", async (req, res, next) => {
         return;
       }
 
-      case "reminders": {
+      case 'reminders': {
         if (!needUser()) return;
         const token = mintUserToken(username!);
         const { data } = await call<{
           catalog: { type: string; label: string; description: string }[];
           prefs: Record<string, boolean>;
-        }>("GET", "/api/notifications/prefs", { token });
+        }>('GET', '/api/notifications/prefs', { token });
         const catalog = data?.catalog ?? [];
         const prefs = data?.prefs ?? {};
 
         const sub = rest[0]?.toLowerCase();
-        if (sub === "on" || sub === "off") {
-          const enabled = sub === "on";
+        if (sub === 'on' || sub === 'off') {
+          const enabled = sub === 'on';
           const targetArg = rest[1]?.toLowerCase();
           const targets =
-            !targetArg || targetArg === "all"
+            !targetArg || targetArg === 'all'
               ? catalog.map((c) => c.type)
               : catalog.filter((c) => c.type === targetArg).map((c) => c.type);
           if (targets.length === 0) {
             reply(
-              `Unknown reminder. Available: ${catalog.map((c) => c.type).join(", ")}.`,
+              `Unknown reminder. Available: ${catalog.map((c) => c.type).join(', ')}.`,
             );
             return;
           }
           await Promise.all(
             targets.map((type) =>
-              call("PUT", `/api/notifications/prefs/${type}`, {
+              call('PUT', `/api/notifications/prefs/${type}`, {
                 token,
                 body: { enabled },
               }),
             ),
           );
           reply(
-            `${enabled ? "🔔" : "🔕"} Reminders for your reservations turned ${sub}.`,
+            `${enabled ? '🔔' : '🔕'} Reminders for your reservations turned ${sub}.`,
           );
           return;
         }
 
         const lines = catalog.map(
           (c) =>
-            `${prefs[c.type] === false ? "🔕" : "🔔"} *${c.type}* — ${c.label}`,
+            `${prefs[c.type] === false ? '🔕' : '🔔'} *${c.type}* — ${c.label}`,
         );
         reply(
           [
-            "*Your reminders:*",
+            '*Your reminders:*',
             ...lines,
-            "",
-            "_Toggle with_ `reminders off <type>` _/_ `reminders on <type>` _(or_ `all`_)._",
-          ].join("\n"),
+            '',
+            '_Toggle with_ `reminders off <type>` _/_ `reminders on <type>` _(or_ `all`_)._',
+          ].join('\n'),
         );
         return;
       }

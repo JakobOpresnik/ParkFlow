@@ -1,5 +1,5 @@
 import request from "supertest";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createApp } from "../app.js";
 
@@ -64,6 +64,62 @@ describe("GET /api/owners", () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
+  });
+});
+
+describe("GET /api/owners/user-ids", () => {
+  const TOKEN = "secret-owners-token";
+
+  beforeEach(() => {
+    process.env.OWNERS_API_TOKEN = TOKEN;
+  });
+
+  afterEach(() => {
+    delete process.env.OWNERS_API_TOKEN;
+  });
+
+  it("returns a flat array of owner user IDs with a valid token", async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ user_id: "jakobo" }, { user_id: "jdoe" }],
+    });
+
+    const res = await request(app)
+      .get("/api/owners/user-ids")
+      .set("X-Owners-Token", TOKEN);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(["jakobo", "jdoe"]);
+  });
+
+  it("returns an empty array when no owners are linked", async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .get("/api/owners/user-ids")
+      .set("X-Owners-Token", TOKEN);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it("returns 401 with a missing or wrong token", async () => {
+    const missing = await request(app).get("/api/owners/user-ids");
+    expect(missing.status).toBe(401);
+
+    const wrong = await request(app)
+      .get("/api/owners/user-ids")
+      .set("X-Owners-Token", "nope");
+    expect(wrong.status).toBe(401);
+  });
+
+  it("returns 500 when the token is not configured", async () => {
+    delete process.env.OWNERS_API_TOKEN;
+
+    const res = await request(app)
+      .get("/api/owners/user-ids")
+      .set("X-Owners-Token", TOKEN);
+
+    expect(res.status).toBe(500);
   });
 });
 
