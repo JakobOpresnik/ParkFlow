@@ -9,7 +9,9 @@ vi.mock('../lib/rocketchatNotify.js', () => ({
 
 const { pool } = await import('../db/pool.js')
 const { pushChatMessage } = await import('../lib/rocketchatNotify.js')
-const { runReminderTick } = await import('../lib/reminderScheduler.js')
+const { runReminderTick, runOwnerReminderTick } = await import(
+  '../lib/reminderScheduler.js'
+)
 
 const mockConnect = pool.connect as ReturnType<typeof vi.fn>
 const mockPush = pushChatMessage as ReturnType<typeof vi.fn>
@@ -131,6 +133,103 @@ describe('runReminderTick', () => {
     expect(selectSql).toContain("status = 'active'")
     expect(selectSql).toContain('AT TIME ZONE')
     expect(selectSql).toContain('NOT EXISTS')
+    expect(selectSql).toContain('notification_prefs')
+    expect(mockPush).not.toHaveBeenCalled()
+  })
+})
+
+describe('runOwnerReminderTick', () => {
+  it('inserts a notice and DMs each owner', async () => {
+    const client = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [{ ok: true }] }) // advisory lock
+        .mockResolvedValueOnce({ rows: [{ user_id: 'jsernec' }] }) // owners
+        .mockResolvedValueOnce({ rows: [{ id: 'n1' }] }) // insert
+        .mockResolvedValueOnce({ rows: [] }) // pushed_at update
+        .mockResolvedValueOnce({ rows: [] }), // advisory unlock
+      release: vi.fn(),
+    }
+    mockConnect.mockResolvedValue(client)
+    mockPush.mockResolvedValue(true)
+
+    await runOwnerReminderTick(new Date('2026-06-12T13:30:00.000Z'))
+
+    expect(client.query).toHaveBeenCalledWith(
+      expect.stringContaining("'owner_release_spot'"),
+      expect.arrayContaining(['jsernec']),
+    )
+    expect(mockPush).toHaveBeenCalledWith(
+      'jsernec',
+      expect.stringContaining('available'),
+    )
+    expect(client.query).toHaveBeenCalledWith(
+      expect.stringContaining('pushed_at = now()'),
+      ['n1'],
+    )
+    expect(client.release).toHaveBeenCalled()
+  })
+
+  it('uses a distinct advisory lock from the morning tick', async () => {
+    const client = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [{ ok: true }] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] }),
+      release: vi.fn(),
+    }
+    mockConnect.mockResolvedValue(client)
+
+    await runOwnerReminderTick(new Date('2026-06-12T13:30:00.000Z'))
+
+    const lockKey = client.query.mock.calls[0]?.[1]?.[0] as number
+    expect(lockKey).toBe(4730248)
+  })
+
+  it('dry run selects owners but does not insert or push', async () => {
+    const client = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [{ ok: true }] })
+        .mockResolvedValueOnce({ rows: [{ user_id: 'a' }, { user_id: 'b' }] })
+        .mockResolvedValueOnce({ rows: [] }), // unlock
+      release: vi.fn(),
+    }
+    mockConnect.mockResolvedValue(client)
+
+    const result = await runOwnerReminderTick(
+      new Date('2026-06-12T13:30:00.000Z'),
+      { dryRun: true },
+    )
+
+    expect(result).toEqual({ count: 2, dryRun: true })
+    expect(client.query).not.toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO notifications'),
+      expect.anything(),
+    )
+    expect(mockPush).not.toHaveBeenCalled()
+    expect(client.release).toHaveBeenCalled()
+  })
+
+  it('targets every linked owner, gating/dedup/opt-out (SQL shape)', async () => {
+    const client = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [{ ok: true }] })
+        .mockResolvedValueOnce({ rows: [] }) // no owners
+        .mockResolvedValueOnce({ rows: [] }), // unlock
+      release: vi.fn(),
+    }
+    mockConnect.mockResolvedValue(client)
+
+    await runOwnerReminderTick(new Date('2026-06-12T13:30:00.000Z'))
+
+    const selectSql = client.query.mock.calls[1]?.[0] as string
+    expect(selectSql).toContain('FROM owners')
+    expect(selectSql).toContain('string_to_array')
+    expect(selectSql).toContain('AT TIME ZONE')
+    expect(selectSql).toContain("'owner_release_spot'")
     expect(selectSql).toContain('notification_prefs')
     expect(mockPush).not.toHaveBeenCalled()
   })
