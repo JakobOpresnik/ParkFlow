@@ -86,6 +86,14 @@
 - Package manager: **Bun** (never npm/yarn/pnpm)
 - Run: `bun run build`, `bun run lint`, `bun run format`, `bun test`
 
+### Production server & database — READ-ONLY ONLY
+
+- The prod host (`parkflow.int.matheo.si` / `10.0.0.9`) is deployed via **CI/CD only**.
+  Never write to the prod DB, never restart/kill containers, never deploy by hand.
+- For read-only inspection of the prod database, see
+  [`docs/prod-db-readonly-access.md`](docs/prod-db-readonly-access.md) — SSH tunnel +
+  `parkflow_readonly` role + optional `postgres-prod` MCP. Requires VPN.
+
 ### When working in /jakob (archived — reference only)
 
 - Package manager: **pnpm** (never npm or yarn)
