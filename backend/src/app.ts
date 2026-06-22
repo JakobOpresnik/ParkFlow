@@ -22,8 +22,8 @@ export function createApp() {
   const app = express();
 
   // Allowed browser origins: local dev (any localhost port) and the Abelium
-  // timesheet app, which calls the token-gated GET /api/owners/user-ids endpoint
-  // (and so must also be allowed to send the X-Owners-Token header).
+  // timesheet app, which calls the token-gated GET /api/owners/timesheet-ids
+  // endpoint (and so must also be allowed to send the X-Owners-Token header).
   app.use(
     cors({
       origin: [

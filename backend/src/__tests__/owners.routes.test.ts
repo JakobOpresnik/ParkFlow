@@ -27,8 +27,17 @@ vi.mock("../middleware/auth.js", () => ({
   requireNonGuest: (_req: any, _res: any, next: any) => next(),
 }));
 
+// Mock only the network-bound timesheet fetch; keep ownerTimesheetIds (the pure
+// name→id matcher) real so the route's real wiring is under test.
+vi.mock("../lib/presence.js", async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, fetchWeekPresence: vi.fn() };
+});
+
 const { pool } = await import("../db/pool.js");
 const mockQuery = pool.query as ReturnType<typeof vi.fn>;
+const { fetchWeekPresence } = await import("../lib/presence.js");
+const mockFetchPresence = fetchWeekPresence as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -68,7 +77,49 @@ describe("GET /api/owners", () => {
 });
 
 describe("GET /api/owners/user-ids", () => {
+  // /user-ids takes no auth — it is consumed only by the internal Friday
+  // reminder flow.
+  it("returns a flat array of owner user IDs (no auth required)", async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ user_id: "jakobo" }, { user_id: "jdoe" }],
+    });
+
+    const res = await request(app).get("/api/owners/user-ids");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(["jakobo", "jdoe"]);
+  });
+
+  it("returns an empty array when no owners are linked", async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app).get("/api/owners/user-ids");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it("does not require the owners API token (reserved for /timesheet-ids)", async () => {
+    process.env.OWNERS_API_TOKEN = "owners-token";
+    mockQuery.mockResolvedValueOnce({ rows: [{ user_id: "jakobo" }] });
+
+    const res = await request(app).get("/api/owners/user-ids");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(["jakobo"]);
+    delete process.env.OWNERS_API_TOKEN;
+  });
+});
+
+describe("GET /api/owners/timesheet-ids", () => {
   const TOKEN = "secret-owners-token";
+
+  const day = (date: string, parking_available = false) => ({
+    date,
+    status: "in_office" as const,
+    is_work_free_day: false,
+    parking_available,
+  });
 
   beforeEach(() => {
     process.env.OWNERS_API_TOKEN = TOKEN;
@@ -78,24 +129,61 @@ describe("GET /api/owners/user-ids", () => {
     delete process.env.OWNERS_API_TOKEN;
   });
 
-  it("returns a flat array of owner user IDs with a valid token", async () => {
+  it("returns numeric timesheet ids for spot owners, matched by name, sorted", async () => {
+    // Spot owners include a placeholder ("Tesla S") that must be excluded.
     mockQuery.mockResolvedValueOnce({
-      rows: [{ user_id: "jakobo" }, { user_id: "jdoe" }],
+      rows: [
+        { name: "Janez Novak" },
+        { name: "Ana Kovač" },
+        { name: "Tesla S" },
+      ],
+    });
+    mockFetchPresence.mockResolvedValueOnce({
+      employees: [
+        { user_id: 42, name: "Janez Novak", week: [day("2026-06-22")] },
+        { user_id: 7, name: "Ana Kovač", week: [day("2026-06-22")] },
+        { user_id: 99, name: "Someone Else", week: [day("2026-06-22")] },
+      ],
+      work_free_days: [],
     });
 
     const res = await request(app)
-      .get("/api/owners/user-ids")
+      .get("/api/owners/timesheet-ids")
       .set("X-Owners-Token", TOKEN);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual(["jakobo", "jdoe"]);
+    expect(res.body).toEqual([7, 42]);
   });
 
-  it("returns an empty array when no owners are linked", async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
+  it("splits slash-separated co-owner names and matches each segment", async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ name: "Janez Novak/Ana Kovač" }],
+    });
+    mockFetchPresence.mockResolvedValueOnce({
+      employees: [
+        { user_id: 5, name: "Janez Novak", week: [] },
+        { user_id: 6, name: "Ana Kovač", week: [] },
+      ],
+      work_free_days: [],
+    });
 
     const res = await request(app)
-      .get("/api/owners/user-ids")
+      .get("/api/owners/timesheet-ids")
+      .set("X-Owners-Token", TOKEN);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([5, 6]);
+  });
+
+  it("omits owners with no matching timesheet employee", async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ name: "Not On Timesheet" }] });
+    mockFetchPresence.mockResolvedValueOnce({
+      employees: [{ user_id: 1, name: "Someone Else", week: [] }],
+      work_free_days: [],
+    });
+
+    const res = await request(app)
+      .get("/api/owners/timesheet-ids")
       .set("X-Owners-Token", TOKEN);
 
     expect(res.status).toBe(200);
@@ -103,11 +191,11 @@ describe("GET /api/owners/user-ids", () => {
   });
 
   it("returns 401 with a missing or wrong token", async () => {
-    const missing = await request(app).get("/api/owners/user-ids");
+    const missing = await request(app).get("/api/owners/timesheet-ids");
     expect(missing.status).toBe(401);
 
     const wrong = await request(app)
-      .get("/api/owners/user-ids")
+      .get("/api/owners/timesheet-ids")
       .set("X-Owners-Token", "nope");
     expect(wrong.status).toBe(401);
   });
@@ -116,10 +204,21 @@ describe("GET /api/owners/user-ids", () => {
     delete process.env.OWNERS_API_TOKEN;
 
     const res = await request(app)
-      .get("/api/owners/user-ids")
+      .get("/api/owners/timesheet-ids")
       .set("X-Owners-Token", TOKEN);
 
     expect(res.status).toBe(500);
+  });
+
+  it("returns 502 when the timesheet presence fetch fails", async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ name: "Janez Novak" }] });
+    mockFetchPresence.mockRejectedValueOnce(new Error("timesheet down"));
+
+    const res = await request(app)
+      .get("/api/owners/timesheet-ids")
+      .set("X-Owners-Token", TOKEN);
+
+    expect(res.status).toBe(502);
   });
 });
 

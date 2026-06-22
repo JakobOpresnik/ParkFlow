@@ -8,7 +8,11 @@ import type {
 } from './presence.types.js';
 
 // re-export types and helpers so existing imports from 'lib/presence' keep working
-export { getWeekDays, isOwnerAbsent } from './presence.helpers.js';
+export {
+  getWeekDays,
+  isOwnerAbsent,
+  ownerTimesheetIds,
+} from './presence.helpers.js';
 export type {
   EmployeeWeekPresence,
   PresenceDayEntry,

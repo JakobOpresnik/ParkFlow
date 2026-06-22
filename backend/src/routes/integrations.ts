@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 
+import { ACEX_OWNER_NAME, NOT_ACEX_OWNERS } from '../lib/acexOwners.js';
 import type { WeekPresenceResponse } from '../lib/presence.types.js';
 import type { AuthPayload } from '../middleware/auth.js';
 
@@ -278,24 +279,6 @@ export function pickRandomFree(
   if (free.length === 0) return undefined;
   return free[Math.floor(rand() * free.length)];
 }
-
-// The ACEX company pool ("first come, first served") — public, not a personal spot.
-const ACEX_OWNER_NAME = 'ACEX - kdor prej pride, prej melje';
-
-// Owner rows that are NOT ACEX employees — the public pool, placeholders/
-// vehicles, and external companies/rentals. The `owners` roster lists only real
-// ACEX staff, so these are filtered out. There is no DB flag for this, so the
-// list is maintained by hand: add new external/placeholder owner names here as
-// they are created (see migrations/005_real_parking_data.sql for the seed set).
-const NOT_ACEX_OWNERS = new Set<string>([
-  ACEX_OWNER_NAME,
-  'kontejner - prenova',
-  'Tesla S',
-  'Tesla X',
-  'oddano v najem: MIK',
-  'ARHEA',
-  'Reduxi',
-]);
 
 // A spot anyone can grab without taking someone's personal/shared spot:
 // free, and either unowned or part of the ACEX public pool.
