@@ -59,31 +59,46 @@ export function ProfilePage() {
         <ActiveBookingBanner booking={activeBooking} />
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard
-          label={t('profile.totalBookings')}
-          value={isLoading ? '—' : totalBookings}
-          icon={CalendarCheck}
-          colorClass="bg-primary/10 text-primary"
-        />
-        <StatCard
-          label={t('profile.active')}
-          value={isLoading ? '—' : activeBookings.length}
-          icon={Clock}
-          colorClass="bg-green-500/15 text-green-600 dark:text-green-400"
-        />
-        <StatCard
-          label={t('profile.cancelled')}
-          value={isLoading ? '—' : cancelledCount}
-          icon={XCircle}
-          colorClass="bg-muted text-muted-foreground"
-        />
-        <UtilizationRing
-          label={t('profile.utilization')}
-          utilizationPct={utilizationPct}
-          isLoading={isLoading}
-        />
-      </div>
+      {isLoading ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="bg-card rounded-lg border p-4 text-center shadow-sm"
+            >
+              <div className="bg-muted mx-auto mb-3 size-10 animate-pulse rounded-full" />
+              <div className="bg-muted mx-auto h-7 w-12 animate-pulse rounded" />
+              <div className="bg-muted mx-auto mt-1.5 h-3 w-16 animate-pulse rounded" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard
+            label={t('profile.totalBookings')}
+            value={totalBookings}
+            icon={CalendarCheck}
+            colorClass="bg-primary/10 text-primary"
+          />
+          <StatCard
+            label={t('profile.active')}
+            value={activeBookings.length}
+            icon={Clock}
+            colorClass="bg-green-500/15 text-green-600 dark:text-green-400"
+          />
+          <StatCard
+            label={t('profile.cancelled')}
+            value={cancelledCount}
+            icon={XCircle}
+            colorClass="bg-muted text-muted-foreground"
+          />
+          <UtilizationRing
+            label={t('profile.utilization')}
+            utilizationPct={utilizationPct}
+            isLoading={false}
+          />
+        </div>
+      )}
 
       <PreferencesCard
         lots={lots}

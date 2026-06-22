@@ -20,6 +20,39 @@ const OWNER_MATCHES_USER = `(
   )
 )`;
 
+// GET /api/owners/user-ids — token-gated (no JWT). Lists the SSO usernames of
+// every linked parking-spot owner (rows whose user_id is set). Consumed by the
+// timesheet app to know which employees actually own a spot. Auth is a shared
+// secret: the X-Owners-Token header must equal OWNERS_API_TOKEN, mirroring the
+// internal reminders endpoint. An owner row's user_id may hold a comma-separated
+// list of co-owners, split here into individual usernames; the result is a flat,
+// de-duplicated, sorted string array (only user IDs, never the PII-carrying
+// owner objects).
+router.get("/user-ids", async (req, res, next) => {
+  try {
+    const expected = process.env.OWNERS_API_TOKEN;
+    if (!expected) {
+      res.status(500).json({ error: "Owners API token is not configured." });
+      return;
+    }
+    if (req.get("x-owners-token") !== expected) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const result = await pool.query(
+      `SELECT DISTINCT TRIM(uid) AS user_id
+       FROM owners o,
+            unnest(string_to_array(o.user_id, ',')) AS uid
+       WHERE o.user_id IS NOT NULL
+         AND TRIM(uid) <> ''
+       ORDER BY user_id`,
+    );
+    res.json(result.rows.map((r) => r.user_id as string));
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/owners/me — owner profile for authenticated user
 router.get("/me", requireAuth, requireNonGuest, async (req, res, next) => {
   try {

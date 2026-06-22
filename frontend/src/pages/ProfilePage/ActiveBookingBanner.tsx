@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import { Clock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
@@ -18,7 +19,11 @@ interface ActiveBookingBannerProps {
 export function ActiveBookingBanner({ booking }: ActiveBookingBannerProps) {
   const { t } = useTranslation()
   return (
-    <div className="border-spot-free rounded-lg border border-l-4 bg-green-500/5 p-4">
+    <Link
+      to="/my-bookings"
+      aria-label={`${t('profile.activeBooking')}: ${booking.spot_label ?? `#${booking.spot_number}`}`}
+      className="border-spot-free block cursor-pointer rounded-lg border border-l-4 bg-green-500/5 p-4 transition-all hover:bg-green-500/10 hover:shadow-sm"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-green-700 dark:text-green-400">
@@ -50,6 +55,6 @@ export function ActiveBookingBanner({ booking }: ActiveBookingBannerProps) {
         )}
         className="mt-3"
       />
-    </div>
+    </Link>
   )
 }

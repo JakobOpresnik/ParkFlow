@@ -105,6 +105,7 @@ const sl = {
     bookedSpots: 'rezervirana mesta',
     totalSpots: 'Skupaj mest',
     acrossAllLots: 'na vseh parkiriščih',
+    bookingsTrend: 'Rezervacije · zadnjih 7 dni',
     recentActivity: 'Nedavna aktivnost',
     activitySubtitle: 'Zadnjih 50 · osvežuje se vsakih 15 s',
     noActivity:

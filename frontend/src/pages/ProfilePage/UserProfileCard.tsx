@@ -1,6 +1,9 @@
 import { ShieldCheck, User } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { avatarColor } from '@/lib/avatar'
+import { cn } from '@/lib/utils'
+
 import { getInitials } from './utils'
 
 // — types —
@@ -28,7 +31,12 @@ export function UserProfileCard({
   return (
     <div className="bg-card rounded-lg border p-5 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="bg-primary/10 text-primary flex size-16 shrink-0 items-center justify-center rounded-full text-xl font-bold">
+        <div
+          className={cn(
+            'flex size-16 shrink-0 items-center justify-center rounded-full text-xl font-bold',
+            avatarColor(user.username),
+          )}
+        >
           {initials}
         </div>
         <div className="flex-1 space-y-2">

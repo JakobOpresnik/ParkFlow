@@ -176,7 +176,18 @@ export function MyBookingsPage() {
       </div>
 
       {isLoading && (
-        <div className="bg-muted h-24 animate-pulse rounded-lg border" />
+        <div className="space-y-3">
+          {[0, 1].map((i) => (
+            <div
+              key={i}
+              className="bg-card space-y-3 rounded-lg border p-4 shadow-sm"
+            >
+              <div className="bg-muted h-5 w-28 animate-pulse rounded" />
+              <div className="bg-muted h-4 w-20 animate-pulse rounded" />
+              <div className="bg-muted h-4 w-44 animate-pulse rounded" />
+            </div>
+          ))}
+        </div>
       )}
 
       {!isLoading && bookings.length === 0 && (
