@@ -5,16 +5,21 @@ services:
     env_file:
       - backend/.env
     environment:
-      # Override DATABASE_URL to use the Docker service hostname instead of localhost
-      DATABASE_URL: postgresql://parkflow:parkflow@db:5432/parkflow
+      # Override DATABASE_URL to use the Docker service hostname instead of localhost.
+      # Credentials are injected at deploy from GitLab CI/CD variables (POSTGRES_USER /
+      # POSTGRES_PASSWORD) — never hardcoded here. Compose substitutes them from the
+      # deploy-dir .env; the password is required (deploy errors loudly if it's unset).
+      DATABASE_URL: postgresql://${POSTGRES_USER:-parkflow}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/parkflow
       PORT: 3001
       OAUTH_TOKEN_URL: ${OAUTH_TOKEN_URL:-https://sso.matheo.si/application/o/token/}
       AUTHENTIK_USERINFO_URL: ${AUTHENTIK_USERINFO_URL:-https://sso.matheo.si/application/o/userinfo/}
       AUTHENTIK_ADMIN_GROUP: ${AUTHENTIK_ADMIN_GROUP:-parkflow-admins}
       # Public frontend URL used for the Rocket.Chat bot's map deep-links
       PUBLIC_FRONTEND_URL: ${PUBLIC_FRONTEND_URL:-https://parkflow.matheo.si}
-    ports:
-      - '3001:3001'
+    # No published ports: the API is reachable only inside the `parkflow` network
+    # as `backend:3001` (frontend nginx /api proxy + reminders-cron). It is
+    # deliberately NOT exposed on the host — browsers reach it via the frontend's
+    # https://parkflow.matheo.si/api/ proxy, never directly.
     depends_on:
       db:
         condition: service_healthy
@@ -35,16 +40,18 @@ services:
     image: postgres:16
     restart: always
     environment:
-      POSTGRES_DB: parkflow
-      POSTGRES_USER: parkflow
-      POSTGRES_PASSWORD: parkflow
+      POSTGRES_DB: ${POSTGRES_DB:-parkflow}
+      POSTGRES_USER: ${POSTGRES_USER:-parkflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     volumes:
       - parkflow_db:/var/lib/postgresql/data
       - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+    # Bind to the host's loopback only: reachable via an SSH tunnel
+    # (which connects to the server's localhost) but NOT from the wider network.
     ports:
-      - '5432:5432'
+      - '127.0.0.1:5432:5432'
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U parkflow']
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-parkflow}']
       interval: 5s
       timeout: 5s
       retries: 10
