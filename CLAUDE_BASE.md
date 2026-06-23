@@ -239,9 +239,10 @@ Projekt uporablja VSCode Dev Container. Ko odpreš repo v VSCode:
 3. `postCreateCommand` avtomatsko požene `bun install` za frontend in backend
 4. PostgreSQL je dostopen na `localhost:5432` znotraj containerja
 
-Credentiali so že nastavljeni v `docker-compose.yml`:
+Credentiali so že nastavljeni v `docker-compose.yml` (lokalne razvojne
+privzete vrednosti — produkcija dobi geslo iz GitLab CI/CD spremenljivke):
 ```
-DATABASE_URL=postgresql://parkflow:parkflow@db:5432/parkflow
+DATABASE_URL=postgresql://user:password@db:5432/parkflow
 ```
 
 Za zagon migracije znotraj containerja:
