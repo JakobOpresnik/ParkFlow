@@ -275,7 +275,7 @@ bun dev        # starts on port 5173
 
 | Variable                 | Description                                             | Example                                                  |
 | ------------------------ | ------------------------------------------------------- | -------------------------------------------------------- |
-| `DATABASE_URL`           | 🐘 PostgreSQL connection string                         | `postgresql://parkflow:parkflow@localhost:5432/parkflow` |
+| `DATABASE_URL`           | 🐘 PostgreSQL connection string                         | `postgresql://user:password@localhost:5432/parkflow`     |
 | `PORT`                   | 🔌 API server port                                      | `3001`                                                   |
 | `JWT_SECRET`             | 🔑 Secret used to sign session tokens                   | `your-random-secret`                                     |
 | `OAUTH_CLIENT_ID`        | 🪪 Authentik OAuth application client ID                | `your-client-id`                                         |

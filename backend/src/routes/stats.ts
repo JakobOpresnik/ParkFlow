@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { pool } from "../db/pool.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -14,7 +15,7 @@ const router = Router();
 //   lot_id?        — scope to a single parking lot
 //   days?          — window for the daily series (default 30, max 365)
 //   heatmap_days?  — window for the heatmap (default 90, max 365)
-router.get("/history", async (req, res, next) => {
+router.get("/history", requireAuth, async (req, res, next) => {
   try {
     const {
       lot_id,
