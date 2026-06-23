@@ -5,7 +5,6 @@ import { broadcast } from '../lib/broadcast.js';
 import { ljubljanaDate } from '../lib/localDate.js';
 import { fetchWeekPresence, isOwnerAbsent } from '../lib/presence.js';
 import {
-  optionalAuth,
   requireAdmin,
   requireAuth,
   requireNonGuest,
@@ -258,7 +257,7 @@ router.delete(
 );
 
 // GET /api/spots/day-overrides?date=YYYY-MM-DD — all per-day overrides for a date
-router.get('/day-overrides', async (req, res, next) => {
+router.get('/day-overrides', requireAuth, async (req, res, next) => {
   try {
     const { date } = req.query as { date?: string };
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -278,7 +277,7 @@ router.get('/day-overrides', async (req, res, next) => {
 });
 
 // BE-1: GET /api/spots — all spots, optionally filtered by ?lot_id=
-router.get('/', optionalAuth, async (req, res, next) => {
+router.get('/', requireAuth, async (req, res, next) => {
   try {
     const { lot_id } = req.query as { lot_id?: string };
 
@@ -303,7 +302,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
 });
 
 // BE-2: GET /api/spots/:number — single spot by number (first match across lots)
-router.get('/:number', optionalAuth, async (req, res, next) => {
+router.get('/:number', requireAuth, async (req, res, next) => {
   try {
     const numberParam = req.params.number as string;
     const number = Number.parseInt(numberParam, 10);
@@ -335,7 +334,7 @@ router.get('/:number', optionalAuth, async (req, res, next) => {
 // GET /api/spots/:id/bookings — booking history for a specific spot.
 // Guests see only the current active booking with minimal fields
 // (no booker identity, no past activity).
-router.get('/:id/bookings', optionalAuth, async (req, res, next) => {
+router.get('/:id/bookings', requireAuth, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { limit } = req.query as { limit?: string };

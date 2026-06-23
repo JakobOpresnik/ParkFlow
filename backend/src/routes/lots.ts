@@ -6,7 +6,7 @@ import { requireAdmin, requireAuth } from '../middleware/auth.js';
 const router = Router();
 
 // GET /api/lots — all parking lots ordered by sort_order
-router.get('/', async (_req, res, next) => {
+router.get('/', requireAuth, async (_req, res, next) => {
   try {
     const result = await pool.query(
       'SELECT * FROM parking_lots ORDER BY sort_order, name',

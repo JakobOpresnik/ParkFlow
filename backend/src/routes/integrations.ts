@@ -870,7 +870,12 @@ async function call<T = unknown>(
   opts: { token?: string; body?: unknown } = {},
 ): Promise<{ status: number; data: T | null }> {
   const headers: Record<string, string> = {};
-  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
+  // Loopback calls authenticate as the bot service user by default, so they keep
+  // working now that the read endpoints (spots/lots/day-overrides/stats) require
+  // auth. Callers needing a user-scoped identity (e.g. presence) pass their own
+  // token, which takes precedence.
+  const token = opts.token ?? mintUserToken(PRESENCE_SERVICE_USER);
+  headers.Authorization = `Bearer ${token}`;
   if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
   const res = await fetch(internalBase() + path, {
     method,
