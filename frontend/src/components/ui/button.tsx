@@ -67,13 +67,11 @@ function Button({
   type = 'button',
   'aria-label': ariaLabel,
   title,
-  asChild: _asChild,
   ...rest
 }: React.ComponentProps<'button'> & {
   variant?: ButtonVariant
   size?: ButtonSize
   color?: string
-  asChild?: boolean
 }) {
   const { mantineVariant, color: variantColor } = resolveVariant(variant)
   const color = colorProp ?? variantColor

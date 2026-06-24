@@ -1,7 +1,6 @@
 import { useAuthStore } from '@/store/authStore'
 import type {
   AppNotification,
-  AppUser,
   Booking,
   FeatureRequest,
   FeedbackCategory,
@@ -207,9 +206,6 @@ export const api = {
       suffix ? `/api/stats/history?${suffix}` : '/api/stats/history',
     )
   },
-
-  // Auth
-  getMe: () => request<AppUser>('/api/auth/me'),
 
   // Bookings
   getMyBookings: () => request<Booking[]>('/api/bookings/my'),
