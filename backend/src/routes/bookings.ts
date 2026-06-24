@@ -553,7 +553,12 @@ router.patch(
               booking.user_id,
               "Reservation released",
               notifBody,
-              JSON.stringify({ spot_id: booking.spot_id, booking_id: id }),
+              JSON.stringify({
+                spot_id: booking.spot_id,
+                booking_id: id,
+                spot_label: label,
+                date: dateStr,
+              }),
             ],
           );
           notifId = notif.rows[0].id as string;
