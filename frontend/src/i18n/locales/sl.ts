@@ -506,11 +506,6 @@ const sl = {
     ownerPhoneLabel: 'Telefon',
     ownerPlateLabel: 'Registrska tablica',
     ownerNotesLabel: 'Opombe',
-    placeholderName: 'Polno ime',
-    placeholderEmail: 'email@example.com',
-    placeholderPhone: '+386 40 123 456',
-    placeholderPlate: 'LJ 12-345',
-    placeholderNotes: 'Neobvezna opomba',
     ownerSsoLabel: 'SSO uporabniško ime',
     ownerSsoNote:
       'Poveže lastnika z računom SSO za dostop do "Mojega parkirišča".',
