@@ -13,13 +13,13 @@ import { useTranslation } from 'react-i18next'
 
 import { ReservationTimer } from '@/components/ReservationTimer'
 import { Button } from '@/components/ui/button'
+import { fmtTime } from '@/lib/datetime'
 import type { Spot } from '@/types'
 
 import { DurationPicker } from './DurationPicker'
 import { IntervalEditor } from './IntervalEditor'
 import { useBookingCta } from './useBookingCta'
 import { useIntervalEditor } from './useIntervalEditor'
-import { fmtTime } from './utils'
 
 // — types —
 

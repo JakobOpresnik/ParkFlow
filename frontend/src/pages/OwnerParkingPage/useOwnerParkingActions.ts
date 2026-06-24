@@ -120,13 +120,11 @@ export function useOwnerParkingActions(selectedDate: string) {
     if (!spot.active_booking_id) return
     cancelBooking.mutate(spot.active_booking_id, {
       onSuccess: (result) => {
-        const base = t('ownerParking.toastBookingCancelled', {
-          label: spot.label ?? `#${spot.number}`,
-        })
+        const label = spot.label ?? `#${spot.number}`
         notifications.show({
           message: result.notified
-            ? `${base} — the user has been notified.`
-            : base,
+            ? t('ownerParking.toastBookingCancelledNotified', { label })
+            : t('ownerParking.toastBookingCancelled', { label }),
           color: 'green',
         })
       },

@@ -14,8 +14,6 @@ vi.mock('../middleware/auth.js', () => ({
     next()
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  optionalAuth: (_req: any, _res: any, next: any) => next(),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   requireAdmin: (_req: any, _res: any, next: any) => next(),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   requireNonGuest: (_req: any, _res: any, next: any) => next(),

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useCancelBooking, useMyBookings } from '@/hooks/useBookings'
 import { useRelativeTime } from '@/hooks/useRelativeTime'
+import { useTimeRemaining } from '@/hooks/useTimeRemaining'
 import { expiryProgressPct } from '@/lib/datetime'
 import { useAuthStore } from '@/store/authStore'
 import type { Booking, BookingStatus } from '@/types'
@@ -35,19 +36,6 @@ function formatDate(iso: string) {
 
 interface BookingCardProps {
   readonly booking: Booking
-}
-
-function useTimeRemaining() {
-  const { t } = useTranslation()
-  return function timeRemaining(expiresAt: string): string {
-    const ms = new Date(expiresAt).getTime() - Date.now()
-    if (ms <= 0) return t('bookings.expired')
-    const h = Math.floor(ms / 3_600_000)
-    const m = Math.floor((ms % 3_600_000) / 60_000)
-    return h > 0
-      ? t('bookings.remaining', { h, m })
-      : t('bookings.remainingMins', { m })
-  }
 }
 
 function BookingCard({ booking }: BookingCardProps) {

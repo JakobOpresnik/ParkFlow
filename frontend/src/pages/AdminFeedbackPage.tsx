@@ -220,6 +220,7 @@ function StatusGroup({
   onStatusChange: (id: string, status: FeedbackStatus) => void
   onDelete: (id: string) => void
 }) {
+  const { t } = useTranslation()
   return (
     <div>
       <div className="mb-2 flex items-center gap-2">
@@ -277,7 +278,7 @@ function StatusGroup({
                 <button
                   onClick={() => onDelete(item.id)}
                   className="text-muted-foreground flex size-8 items-center justify-center rounded-md transition-colors hover:text-red-500"
-                  title="Delete"
+                  title={t('admin.delete')}
                 >
                   <Trash2 className="size-4 cursor-pointer" />
                 </button>

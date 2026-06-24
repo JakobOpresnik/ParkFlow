@@ -7,12 +7,13 @@ import { useChanges } from '@/hooks/useChanges'
 import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
 import { useLots } from '@/hooks/useLots'
 import { useStatsHistory } from '@/hooks/useStatsHistory'
+import { countByStatus } from '@/lib/spots'
 
 import { ActivityFeed } from './ActivityFeed'
 import { HotSpots } from './HotSpots'
 import { LotBreakdown } from './LotBreakdown'
 import { RecentlyFreed } from './RecentlyFreed'
-import { countByStatus, lastNDayCounts } from './utils'
+import { lastNDayCounts } from './utils'
 
 // — types —
 

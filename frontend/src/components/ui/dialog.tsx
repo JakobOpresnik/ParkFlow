@@ -1,6 +1,8 @@
 import * as React from 'react'
 import { Modal } from '@mantine/core'
 import { XIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+
 import { cn } from '@/lib/utils'
 
 // Context so DialogContent can call onClose without prop-drilling
@@ -53,6 +55,7 @@ function DialogContent({
   showCloseButton?: boolean
 }) {
   const onClose = React.useContext(DialogCloseCtx)
+  const { t } = useTranslation()
   return (
     <div
       className={cn(
@@ -67,7 +70,7 @@ function DialogContent({
           className="text-muted-foreground hover:bg-muted hover:text-foreground absolute top-3.5 right-3.5 flex size-8 cursor-pointer items-center justify-center rounded-lg transition-colors focus:outline-none"
         >
           <XIcon className="size-4" />
-          <span className="sr-only">Close</span>
+          <span className="sr-only">{t('common.close')}</span>
         </button>
       )}
     </div>
@@ -90,6 +93,7 @@ function DialogFooter({
   ...props
 }: React.ComponentProps<'div'> & { showCloseButton?: boolean }) {
   const onClose = React.useContext(DialogCloseCtx)
+  const { t } = useTranslation()
   return (
     <div
       className={cn(
@@ -104,7 +108,7 @@ function DialogFooter({
           onClick={onClose}
           className="hover:bg-accent hover:text-accent-foreground inline-flex h-9 items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors"
         >
-          Close
+          {t('common.close')}
         </button>
       )}
     </div>
@@ -135,17 +139,6 @@ function DialogClose({ children, ...props }: React.ComponentProps<'button'>) {
   )
 }
 
-// Stubs for Radix-pattern components no longer needed but kept for API compat
-function DialogTrigger({ children }: { children?: React.ReactNode }) {
-  return <>{children}</>
-}
-function DialogPortal({ children }: { children?: React.ReactNode }) {
-  return <>{children}</>
-}
-function DialogOverlay() {
-  return null
-}
-
 export {
   Dialog,
   DialogClose,
@@ -153,8 +146,5 @@ export {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogOverlay,
-  DialogPortal,
   DialogTitle,
-  DialogTrigger,
 }

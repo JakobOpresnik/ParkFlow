@@ -1,14 +1,8 @@
-import type { Spot, SpotStatus } from '@/types'
+import { countByStatus } from '@/lib/spots'
+import type { Spot } from '@/types'
 
 export function computePct(n: number, total: number): number {
   return total > 0 ? Math.round((n / total) * 100) : 0
-}
-
-export function countByStatus(
-  spots: readonly Spot[],
-  status: SpotStatus,
-): number {
-  return spots.filter((s) => s.status === status).length
 }
 
 export interface FloorStats {

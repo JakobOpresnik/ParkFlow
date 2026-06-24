@@ -34,12 +34,10 @@ function Badge({
   variant = 'default',
   color: colorProp,
   children,
-  asChild: _asChild,
   ...props
 }: React.ComponentProps<'span'> & {
   variant?: BadgeVariant
   color?: string
-  asChild?: boolean
 }) {
   const { mantineVariant, color: variantColor } = resolveVariant(variant)
   const color = colorProp ?? variantColor

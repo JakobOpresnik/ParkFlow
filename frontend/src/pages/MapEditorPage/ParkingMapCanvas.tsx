@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import type { ParkingMapCanvasProps } from './types'
 import { ensureViewBox, LABEL_FONT_SCALE, labelTextPos } from './utils'
@@ -24,6 +25,7 @@ export function ParkingMapCanvas({
 }: ParkingMapCanvasProps) {
   // Owned internally so it resets naturally when this component remounts (key changes)
   const [hasImageError, setHasImageError] = useState(false)
+  const { t } = useTranslation()
   return (
     <div
       className="min-w-0 flex-1 overflow-hidden rounded-lg border bg-white"
@@ -69,7 +71,7 @@ export function ParkingMapCanvas({
               fill="#94a3b8"
               className="pointer-events-none"
             >
-              No floor plan uploaded
+              {t('mapEditor.noFloorPlan')}
             </text>
             <text
               x={imgW / 2}
@@ -80,7 +82,7 @@ export function ParkingMapCanvas({
               fill="#cbd5e1"
               className="pointer-events-none"
             >
-              Upload an image via the Admin page to get started
+              {t('mapEditor.uploadImageHint')}
             </text>
           </>
         )}

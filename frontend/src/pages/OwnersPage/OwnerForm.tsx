@@ -21,7 +21,7 @@ export function OwnerForm({ value, onChange }: OwnerFormProps) {
         <label className="mb-1 block text-sm font-medium">
           {t('owners.ownerNameLabel')}
         </label>
-        <Input placeholder="Full name" {...field('name')} />
+        <Input placeholder={t('owners.placeholderName')} {...field('name')} />
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium">
@@ -29,7 +29,7 @@ export function OwnerForm({ value, onChange }: OwnerFormProps) {
         </label>
         <Input
           type="email"
-          placeholder="email@example.com"
+          placeholder={t('owners.placeholderEmail')}
           {...field('email')}
         />
       </div>
@@ -37,19 +37,22 @@ export function OwnerForm({ value, onChange }: OwnerFormProps) {
         <label className="mb-1 block text-sm font-medium">
           {t('owners.ownerPhoneLabel')}
         </label>
-        <Input placeholder="+386 40 123 456" {...field('phone')} />
+        <Input placeholder={t('owners.placeholderPhone')} {...field('phone')} />
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium">
           {t('owners.ownerPlateLabel')}
         </label>
-        <Input placeholder="LJ 12-345" {...field('vehicle_plate')} />
+        <Input
+          placeholder={t('owners.placeholderPlate')}
+          {...field('vehicle_plate')}
+        />
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium">
           {t('owners.ownerNotesLabel')}
         </label>
-        <Input placeholder="Optional note" {...field('notes')} />
+        <Input placeholder={t('owners.placeholderNotes')} {...field('notes')} />
       </div>
     </div>
   )

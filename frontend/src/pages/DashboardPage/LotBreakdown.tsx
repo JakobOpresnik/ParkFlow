@@ -1,8 +1,7 @@
 import { useTranslation } from 'react-i18next'
 
+import { countByStatus } from '@/lib/spots'
 import type { ParkingLot, Spot } from '@/types'
-
-import { countByStatus } from './utils'
 
 // — types —
 

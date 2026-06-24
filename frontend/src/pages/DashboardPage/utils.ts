@@ -1,11 +1,4 @@
-import type { Spot, SpotStatus, StatsDailyPoint } from '@/types'
-
-export function countByStatus(
-  spots: readonly Spot[],
-  status: SpotStatus,
-): number {
-  return spots.filter((s) => s.status === status).length
-}
+import type { StatsDailyPoint } from '@/types'
 
 // Per-day counts for the last `n` calendar days (oldest → newest), zero-filling
 // missing days, for a sparkline. Mirrors how TrendChart fills its series.

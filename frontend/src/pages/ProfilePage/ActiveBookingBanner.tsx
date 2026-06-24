@@ -3,10 +3,11 @@ import { Clock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { ExpiryProgress } from '@/components/ExpiryProgress'
+import { useTimeRemaining } from '@/hooks/useTimeRemaining'
 import { expiryProgressPct } from '@/lib/datetime'
 import type { Booking } from '@/types'
 
-import { formatDate, timeRemaining } from './utils'
+import { formatDate } from './utils'
 
 // — types —
 
@@ -18,6 +19,7 @@ interface ActiveBookingBannerProps {
 
 export function ActiveBookingBanner({ booking }: ActiveBookingBannerProps) {
   const { t } = useTranslation()
+  const timeRemaining = useTimeRemaining()
   return (
     <Link
       to="/my-bookings"
