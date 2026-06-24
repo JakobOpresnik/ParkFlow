@@ -71,6 +71,16 @@ const en = {
   notifications: {
     title: 'Notifications',
     empty: 'No notifications.',
+    yourSpot: 'your spot',
+    onDate: ' on {{date}}',
+    reservationTodayTitle: 'Reservation today',
+    reservationTodayBody: 'You have a reservation today for {{spot}}{{floor}}.',
+    ownerReleaseTitle: 'Free your parking spot?',
+    ownerReleaseBody:
+      'If you won’t be needing your parking spot at some point in the following week, please mark it as available so another colleague can use it.',
+    reservationReleasedTitle: 'Reservation released',
+    reservationReleasedBody:
+      'Your reservation for {{spot}}{{date}} was cancelled because the spot owner reclaimed it.',
   },
   auth: {
     sessionExpired: 'Session expired — redirecting back to sign in…',
@@ -490,6 +500,11 @@ const en = {
     ownerPhoneLabel: 'Phone',
     ownerPlateLabel: 'Vehicle plate',
     ownerNotesLabel: 'Notes',
+    placeholderName: 'Full name',
+    placeholderEmail: 'email@example.com',
+    placeholderPhone: '+386 40 123 456',
+    placeholderPlate: 'LJ 12-345',
+    placeholderNotes: 'Optional note',
     ownerSsoLabel: 'SSO Username',
     ownerSsoNote:
       'Links this owner to their SSO account for "My Parking" access.',
@@ -648,6 +663,10 @@ const en = {
     error: 'Something went wrong',
     close: 'Close',
     back: 'Back',
+  },
+  time: {
+    daysAgo: '{{n}} days ago',
+    inDays: 'in {{n}} days',
   },
 } as const
 

@@ -71,6 +71,16 @@ const sl = {
   notifications: {
     title: 'Obvestila',
     empty: 'Ni obvestil.',
+    yourSpot: 'svoje mesto',
+    onDate: ' dne {{date}}',
+    reservationTodayTitle: 'Rezervacija danes',
+    reservationTodayBody: 'Danes imaš rezervacijo za {{spot}}{{floor}}.',
+    ownerReleaseTitle: 'Sprosti svoje parkirno mesto?',
+    ownerReleaseBody:
+      'Če v prihodnjem tednu kdaj ne boš potreboval/a svojega parkirnega mesta, ga prosim označi kot prosto, da ga lahko uporabi drug sodelavec.',
+    reservationReleasedTitle: 'Rezervacija sproščena',
+    reservationReleasedBody:
+      'Tvoja rezervacija za {{spot}}{{date}} je bila preklicana, ker je lastnik prevzel svoje mesto nazaj.',
   },
   auth: {
     sessionExpired: 'Seja je potekla — preusmerjanje na ponovno prijavo…',
@@ -493,6 +503,11 @@ const sl = {
     ownerPhoneLabel: 'Telefon',
     ownerPlateLabel: 'Registrska tablica',
     ownerNotesLabel: 'Opombe',
+    placeholderName: 'Polno ime',
+    placeholderEmail: 'email@example.com',
+    placeholderPhone: '+386 40 123 456',
+    placeholderPlate: 'LJ 12-345',
+    placeholderNotes: 'Neobvezna opomba',
     ownerSsoLabel: 'SSO uporabniško ime',
     ownerSsoNote:
       'Poveže lastnika z računom SSO za dostop do "Mojega parkirišča".',
@@ -653,6 +668,10 @@ const sl = {
     error: 'Prišlo je do napake',
     close: 'Zapri',
     back: 'Nazaj',
+  },
+  time: {
+    daysAgo: '{{n}} dni nazaj',
+    inDays: 'čez {{n}} dni',
   },
 } as const
 

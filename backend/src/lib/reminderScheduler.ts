@@ -133,6 +133,7 @@ export async function runReminderTick(
                 booking_id: r.booking_id,
                 spot_id: r.spot_id,
                 spot_label: r.spot_label,
+                floor: r.floor,
                 expires_at: r.expires_at,
               }),
             ],
