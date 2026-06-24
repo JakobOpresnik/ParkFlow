@@ -36,6 +36,9 @@ export function LotForm({ value, onChange }: LotFormProps) {
         >
           {t('admin.lotImageFilename')}
         </label>
+        <p className="text-muted-foreground mb-1 text-xs">
+          {t('admin.lotImageFilenameNote')}
+        </p>
         <Input
           id="lot-image-filename"
           value={value.image_filename}
@@ -44,9 +47,6 @@ export function LotForm({ value, onChange }: LotFormProps) {
           }
           placeholder="zunaj.svg"
         />
-        <p className="text-muted-foreground mt-1 text-xs">
-          {t('admin.lotImageFilenameNote')}
-        </p>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
