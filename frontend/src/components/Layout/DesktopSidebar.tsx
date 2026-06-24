@@ -128,16 +128,32 @@ export function DesktopSidebar({
       <div className="border-t px-3 py-0.5">
         {user && user.role !== 'guest' ? (
           <div className="space-y-0.5">
-            <Link
-              to="/profile"
-              className="rounded-md px-2"
-              title={t('nav.profile')}
-            >
-              <p className="text-xs font-medium">{user.displayName}</p>
-              <p className="text-muted-foreground text-xs">{user.username}</p>
-            </Link>
+            <div className="flex items-center justify-between gap-1">
+              <Link
+                to="/profile"
+                className="min-w-0 flex-1 rounded-md px-2"
+                title={t('nav.profile')}
+              >
+                <p className="truncate text-xs font-medium">
+                  {user.displayName}
+                </p>
+                <p className="text-muted-foreground truncate text-xs">
+                  {user.username}
+                </p>
+              </Link>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onLogout}
+                aria-label={t('auth.logOut')}
+                title={t('auth.logOut')}
+                className="text-muted-foreground hover:text-foreground shrink-0"
+              >
+                <LogOut className="size-4" />
+              </Button>
+            </div>
             <div
-              className="flex items-center justify-between"
+              className="flex items-center gap-1"
               title={`${user.displayName} (${user.username})`}
             >
               <ThemeToggle />
@@ -151,15 +167,6 @@ export function DesktopSidebar({
                 <HelpCircle className="size-3" />
                 {t('feedback.help')}
               </button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onLogout}
-                aria-label={t('auth.logOut')}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <LogOut className="size-4" />
-              </Button>
             </div>
           </div>
         ) : user?.role === 'guest' ? (
