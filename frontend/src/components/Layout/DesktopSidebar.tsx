@@ -128,7 +128,7 @@ export function DesktopSidebar({
       <div className="border-t px-3 py-0.5">
         {user && user.role !== 'guest' ? (
           <div className="space-y-0.5">
-            <div className="flex items-center justify-between gap-1">
+            <div className="flex items-center justify-between gap-1 pt-3 pb-2">
               <Link
                 to="/profile"
                 className="min-w-0 flex-1 rounded-md px-2"
@@ -153,7 +153,7 @@ export function DesktopSidebar({
               </Button>
             </div>
             <div
-              className="flex items-center gap-1"
+              className="flex items-center justify-between"
               title={`${user.displayName} (${user.username})`}
             >
               <ThemeToggle />
