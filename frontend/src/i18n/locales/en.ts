@@ -167,6 +167,7 @@ const en = {
     prevWeek: 'Previous week',
     nextWeek: 'Next week',
     today: 'Today',
+    closeSidebar: 'Close sidebar',
   },
   spotModal: {
     parkingSpot: 'Parking Spot',
@@ -469,6 +470,8 @@ const en = {
     freeStatus: 'Free',
     occupiedStatus: 'Occupied',
     reservedStatus: 'Reserved',
+    editSpot: 'Edit spot',
+    deleteSpot: 'Delete spot',
   },
   owners: {
     title: 'Owners',
@@ -516,6 +519,13 @@ const en = {
     ownerLinked: '{{name}} linked to {{username}}',
     ownerUnlinked: '{{name}} unlinked',
     failedToLink: 'Failed to link owner',
+    editOwner: 'Edit owner',
+    deleteOwner: 'Delete owner',
+    placeholderName: 'Full name',
+    placeholderEmail: 'email@example.com',
+    placeholderPhone: '+386 40 123 456',
+    placeholderPlate: 'LJ 12-345',
+    placeholderNotes: 'Optional note',
   },
   mapEditor: {
     title: 'Map Editor',
@@ -560,6 +570,8 @@ const en = {
     failedToCreateSpot: 'Failed to create spot',
     ownerUpdated: 'Owner updated',
     failedToUpdateOwner: 'Failed to update owner',
+    noFloorPlan: 'No floor plan uploaded',
+    uploadImageHint: 'Upload an image via the Admin page to get started',
   },
   ownerParking: {
     title: 'My Parking',
@@ -598,6 +610,8 @@ const en = {
     toastBookingCancelled: 'Reservation for spot {{label}} cancelled',
     toastError: 'Error',
     toastCancelError: 'Failed to cancel',
+    toastBookingCancelledNotified:
+      'Reservation for spot {{label}} cancelled — the user has been notified.',
   },
   callback: {
     completingSignIn: 'Completing sign-in…',
@@ -648,6 +662,8 @@ const en = {
     error: 'Something went wrong',
     close: 'Close',
     back: 'Back',
+    clearSearch: 'Clear search',
+    toggleTheme: 'Toggle theme',
   },
 } as const
 

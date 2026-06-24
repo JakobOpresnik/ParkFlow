@@ -52,7 +52,7 @@ export function MapSidebar({
           </p>
           <button
             onClick={onClose}
-            aria-label="Close sidebar"
+            aria-label={t('map.closeSidebar')}
             className="hover:bg-muted flex size-9 items-center justify-center rounded-lg transition-colors"
           >
             <X className="size-4" />

@@ -168,6 +168,7 @@ const sl = {
     prevWeek: 'Prejšnji teden',
     nextWeek: 'Naslednji teden',
     today: 'Danes',
+    closeSidebar: 'Zapri stransko ploščo',
   },
   spotModal: {
     parkingSpot: 'Parkirno mesto',
@@ -472,6 +473,8 @@ const sl = {
     freeStatus: 'Prosto',
     occupiedStatus: 'Zasedeno',
     reservedStatus: 'Rezervirano',
+    editSpot: 'Uredi mesto',
+    deleteSpot: 'Izbriši mesto',
   },
   owners: {
     title: 'Lastniki',
@@ -519,6 +522,13 @@ const sl = {
     ownerLinked: '{{name}} povezan z {{username}}',
     ownerUnlinked: '{{name}} ni več povezan',
     failedToLink: 'Napaka pri povezovanju lastnika',
+    editOwner: 'Uredi lastnika',
+    deleteOwner: 'Izbriši lastnika',
+    placeholderName: 'Polno ime',
+    placeholderEmail: 'email@example.com',
+    placeholderPhone: '+386 40 123 456',
+    placeholderPlate: 'LJ 12-345',
+    placeholderNotes: 'Neobvezna opomba',
   },
   mapEditor: {
     title: 'Urednik zemljevida',
@@ -565,6 +575,8 @@ const sl = {
     failedToCreateSpot: 'Napaka pri ustvarjanju mesta',
     ownerUpdated: 'Lastnik posodobljen',
     failedToUpdateOwner: 'Napaka pri posodabljanju lastnika',
+    noFloorPlan: 'Tloris ni naložen',
+    uploadImageHint: 'Za začetek naložite sliko prek strani Admin',
   },
   ownerParking: {
     title: 'Moje parkirišče',
@@ -603,6 +615,8 @@ const sl = {
     toastBookingCancelled: 'Rezervacija na mestu {{label}} preklicana',
     toastError: 'Napaka',
     toastCancelError: 'Preklic ni uspel',
+    toastBookingCancelledNotified:
+      'Rezervacija na mestu {{label}} preklicana — uporabnik je bil obveščen.',
   },
   callback: {
     completingSignIn: 'Zaključevanje prijave…',
@@ -653,6 +667,8 @@ const sl = {
     error: 'Prišlo je do napake',
     close: 'Zapri',
     back: 'Nazaj',
+    clearSearch: 'Počisti iskanje',
+    toggleTheme: 'Preklopi temo',
   },
 } as const
 

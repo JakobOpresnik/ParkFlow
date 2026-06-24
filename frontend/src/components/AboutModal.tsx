@@ -97,7 +97,7 @@ export function AboutModal({ open, onOpenChange }: AboutModalProps) {
         <button
           type="button"
           onClick={handleClose}
-          aria-label="Close"
+          aria-label={t('common.close')}
           className="text-muted-foreground hover:bg-muted hover:text-foreground absolute top-3.5 right-3.5 flex size-8 cursor-pointer items-center justify-center rounded-lg transition-colors focus:outline-none"
         >
           <XIcon className="size-4" />

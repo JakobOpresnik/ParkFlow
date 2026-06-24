@@ -1,4 +1,5 @@
 import { Pencil, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import type { Spot } from '@/types'
@@ -19,6 +20,7 @@ interface SpotCardProps {
 export function SpotCard({ spot, lotName, onEdit, onDelete }: SpotCardProps) {
   const typeConf = SpotTypeConfig[spot.type]
   const displayStatus = adminSpotStatus(spot)
+  const { t } = useTranslation()
   return (
     <div className="bg-card rounded-lg border p-3 shadow-sm">
       <div className="flex items-center gap-2">
@@ -40,7 +42,7 @@ export function SpotCard({ spot, lotName, onEdit, onDelete }: SpotCardProps) {
             size="sm"
             variant="ghost"
             onClick={() => onEdit(spot)}
-            aria-label="Edit spot"
+            aria-label={t('admin.editSpot')}
           >
             <Pencil className="size-3.5" />
           </Button>
@@ -49,7 +51,7 @@ export function SpotCard({ spot, lotName, onEdit, onDelete }: SpotCardProps) {
             variant="ghost"
             className="text-destructive hover:text-destructive"
             onClick={() => onDelete(spot)}
-            aria-label="Delete spot"
+            aria-label={t('admin.deleteSpot')}
           >
             <Trash2 className="size-3.5" />
           </Button>

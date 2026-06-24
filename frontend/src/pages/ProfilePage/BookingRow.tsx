@@ -39,7 +39,8 @@ export function BookingRow({ booking }: BookingRowProps) {
         </div>
         <div>
           <p className="text-sm font-medium">
-            Spot {booking.spot_label ?? `#${booking.spot_number}`}
+            {t('profile.spotLabel')}{' '}
+            {booking.spot_label ?? `#${booking.spot_number}`}
           </p>
           <p
             className="text-muted-foreground text-xs"

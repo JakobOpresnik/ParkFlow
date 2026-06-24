@@ -97,7 +97,7 @@ export function OwnerRow({
             size="sm"
             variant="ghost"
             onClick={() => onEdit(owner)}
-            aria-label="Edit owner"
+            aria-label={t('owners.editOwner')}
           >
             <Pencil className="size-3.5" />
           </Button>
@@ -106,7 +106,7 @@ export function OwnerRow({
             variant="ghost"
             onClick={() => onDelete(owner)}
             className="text-destructive hover:text-destructive"
-            aria-label="Delete owner"
+            aria-label={t('owners.deleteOwner')}
           >
             <Trash2 className="size-3.5" />
           </Button>

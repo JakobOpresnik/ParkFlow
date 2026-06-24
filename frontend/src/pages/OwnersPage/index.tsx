@@ -131,7 +131,7 @@ export function OwnersPage() {
               <button
                 onClick={() => setOwnerSearch('')}
                 className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer"
-                aria-label="Clear search"
+                aria-label={t('common.clearSearch')}
               >
                 <X className="size-3.5" />
               </button>

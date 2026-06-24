@@ -101,7 +101,7 @@ export function OwnerTableSection({
                   size="sm"
                   variant="ghost"
                   onClick={() => onEdit(owner)}
-                  aria-label="Edit owner"
+                  aria-label={t('owners.editOwner')}
                 >
                   <Pencil className="size-3.5" />
                 </Button>
@@ -110,7 +110,7 @@ export function OwnerTableSection({
                   variant="ghost"
                   className="text-destructive hover:text-destructive"
                   onClick={() => onDelete(owner)}
-                  aria-label="Delete owner"
+                  aria-label={t('owners.deleteOwner')}
                 >
                   <Trash2 className="size-3.5" />
                 </Button>
