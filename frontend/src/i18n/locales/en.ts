@@ -503,11 +503,6 @@ const en = {
     ownerPhoneLabel: 'Phone',
     ownerPlateLabel: 'Vehicle plate',
     ownerNotesLabel: 'Notes',
-    placeholderName: 'Full name',
-    placeholderEmail: 'email@example.com',
-    placeholderPhone: '+386 40 123 456',
-    placeholderPlate: 'LJ 12-345',
-    placeholderNotes: 'Optional note',
     ownerSsoLabel: 'SSO Username',
     ownerSsoNote:
       'Links this owner to their SSO account for "My Parking" access.',
