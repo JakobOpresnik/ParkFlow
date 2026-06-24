@@ -5,9 +5,8 @@ import { useTranslation } from 'react-i18next'
 import { useCancelBooking, useCreateBooking } from '@/hooks/useBookings'
 import { useSetSpotDayStatus } from '@/hooks/useOwnerParking'
 import { useReportSpotted } from '@/hooks/useSpots'
+import { fmtTime } from '@/lib/datetime'
 import type { Spot } from '@/types'
-
-import { fmtTime } from './utils'
 
 // — types —
 

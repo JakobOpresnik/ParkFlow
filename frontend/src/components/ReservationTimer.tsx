@@ -1,16 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { fmtTime } from '@/lib/datetime'
+
 interface ReservationTimerProps {
   readonly expiresAt: string
   readonly arrivalTime?: string
-}
-
-function fmtTime(date: Date): string {
-  return date.toLocaleTimeString(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 
 function fmtFutureDate(date: Date): string {

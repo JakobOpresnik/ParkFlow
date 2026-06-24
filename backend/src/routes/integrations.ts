@@ -2,6 +2,7 @@ import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 
 import { ACEX_OWNER_NAME, NOT_ACEX_OWNERS } from '../lib/acexOwners.js';
+import { ljubljanaDate } from '../lib/localDate.js';
 import type { WeekPresenceResponse } from '../lib/presence.types.js';
 import type { AuthPayload } from '../middleware/auth.js';
 
@@ -163,13 +164,9 @@ export function parseCommand(text: string): {
 
 // The local calendar date (YYYY-MM-DD) in Slovenia for a given instant.
 // Used so "today"/"tomorrow" resolve to the user's day, not the UTC day.
+// Delegates to the shared helper so the en-CA/timezone config lives in one place.
 export function localDate(now: Date): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Ljubljana',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(now);
+  return ljubljanaDate(now);
 }
 
 function addDays(date: string, n: number): string {

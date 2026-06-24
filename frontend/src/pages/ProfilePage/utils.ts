@@ -16,11 +16,3 @@ export function formatDate(iso: string): string {
     minute: '2-digit',
   })
 }
-
-export function timeRemaining(expiresAt: string): string {
-  const ms = new Date(expiresAt).getTime() - Date.now()
-  if (ms <= 0) return 'Expired'
-  const h = Math.floor(ms / 3_600_000)
-  const m = Math.floor((ms % 3_600_000) / 60_000)
-  return h > 0 ? `${h}h ${m}m remaining` : `${m}m remaining`
-}

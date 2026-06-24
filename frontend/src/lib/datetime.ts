@@ -44,3 +44,11 @@ export function expiryProgressPct(
   const pct = ((now - start) / (end - start)) * 100
   return Math.min(100, Math.max(0, pct))
 }
+
+// Local-time "HH:MM" label in the viewer's locale.
+export function fmtTime(date: Date): string {
+  return date.toLocaleTimeString(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
