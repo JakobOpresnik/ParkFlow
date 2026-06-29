@@ -29,12 +29,9 @@ export interface OAuthResponse {
   expires_at: string;
 }
 
-export interface TimesheetDayEntry {
-  date: string;
-  status: PresenceStatus;
-  is_work_free_day: boolean;
-  parking_available: boolean;
-}
+// Wire shape of a day entry from the timesheet API — currently identical to
+// PresenceDayEntry, so aliased rather than duplicated.
+export type TimesheetDayEntry = PresenceDayEntry;
 
 export interface TimesheetEntry {
   user_id: number;

@@ -23,22 +23,14 @@ import {
 import type {
   EmployeeWeekPresence,
   PresenceDayEntry,
-  PresenceStatus,
 } from './presence.types.js';
 
 // ─── Internal types for WS message shapes ────────────────────────────────────
 
-interface WsDayEntry {
-  date: string;
-  status: PresenceStatus;
-  is_work_free_day: boolean;
-  parking_available: boolean;
-}
-
 interface WsUserPayload {
   user_id: number;
   name: string;
-  data: WsDayEntry[];
+  data: PresenceDayEntry[];
 }
 
 interface WsChannelMessage {
@@ -110,7 +102,7 @@ function resetPingTimer() {
   }, PING_TIMEOUT_MS);
 }
 
-function buildEmployee(userId: number, name: string, days: WsDayEntry[]): EmployeeWeekPresence {
+function buildEmployee(userId: number, name: string, days: PresenceDayEntry[]): EmployeeWeekPresence {
   return {
     user_id: userId,
     name,
