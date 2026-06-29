@@ -77,7 +77,7 @@ const sl = {
     reservationTodayBody: 'Danes imaš rezervacijo za {{spot}}{{floor}}.',
     ownerReleaseTitle: 'Sprosti svoje parkirno mesto?',
     ownerReleaseBody:
-      'Če v prihodnjem tednu kdaj ne boš potreboval/a svojega parkirnega mesta, ga prosim označi kot prosto, da ga lahko uporabi drug sodelavec.',
+      'Če v prihodnjem tednu kdaj ne boš potreboval/a svojega parkirnega mesta, ga prosim označi kot prosto, da ga lahko uporabi kateri od sodelavcev.',
     reservationReleasedTitle: 'Rezervacija sproščena',
     reservationReleasedBody:
       'Tvoja rezervacija za {{spot}}{{date}} je bila preklicana, ker je lastnik prevzel svoje mesto nazaj.',
