@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 
 import { pool } from '../db/pool.js';
 import { broadcast } from '../lib/broadcast.js';
@@ -14,10 +14,13 @@ const router = Router();
 
 const ACEX_OWNER_NAME = 'ACEX - kdor prej pride, prej melje';
 const validTypes = ['standard', 'ev', 'handicap', 'compact'];
+const validStatuses = ['free', 'occupied', 'reserved'];
 
-// Base effective status: ACEX-owned spots are masked as 'free' regardless of stored status.
-// 'spotted' is layered on top: when the base resolves to 'free' AND there's an active
-// (non-cleared, non-expired) user report, the API returns 'spotted' instead.
+// Base effective status: ACEX-owned (public pool) spots default to 'free', but an
+// admin's explicit non-'free' status (occupied/reserved) wins — so an admin can take
+// a pool spot out of circulation. 'spotted' is layered on top: when the base resolves
+// to 'free' AND there's an active (non-cleared, non-expired) user report, the API
+// returns 'spotted' instead.
 const SPOT_SELECT = `
   SELECT
     s.id,
@@ -26,6 +29,7 @@ const SPOT_SELECT = `
     s.floor,
     s.lot_id,
     CASE
+      WHEN o.name = '${ACEX_OWNER_NAME}' AND s.status <> 'free' THEN s.status
       WHEN o.name = '${ACEX_OWNER_NAME}' AND sr.id IS NOT NULL THEN 'spotted'
       WHEN o.name = '${ACEX_OWNER_NAME}' THEN 'free'
       WHEN s.status = 'free' AND sr.id IS NOT NULL THEN 'spotted'
@@ -72,6 +76,55 @@ function scrubSpotForGuest<T extends Record<string, unknown>>(row: T): T {
     active_booking_reserved_by: null,
     active_booking_booked_by_owner: null,
   };
+}
+
+// Shared shape for the admin spot-field PATCH endpoints (owner/status/type):
+// fetch the old value, update the single column, append a (non-fatal) audit-log
+// row, broadcast, and return the updated spot. `field` is a fixed column literal
+// (never user input). `returning` is kept per-caller so each endpoint's response
+// columns are unchanged.
+async function auditedSpotUpdate(
+  res: Response,
+  opts: {
+    id: string;
+    field: 'owner_id' | 'status' | 'type';
+    newValue: string | null;
+    changeType: string;
+    returning: string;
+  },
+): Promise<void> {
+  const { id, field, newValue, changeType, returning } = opts;
+
+  const before = await pool.query(`SELECT ${field} FROM spots WHERE id = $1`, [
+    id,
+  ]);
+  if (before.rows.length === 0) {
+    res.status(404).json({ error: 'Spot not found' });
+    return;
+  }
+  const oldValue = before.rows[0][field] as string | null;
+
+  const result = await pool.query(
+    `UPDATE spots SET ${field} = $1 WHERE id = $2 RETURNING ${returning}`,
+    [newValue, id],
+  );
+  if (result.rows.length === 0) {
+    res.status(404).json({ error: 'Spot not found' });
+    return;
+  }
+
+  await pool
+    .query(
+      `INSERT INTO spot_changes (spot_id, change_type, old_value, new_value)
+       VALUES ($1, $2, $3, $4)`,
+      [id, changeType, oldValue, newValue],
+    )
+    .catch(() => {
+      /* audit log failure is non-fatal */
+    });
+
+  broadcast();
+  res.json(result.rows[0]);
 }
 
 // POST /api/spots/:id/spotted — user reports that a free spot is actually taken.
@@ -397,7 +450,6 @@ router.post('/', requireAuth, requireAdmin, async (req, res, next) => {
       return;
     }
 
-    const validStatuses = ['free', 'occupied', 'reserved'];
     const spotStatus =
       status && validStatuses.includes(status) ? status : 'free';
     const spotType = type && validTypes.includes(type) ? type : 'standard';
@@ -426,7 +478,6 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res, next) => {
       type?: string;
     };
 
-    const validStatuses = ['free', 'occupied', 'reserved'];
     if (status && !validStatuses.includes(status)) {
       res
         .status(400)
@@ -571,43 +622,14 @@ router.patch(
         }
       }
 
-      // Fetch old owner for audit log
-      const before = await pool.query(
-        'SELECT owner_id FROM spots WHERE id = $1',
-        [id],
-      );
-      if (before.rows.length === 0) {
-        res.status(404).json({ error: 'Spot not found' });
-        return;
-      }
-      const oldOwnerId = before.rows[0].owner_id as string | null;
-
-      const result = await pool.query(
-        `UPDATE spots SET owner_id = $1
-       WHERE id = $2
-       RETURNING id, number, label, floor, lot_id, status, owner_id, coordinates`,
-        [owner_id, id],
-      );
-
-      if (result.rows.length === 0) {
-        res.status(404).json({ error: 'Spot not found' });
-        return;
-      }
-
-      // Audit log
-      const changeType = owner_id ? 'owner_assigned' : 'owner_unassigned';
-      await pool
-        .query(
-          `INSERT INTO spot_changes (spot_id, change_type, old_value, new_value)
-       VALUES ($1, $2, $3, $4)`,
-          [id, changeType, oldOwnerId, owner_id],
-        )
-        .catch(() => {
-          /* audit log failure is non-fatal */
-        });
-
-      broadcast();
-      res.json(result.rows[0]);
+      await auditedSpotUpdate(res, {
+        id: id as string,
+        field: 'owner_id',
+        newValue: owner_id,
+        changeType: owner_id ? 'owner_assigned' : 'owner_unassigned',
+        returning:
+          'id, number, label, floor, lot_id, status, owner_id, coordinates',
+      });
     } catch (err) {
       next(err);
     }
@@ -624,7 +646,6 @@ router.patch(
       const { id } = req.params;
       const { status } = req.body as { status: string };
 
-      const validStatuses = ['free', 'occupied', 'reserved'];
       if (!validStatuses.includes(status)) {
         res.status(400).json({
           error: `status must be one of: ${validStatuses.join(', ')}`,
@@ -632,42 +653,14 @@ router.patch(
         return;
       }
 
-      // Fetch old status for audit log
-      const before = await pool.query(
-        'SELECT status FROM spots WHERE id = $1',
-        [id],
-      );
-      if (before.rows.length === 0) {
-        res.status(404).json({ error: 'Spot not found' });
-        return;
-      }
-      const oldStatus = before.rows[0].status as string;
-
-      const result = await pool.query(
-        `UPDATE spots SET status = $1
-       WHERE id = $2
-       RETURNING id, number, label, floor, lot_id, status, owner_id, coordinates`,
-        [status, id],
-      );
-
-      if (result.rows.length === 0) {
-        res.status(404).json({ error: 'Spot not found' });
-        return;
-      }
-
-      // Audit log
-      await pool
-        .query(
-          `INSERT INTO spot_changes (spot_id, change_type, old_value, new_value)
-       VALUES ($1, 'status_changed', $2, $3)`,
-          [id, oldStatus, status],
-        )
-        .catch(() => {
-          /* audit log failure is non-fatal */
-        });
-
-      broadcast();
-      res.json(result.rows[0]);
+      await auditedSpotUpdate(res, {
+        id: id as string,
+        field: 'status',
+        newValue: status,
+        changeType: 'status_changed',
+        returning:
+          'id, number, label, floor, lot_id, status, owner_id, coordinates',
+      });
     } catch (err) {
       next(err);
     }
@@ -687,41 +680,14 @@ router.patch('/:id/type', requireAuth, requireAdmin, async (req, res, next) => {
       return;
     }
 
-    // Fetch old type for audit log
-    const before = await pool.query('SELECT type FROM spots WHERE id = $1', [
-      id,
-    ]);
-    if (before.rows.length === 0) {
-      res.status(404).json({ error: 'Spot not found' });
-      return;
-    }
-    const oldType = before.rows[0].type as string;
-
-    const result = await pool.query(
-      `UPDATE spots SET type = $1
-       WHERE id = $2
-       RETURNING id, number, label, floor, lot_id, status, type, owner_id, coordinates`,
-      [type, id],
-    );
-
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Spot not found' });
-      return;
-    }
-
-    // Audit log
-    await pool
-      .query(
-        `INSERT INTO spot_changes (spot_id, change_type, old_value, new_value)
-       VALUES ($1, 'type_changed', $2, $3)`,
-        [id, oldType, type],
-      )
-      .catch(() => {
-        /* audit log failure is non-fatal */
-      });
-
-    broadcast();
-    res.json(result.rows[0]);
+    await auditedSpotUpdate(res, {
+      id: id as string,
+      field: 'type',
+      newValue: type,
+      changeType: 'type_changed',
+      returning:
+        'id, number, label, floor, lot_id, status, type, owner_id, coordinates',
+    });
   } catch (err) {
     next(err);
   }

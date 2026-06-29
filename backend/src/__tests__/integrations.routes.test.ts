@@ -803,6 +803,25 @@ describe("spotStatusOnDate", () => {
     ).toBe("free");
   });
 
+  it("keeps an ACEX pool spot free by default but respects an admin's non-free status", () => {
+    const acex = (status: string) => ({
+      number: 1,
+      label: "X1",
+      status,
+      owner_id: "acex",
+      owner_name: "ACEX - kdor prej pride, prej melje",
+    });
+    expect(spotStatusOnDate(acex("free"), DATE, undefined, unknown)).toBe(
+      "free",
+    );
+    expect(spotStatusOnDate(acex("occupied"), DATE, undefined, unknown)).toBe(
+      "taken",
+    );
+    expect(spotStatusOnDate(acex("reserved"), DATE, undefined, unknown)).toBe(
+      "taken",
+    );
+  });
+
   it("falls back to the stored status when presence is unknown", () => {
     expect(spotStatusOnDate(owned("Ana"), DATE, undefined, unknown)).toBe(
       "taken",
