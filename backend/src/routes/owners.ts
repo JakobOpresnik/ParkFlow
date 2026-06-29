@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 
 import { pool } from "../db/pool.js";
 import { NOT_ACEX_OWNERS } from "../lib/acexOwners.js";
@@ -26,6 +26,27 @@ const OWNER_MATCHES_USER = `(
     FROM unnest(string_to_array(o.name, '/')) AS t(n)
   )
 )`;
+
+// Resolve the single owner row linked to the authenticated caller (explicit
+// user_id linkage preferred over heuristic name match). Writes the shared 404
+// and returns null when none is linked, so callers do `if (!owner) return;`.
+async function resolveOwner(
+  req: Request,
+  res: Response,
+): Promise<Record<string, unknown> | null> {
+  const result = await pool.query(
+    `SELECT * FROM owners AS o WHERE ${OWNER_MATCHES_USER}
+     ORDER BY CASE WHEN $1 = ANY(string_to_array(o.user_id, ',')) THEN 0 ELSE 1 END, o.id
+     LIMIT 1`,
+    [req.user!.username, req.user!.displayName],
+  );
+  const owner = result.rows[0] as Record<string, unknown> | undefined;
+  if (!owner) {
+    res.status(404).json({ error: "No owner profile linked to your account" });
+    return null;
+  }
+  return owner;
+}
 
 // GET /api/owners/user-ids — no auth. Lists the SSO usernames of every linked
 // parking-spot owner (rows whose user_id is set). Consumed only by the internal
@@ -110,19 +131,9 @@ router.get("/timesheet-ids", async (req, res, next) => {
 // GET /api/owners/me — owner profile for authenticated user
 router.get("/me", requireAuth, requireNonGuest, async (req, res, next) => {
   try {
-    const result = await pool.query(
-      // Prefer rows matched by user_id (explicit admin linkage) over name
-      // matches (heuristic) when both exist; keeps single-owner semantics stable.
-      `SELECT * FROM owners AS o WHERE ${OWNER_MATCHES_USER}
-       ORDER BY CASE WHEN $1 = ANY(string_to_array(o.user_id, ',')) THEN 0 ELSE 1 END, o.id
-       LIMIT 1`,
-      [req.user!.username, req.user!.displayName],
-    );
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: "No owner profile linked to your account" });
-      return;
-    }
-    res.json(result.rows[0]);
+    const owner = await resolveOwner(req, res);
+    if (!owner) return;
+    res.json(owner);
   } catch (err) {
     next(err);
   }
@@ -131,17 +142,9 @@ router.get("/me", requireAuth, requireNonGuest, async (req, res, next) => {
 // GET /api/owners/me/spots — spots owned by authenticated user with active booking info
 router.get("/me/spots", requireAuth, requireNonGuest, async (req, res, next) => {
   try {
-    const ownerResult = await pool.query(
-      `SELECT id FROM owners AS o WHERE ${OWNER_MATCHES_USER}
-       ORDER BY CASE WHEN $1 = ANY(string_to_array(o.user_id, ',')) THEN 0 ELSE 1 END, o.id
-       LIMIT 1`,
-      [req.user!.username, req.user!.displayName],
-    );
-    if (ownerResult.rows.length === 0) {
-      res.status(404).json({ error: "No owner profile linked to your account" });
-      return;
-    }
-    const ownerId = ownerResult.rows[0].id as string;
+    const owner = await resolveOwner(req, res);
+    if (!owner) return;
+    const ownerId = owner.id as string;
 
     const result = await pool.query(
       `SELECT
@@ -181,17 +184,9 @@ router.get("/me/spots", requireAuth, requireNonGuest, async (req, res, next) => 
 // GET /api/owners/me/week — bookings on owner's spots for a date range
 router.get("/me/week", requireAuth, requireNonGuest, async (req, res, next) => {
   try {
-    const ownerResult = await pool.query(
-      `SELECT id FROM owners AS o WHERE ${OWNER_MATCHES_USER}
-       ORDER BY CASE WHEN $1 = ANY(string_to_array(o.user_id, ',')) THEN 0 ELSE 1 END, o.id
-       LIMIT 1`,
-      [req.user!.username, req.user!.displayName],
-    );
-    if (ownerResult.rows.length === 0) {
-      res.status(404).json({ error: "No owner profile linked to your account" });
-      return;
-    }
-    const ownerId = ownerResult.rows[0].id as string;
+    const owner = await resolveOwner(req, res);
+    if (!owner) return;
+    const ownerId = owner.id as string;
 
     const { from, to } = req.query as { from?: string; to?: string };
     if (!from || !to) {
@@ -229,17 +224,9 @@ router.get("/me/week", requireAuth, requireNonGuest, async (req, res, next) => {
 // GET /api/owners/me/overrides?from=&to= — per-day status overrides for owner's spots
 router.get("/me/overrides", requireAuth, requireNonGuest, async (req, res, next) => {
   try {
-    const ownerResult = await pool.query(
-      `SELECT id FROM owners AS o WHERE ${OWNER_MATCHES_USER}
-       ORDER BY CASE WHEN $1 = ANY(string_to_array(o.user_id, ',')) THEN 0 ELSE 1 END, o.id
-       LIMIT 1`,
-      [req.user!.username, req.user!.displayName],
-    );
-    if (ownerResult.rows.length === 0) {
-      res.status(404).json({ error: "No owner profile linked to your account" });
-      return;
-    }
-    const ownerId = ownerResult.rows[0].id as string;
+    const owner = await resolveOwner(req, res);
+    if (!owner) return;
+    const ownerId = owner.id as string;
 
     const { from, to } = req.query as { from?: string; to?: string };
     if (!from || !to) {

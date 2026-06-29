@@ -77,7 +77,7 @@ const en = {
     reservationTodayBody: 'You have a reservation today for {{spot}}{{floor}}.',
     ownerReleaseTitle: 'Free your parking spot?',
     ownerReleaseBody:
-      'If you won’t be needing your parking spot at some point in the following week, please mark it as available so another colleague can use it.',
+      'If you won’t be needing your parking spot at some point in the following week, please mark it as available so a colleague can use it.',
     reservationReleasedTitle: 'Reservation released',
     reservationReleasedBody:
       'Your reservation for {{spot}}{{date}} was cancelled because the spot owner reclaimed it.',

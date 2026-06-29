@@ -192,6 +192,92 @@ describe('POST /api/bookings', () => {
     expect(res.body.status).toBe('active');
     expect(res.body.spot_number).toBe(5);
   });
+
+  it('returns 409 when an admin set an ACEX pool spot to occupied', async () => {
+    const mockClient = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 'spot-1',
+              status: 'occupied',
+              number: 5,
+              label: null,
+              floor: 1,
+              owner_name: 'ACEX - kdor prej pride, prej melje',
+            },
+          ],
+        }) // SELECT spot FOR UPDATE
+        .mockResolvedValueOnce({ rows: [] }) // SELECT existing booking
+        .mockResolvedValueOnce({ rows: [] }) // SELECT booking conflict
+        .mockResolvedValueOnce({ rows: [] }) // SELECT spot_day_status
+        .mockResolvedValueOnce({}), // ROLLBACK
+      release: vi.fn(),
+    };
+
+    mockQuery.mockResolvedValueOnce({ rows: [] }); // expire stale
+    mockConnect.mockResolvedValueOnce(mockClient);
+
+    const res = await request(app)
+      .post('/api/bookings')
+      .set('Authorization', AUTH_HEADER)
+      .send({ spot_id: 'spot-1' });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/not available/);
+  });
+
+  it('still books a free ACEX pool spot by default', async () => {
+    const mockClient = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 'spot-1',
+              status: 'free',
+              number: 5,
+              label: 'A5',
+              floor: 'P1',
+              owner_name: 'ACEX - kdor prej pride, prej melje',
+            },
+          ],
+        }) // SELECT spot FOR UPDATE
+        .mockResolvedValueOnce({ rows: [] }) // SELECT existing booking
+        .mockResolvedValueOnce({ rows: [] }) // SELECT booking conflict
+        .mockResolvedValueOnce({ rows: [] }) // SELECT spot_day_status
+        .mockResolvedValueOnce({}) // UPDATE clear spotted reports
+        .mockResolvedValueOnce({}) // UPDATE spots reserved
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 'booking-acex',
+              status: 'active',
+              booked_at: new Date().toISOString(),
+              starts_at: null,
+              expires_at: new Date(Date.now() + 8 * 3600 * 1000).toISOString(),
+              ended_at: null,
+            },
+          ],
+        }) // INSERT booking
+        .mockResolvedValueOnce({}), // COMMIT
+      release: vi.fn(),
+    };
+
+    mockQuery.mockResolvedValueOnce({ rows: [] }); // expire stale
+    mockConnect.mockResolvedValueOnce(mockClient);
+
+    const res = await request(app)
+      .post('/api/bookings')
+      .set('Authorization', AUTH_HEADER)
+      .send({ spot_id: 'spot-1' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe('active');
+  });
 });
 
 describe('PATCH /api/bookings/:id/cancel', () => {

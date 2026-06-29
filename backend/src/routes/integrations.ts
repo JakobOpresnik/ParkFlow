@@ -499,8 +499,9 @@ export function spotStatusOnDate(
   if (overrideStatus !== undefined) {
     return overrideStatus === 'free' ? 'free' : 'taken';
   }
-  // The ACEX public pool is always free (normally filtered out of this list).
-  if (spot.owner_name === ACEX_OWNER_NAME) return 'free';
+  // The ACEX public pool defaults to free, but an admin's explicit non-free
+  // status wins (normally filtered out of this list anyway).
+  if (spot.owner_name === ACEX_OWNER_NAME) return baseFallback;
   // Owned spot: decide from how many co-owners are in office that day.
   if (spot.owner_name) {
     const ownerNames = spot.owner_name
@@ -572,6 +573,76 @@ export function dayLabel(date: string, now: Date): string {
   if (date === addDays(localDate(now), 1)) return 'tomorrow';
   const [y, m, d] = date.split('-');
   return `${d}.${m}.${y}`;
+}
+
+// Shared resolution for the `owners` and `stats` chat commands (identical except
+// for the final formatter): parse the optional building + date tokens, fetch that
+// day's spots / overrides / presence, and return the building-scoped spot list
+// plus a per-spot effective-status resolver. Returns { error } for an
+// unrecognized token so the caller can reply and bail.
+async function resolveDayView(
+  rest: string[],
+  now: Date,
+  username: string | undefined,
+): Promise<
+  | { error: string }
+  | {
+      lots: Lot[];
+      scoped: SpotLike[];
+      statusOf: (s: SpotLike) => SpotDayStatus;
+      label: string;
+      lotName?: string;
+    }
+> {
+  const [lots, spots] = await Promise.all([
+    callArray<Lot>('GET', '/api/lots'),
+    callArray<SpotLike>('GET', '/api/spots'),
+  ]);
+  let date = localDate(now);
+  let lotFilter: Lot | undefined;
+  for (const tok of rest) {
+    const lot = resolveLot(tok, lots);
+    if (lot) {
+      lotFilter = lot;
+      continue;
+    }
+    const parsed = parseDate(tok, now);
+    if (parsed !== null) {
+      date = parsed;
+      continue;
+    }
+    return {
+      error: `I didn’t understand "${tok}". Use a building (zunaj, klet1, klet2) and/or a date (today, tomorrow, dd.mm.yyyy).`,
+    };
+  }
+  const [overrides, presenceRes] = await Promise.all([
+    callArray<DayOverride>('GET', `/api/spots/day-overrides?date=${date}`),
+    call<WeekPresenceResponse>('GET', `/api/presence?date=${date}`, {
+      token: mintUserToken(username ?? PRESENCE_SERVICE_USER),
+    }),
+  ]);
+  const overrideBySpot = new Map(overrides.map((o) => [o.spot_id, o.status]));
+  // Presence unavailable (timesheet API down) → resolver returns "unknown" and
+  // spotStatusOnDate falls back to the spot's stored status.
+  const presence = presenceRes.status === 200 ? presenceRes.data : null;
+  const ownerPresence = makeOwnerPresence(presence, date);
+  const statusOf = (s: SpotLike): SpotDayStatus =>
+    spotStatusOnDate(
+      s,
+      date,
+      s.id ? overrideBySpot.get(s.id) : undefined,
+      ownerPresence,
+    );
+  const lot = lotFilter;
+  const unique = dedupeSpotsForDate(spots, date);
+  const scoped = lot ? unique.filter((s) => s.lot_id === lot.id) : unique;
+  return {
+    lots,
+    scoped,
+    statusOf,
+    label: dayLabel(date, now),
+    lotName: lot?.name,
+  };
 }
 
 // List every ACEX-employee-owned spot grouped by its owner. Skips unowned spots
@@ -1064,56 +1135,19 @@ router.post('/rocketchat', async (req, res, next) => {
         // building filter (zunaj/klet1/klet2) and/or a date (default today).
         // Pulls that day's per-day overrides and presence so the icon reflects
         // real availability (owner away / freed), mirroring useEffectiveSpots.
-        const [lots, spots] = await Promise.all([
-          callArray<Lot>('GET', '/api/lots'),
-          callArray<SpotLike>('GET', '/api/spots'),
-        ]);
-        let date = localDate(now);
-        let lotFilter: Lot | undefined;
-        for (const tok of rest) {
-          const lot = resolveLot(tok, lots);
-          if (lot) {
-            lotFilter = lot;
-            continue;
-          }
-          const parsed = parseDate(tok, now);
-          if (parsed !== null) {
-            date = parsed;
-            continue;
-          }
-          reply(
-            `I didn’t understand "${tok}". Use a building (zunaj, klet1, klet2) and/or a date (today, tomorrow, dd.mm.yyyy).`,
-          );
+        const view = await resolveDayView(rest, now, username);
+        if ('error' in view) {
+          reply(view.error);
           return;
         }
-        const [overrides, presenceRes] = await Promise.all([
-          callArray<DayOverride>(
-            'GET',
-            `/api/spots/day-overrides?date=${date}`,
-          ),
-          call<WeekPresenceResponse>('GET', `/api/presence?date=${date}`, {
-            token: mintUserToken(username ?? PRESENCE_SERVICE_USER),
-          }),
-        ]);
-        const overrideBySpot = new Map(
-          overrides.map((o) => [o.spot_id, o.status]),
-        );
-        // If presence is unavailable (timesheet API down), the resolver returns
-        // "unknown" and spotStatusOnDate falls back to the stored status.
-        const presence = presenceRes.status === 200 ? presenceRes.data : null;
-        const ownerPresence = makeOwnerPresence(presence, date);
-        const statusOf = (s: SpotLike): SpotDayStatus =>
-          spotStatusOnDate(
-            s,
-            date,
-            s.id ? overrideBySpot.get(s.id) : undefined,
-            ownerPresence,
-          );
-        const lot = lotFilter;
-        const unique = dedupeSpotsForDate(spots, date);
-        const scoped = lot ? unique.filter((s) => s.lot_id === lot.id) : unique;
         reply(
-          formatOwners(scoped, lots, statusOf, dayLabel(date, now), lot?.name),
+          formatOwners(
+            view.scoped,
+            view.lots,
+            view.statusOf,
+            view.label,
+            view.lotName,
+          ),
         );
         return;
       }
@@ -1122,59 +1156,18 @@ router.post('/rocketchat', async (req, res, next) => {
         // Public read — live occupancy snapshot. Optional building filter and/or
         // date (any order, default today), computed with the same presence-aware
         // effective status as the owners command.
-        const [lots, spots] = await Promise.all([
-          callArray<Lot>('GET', '/api/lots'),
-          callArray<SpotLike>('GET', '/api/spots'),
-        ]);
-        let date = localDate(now);
-        let lotFilter: Lot | undefined;
-        for (const tok of rest) {
-          const lot = resolveLot(tok, lots);
-          if (lot) {
-            lotFilter = lot;
-            continue;
-          }
-          const parsed = parseDate(tok, now);
-          if (parsed !== null) {
-            date = parsed;
-            continue;
-          }
-          reply(
-            `I didn’t understand "${tok}". Use a building (zunaj, klet1, klet2) and/or a date (today, tomorrow, dd.mm.yyyy).`,
-          );
+        const view = await resolveDayView(rest, now, username);
+        if ('error' in view) {
+          reply(view.error);
           return;
         }
-        const [overrides, presenceRes] = await Promise.all([
-          callArray<DayOverride>(
-            'GET',
-            `/api/spots/day-overrides?date=${date}`,
-          ),
-          call<WeekPresenceResponse>('GET', `/api/presence?date=${date}`, {
-            token: mintUserToken(username ?? PRESENCE_SERVICE_USER),
-          }),
-        ]);
-        const overrideBySpot = new Map(
-          overrides.map((o) => [o.spot_id, o.status]),
-        );
-        const presence = presenceRes.status === 200 ? presenceRes.data : null;
-        const ownerPresence = makeOwnerPresence(presence, date);
-        const statusOf = (s: SpotLike): SpotDayStatus =>
-          spotStatusOnDate(
-            s,
-            date,
-            s.id ? overrideBySpot.get(s.id) : undefined,
-            ownerPresence,
-          );
-        const lot = lotFilter;
-        const unique = dedupeSpotsForDate(spots, date);
-        const scoped = lot ? unique.filter((s) => s.lot_id === lot.id) : unique;
         reply(
           formatOccupancy(
-            scoped,
-            lots,
-            statusOf,
-            dayLabel(date, now),
-            lot?.name,
+            view.scoped,
+            view.lots,
+            view.statusOf,
+            view.label,
+            view.lotName,
           ),
         );
         return;

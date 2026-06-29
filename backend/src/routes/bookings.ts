@@ -237,9 +237,12 @@ router.post("/", requireAuth, requireNonGuest, async (req, res, next) => {
         // Owner override is authoritative
         isBookable = overrideResult.rows[0].status === "free";
       } else if (spotRow.owner_name === ACEX_OWNER_NAME) {
-        // ACEX-owned spots are company spots — always bookable (map shows them as 'free'
-        // regardless of their db status, booking logic must stay consistent).
-        isBookable = true;
+        // Public pool spots are bookable by default. An admin takes one out of
+        // circulation by setting status 'occupied' — the only way a pool spot
+        // becomes 'occupied', since bookings only ever set 'reserved'. That
+        // blocks new bookings; 'free'/'reserved' stay bookable and real
+        // same-day conflicts are already rejected by the conflict check above.
+        isBookable = spotRow.status !== "occupied";
       } else if (spotRow.status === "occupied" && spotRow.owner_name) {
         // Co-owners can always book their own spot, regardless of presence —
         // clicking Reserve on an unconfirmed shared spot resolves the ambiguity

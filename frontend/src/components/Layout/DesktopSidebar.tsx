@@ -49,7 +49,7 @@ export function DesktopSidebar({
   const [adminOpen, setAdminOpen] = useState(isAdmin)
 
   return (
-    <aside className="bg-card hidden w-56 shrink-0 flex-col border-r sm:flex">
+    <aside className="bg-card hidden w-60 shrink-0 flex-col border-r sm:flex">
       {/* Logo */}
       <div className="flex h-14 items-center border-b px-4">
         <div className="bg-primary/10 flex size-7 shrink-0 items-center justify-center rounded-lg">

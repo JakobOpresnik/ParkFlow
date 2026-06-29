@@ -27,6 +27,10 @@ services:
     environment:
       DATABASE_URL: postgresql://parkflow:parkflow@db:5432/parkflow
       PORT: 3001
+      # File-watch polling so `tsx watch` reloads on edits through the
+      # Windows/Docker volume mount (mirrors the frontend service).
+      CHOKIDAR_USEPOLLING: 'true'
+      CHOKIDAR_INTERVAL: '300'
     volumes:
       - ./backend:/app
       - backend-node-modules:/app/node_modules
