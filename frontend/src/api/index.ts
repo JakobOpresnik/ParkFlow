@@ -62,7 +62,6 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 export const api = {
   // Spots
   getSpots: () => request<Spot[]>('/api/spots'),
-  getSpotByNumber: (number: number) => request<Spot>(`/api/spots/${number}`),
   assignOwner: (id: string, owner_id: string | null) =>
     request<Spot>(`/api/spots/${id}/owner`, {
       method: 'PATCH',
