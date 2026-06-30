@@ -21,7 +21,3 @@ export const REMINDER_TYPES: readonly ReminderTypeDef[] = [
   },
   // Future: { type: 'reservation_ending', label: 'Expiry warning', ... }
 ]
-
-export function isReminderType(value: string): boolean {
-  return REMINDER_TYPES.some((rt) => rt.type === value)
-}

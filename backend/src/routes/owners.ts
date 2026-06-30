@@ -1,17 +1,21 @@
-import { Router, type Request, type Response } from "express";
+import { Router, type Request, type Response } from 'express'
 
-import { pool } from "../db/pool.js";
-import { NOT_ACEX_OWNERS } from "../lib/acexOwners.js";
-import { broadcast } from "../lib/broadcast.js";
-import { ljubljanaDate } from "../lib/localDate.js";
+import { pool } from '../db/pool.js'
+import { NOT_ACEX_OWNERS } from '../lib/acexOwners.js'
+import { broadcast } from '../lib/broadcast.js'
+import { ljubljanaDate } from '../lib/localDate.js'
 import {
   fetchWeekPresence,
   ownerTimesheetIds,
   type WeekPresenceResponse,
-} from "../lib/presence.js";
-import { requireAdmin, requireAuth, requireNonGuest } from "../middleware/auth.js";
+} from '../lib/presence.js'
+import {
+  requireAdmin,
+  requireAuth,
+  requireNonGuest,
+} from '../middleware/auth.js'
 
-const router = Router();
+const router = Router()
 
 // Co-owner predicate: a user matches an owner row (aliased `o`) if either the
 // admin-linked user_id list contains their username ($1), or their displayName
@@ -25,7 +29,7 @@ const OWNER_MATCHES_USER = `(
     SELECT TRIM(LOWER(n))
     FROM unnest(string_to_array(o.name, '/')) AS t(n)
   )
-)`;
+)`
 
 // Resolve the single owner row linked to the authenticated caller (explicit
 // user_id linkage preferred over heuristic name match). Writes the shared 404
@@ -39,13 +43,13 @@ async function resolveOwner(
      ORDER BY CASE WHEN $1 = ANY(string_to_array(o.user_id, ',')) THEN 0 ELSE 1 END, o.id
      LIMIT 1`,
     [req.user!.username, req.user!.displayName],
-  );
-  const owner = result.rows[0] as Record<string, unknown> | undefined;
+  )
+  const owner = result.rows[0] as Record<string, unknown> | undefined
   if (!owner) {
-    res.status(404).json({ error: "No owner profile linked to your account" });
-    return null;
+    res.status(404).json({ error: 'No owner profile linked to your account' })
+    return null
   }
-  return owner;
+  return owner
 }
 
 // GET /api/owners/user-ids — no auth. Lists the SSO usernames of every linked
@@ -56,7 +60,7 @@ async function resolveOwner(
 // list of co-owners, split here into individual usernames; the result is a flat,
 // de-duplicated, sorted string array (only user IDs, never the PII-carrying owner
 // objects).
-router.get("/user-ids", async (_req, res, next) => {
+router.get('/user-ids', async (_req, res, next) => {
   try {
     const result = await pool.query(
       `SELECT DISTINCT TRIM(uid) AS user_id
@@ -65,12 +69,12 @@ router.get("/user-ids", async (_req, res, next) => {
        WHERE o.user_id IS NOT NULL
          AND TRIM(uid) <> ''
        ORDER BY user_id`,
-    );
-    res.json(result.rows.map((r) => r.user_id as string));
+    )
+    res.json(result.rows.map((r) => r.user_id as string))
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
 // GET /api/owners/timesheet-ids — token-gated (no JWT). Returns the numeric
 // Abelium timesheet user_ids (the same ids returned by /api/presence) of every
@@ -86,16 +90,16 @@ router.get("/user-ids", async (_req, res, next) => {
 // OWNERS_API_TOKEN — this endpoint is its sole consumer. Result is a flat,
 // de-duplicated, ascending array of numbers (never the PII-carrying owner
 // objects).
-router.get("/timesheet-ids", async (req, res, next) => {
+router.get('/timesheet-ids', async (req, res, next) => {
   try {
-    const expected = process.env.OWNERS_API_TOKEN;
+    const expected = process.env.OWNERS_API_TOKEN
     if (!expected) {
-      res.status(500).json({ error: "Owners API token is not configured." });
-      return;
+      res.status(500).json({ error: 'Owners API token is not configured.' })
+      return
     }
-    if (req.get("x-owners-token") !== expected) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+    if (req.get('x-owners-token') !== expected) {
+      res.status(401).json({ error: 'Unauthorized' })
+      return
     }
 
     // Names of owners that actually own a spot (one row per distinct name).
@@ -105,49 +109,53 @@ router.get("/timesheet-ids", async (req, res, next) => {
        JOIN spots s ON s.owner_id = o.id
        WHERE o.name IS NOT NULL
          AND TRIM(o.name) <> ''`,
-    );
+    )
     const ownerNames = result.rows
       .map((r) => r.name as string)
-      .filter((name) => !NOT_ACEX_OWNERS.has(name));
+      .filter((name) => !NOT_ACEX_OWNERS.has(name))
 
     // Resolve numeric ids from the timesheet roster (matched by name). If the
     // timesheet API is down we can't translate names to ids — fail loudly rather
     // than return an empty list the caller would read as "no owners".
-    let presence: WeekPresenceResponse;
+    let presence: WeekPresenceResponse
     try {
-      presence = await fetchWeekPresence(ljubljanaDate(new Date()));
+      presence = await fetchWeekPresence(ljubljanaDate(new Date()))
     } catch (err) {
-      console.error("[owners/timesheet-ids] presence fetch failed:", err);
-      res.status(502).json({ error: "Timesheet presence is unavailable." });
-      return;
+      console.error('[owners/timesheet-ids] presence fetch failed:', err)
+      res.status(502).json({ error: 'Timesheet presence is unavailable.' })
+      return
     }
 
-    res.json(ownerTimesheetIds(presence, ownerNames));
+    res.json(ownerTimesheetIds(presence, ownerNames))
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
 // GET /api/owners/me — owner profile for authenticated user
-router.get("/me", requireAuth, requireNonGuest, async (req, res, next) => {
+router.get('/me', requireAuth, requireNonGuest, async (req, res, next) => {
   try {
-    const owner = await resolveOwner(req, res);
-    if (!owner) return;
-    res.json(owner);
+    const owner = await resolveOwner(req, res)
+    if (!owner) return
+    res.json(owner)
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
 // GET /api/owners/me/spots — spots owned by authenticated user with active booking info
-router.get("/me/spots", requireAuth, requireNonGuest, async (req, res, next) => {
-  try {
-    const owner = await resolveOwner(req, res);
-    if (!owner) return;
-    const ownerId = owner.id as string;
+router.get(
+  '/me/spots',
+  requireAuth,
+  requireNonGuest,
+  async (req, res, next) => {
+    try {
+      const owner = await resolveOwner(req, res)
+      if (!owner) return
+      const ownerId = owner.id as string
 
-    const result = await pool.query(
-      `SELECT
+      const result = await pool.query(
+        `SELECT
         s.id,
         s.number,
         s.label,
@@ -172,26 +180,29 @@ router.get("/me/spots", requireAuth, requireNonGuest, async (req, res, next) => 
       LEFT JOIN bookings b ON b.spot_id = s.id AND b.status = 'active'
       WHERE s.owner_id = $1
       ORDER BY s.number`,
-      [ownerId],
-    );
+        [ownerId],
+      )
 
-    res.json(result.rows);
-  } catch (err) {
-    next(err);
-  }
-});
+      res.json(result.rows)
+    } catch (err) {
+      next(err)
+    }
+  },
+)
 
 // GET /api/owners/me/week — bookings on owner's spots for a date range
-router.get("/me/week", requireAuth, requireNonGuest, async (req, res, next) => {
+router.get('/me/week', requireAuth, requireNonGuest, async (req, res, next) => {
   try {
-    const owner = await resolveOwner(req, res);
-    if (!owner) return;
-    const ownerId = owner.id as string;
+    const owner = await resolveOwner(req, res)
+    if (!owner) return
+    const ownerId = owner.id as string
 
-    const { from, to } = req.query as { from?: string; to?: string };
+    const { from, to } = req.query as { from?: string; to?: string }
     if (!from || !to) {
-      res.status(400).json({ error: "from and to query params required (YYYY-MM-DD)" });
-      return;
+      res
+        .status(400)
+        .json({ error: 'from and to query params required (YYYY-MM-DD)' })
+      return
     }
 
     const result = await pool.query(
@@ -213,56 +224,68 @@ router.get("/me/week", requireAuth, requireNonGuest, async (req, res, next) => {
         AND b.booked_at <= ($3::date + interval '1 day')
       ORDER BY b.booked_at DESC`,
       [ownerId, from, to],
-    );
+    )
 
-    res.json(result.rows);
+    res.json(result.rows)
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
 // GET /api/owners/me/overrides?from=&to= — per-day status overrides for owner's spots
-router.get("/me/overrides", requireAuth, requireNonGuest, async (req, res, next) => {
-  try {
-    const owner = await resolveOwner(req, res);
-    if (!owner) return;
-    const ownerId = owner.id as string;
+router.get(
+  '/me/overrides',
+  requireAuth,
+  requireNonGuest,
+  async (req, res, next) => {
+    try {
+      const owner = await resolveOwner(req, res)
+      if (!owner) return
+      const ownerId = owner.id as string
 
-    const { from, to } = req.query as { from?: string; to?: string };
-    if (!from || !to) {
-      res.status(400).json({ error: "from and to query params required" });
-      return;
-    }
+      const { from, to } = req.query as { from?: string; to?: string }
+      if (!from || !to) {
+        res.status(400).json({ error: 'from and to query params required' })
+        return
+      }
 
-    const result = await pool.query(
-      `SELECT sds.id, sds.spot_id, sds.date, sds.status, sds.set_by
+      const result = await pool.query(
+        `SELECT sds.id, sds.spot_id, sds.date, sds.status, sds.set_by
        FROM spot_day_status sds
        JOIN spots s ON sds.spot_id = s.id
        WHERE s.owner_id = $1 AND sds.date >= $2::date AND sds.date <= $3::date
        ORDER BY sds.date`,
-      [ownerId, from, to],
-    );
-    res.json(result.rows);
-  } catch (err) {
-    next(err);
-  }
-});
+        [ownerId, from, to],
+      )
+      res.json(result.rows)
+    } catch (err) {
+      next(err)
+    }
+  },
+)
 
 // PUT /api/owners/me/spots/:spotId/day-status — set or clear per-day override
-router.put("/me/spots/:spotId/day-status", requireAuth, requireNonGuest, async (req, res, next) => {
-  try {
-    const { spotId } = req.params;
-    const { date, status } = req.body as { date: string; status: string | null };
+router.put(
+  '/me/spots/:spotId/day-status',
+  requireAuth,
+  requireNonGuest,
+  async (req, res, next) => {
+    try {
+      const { spotId } = req.params
+      const { date, status } = req.body as {
+        date: string
+        status: string | null
+      }
 
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      res.status(400).json({ error: "date is required (YYYY-MM-DD)" });
-      return;
-    }
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        res.status(400).json({ error: 'date is required (YYYY-MM-DD)' })
+        return
+      }
 
-    // Verify the caller owns this spot (either via user_id linkage or
-    // displayName matching a segment of owner.name).
-    const check = await pool.query(
-      `SELECT s.id FROM spots s
+      // Verify the caller owns this spot (either via user_id linkage or
+      // displayName matching a segment of owner.name).
+      const check = await pool.query(
+        `SELECT s.id FROM spots s
        JOIN owners o ON s.owner_id = o.id
        WHERE s.id = $1 AND (
          $2 = ANY(string_to_array(o.user_id, ','))
@@ -271,88 +294,91 @@ router.put("/me/spots/:spotId/day-status", requireAuth, requireNonGuest, async (
            FROM unnest(string_to_array(o.name, '/')) AS t(n)
          )
        )`,
-      [spotId, req.user!.username, req.user!.displayName],
-    );
-    if (check.rows.length === 0) {
-      res.status(403).json({ error: "Not your spot" });
-      return;
-    }
+        [spotId, req.user!.username, req.user!.displayName],
+      )
+      if (check.rows.length === 0) {
+        res.status(403).json({ error: 'Not your spot' })
+        return
+      }
 
-    if (status === null || status === undefined) {
-      // Clear override — revert to timesheet
-      await pool.query(
-        `DELETE FROM spot_day_status WHERE spot_id = $1 AND date = $2`,
-        [spotId, date],
-      );
-      broadcast();
-      res.json({ ok: true, cleared: true });
-      return;
-    }
+      if (status === null || status === undefined) {
+        // Clear override — revert to timesheet
+        await pool.query(
+          `DELETE FROM spot_day_status WHERE spot_id = $1 AND date = $2`,
+          [spotId, date],
+        )
+        broadcast()
+        res.json({ ok: true, cleared: true })
+        return
+      }
 
-    if (status !== "free" && status !== "occupied") {
-      res.status(400).json({ error: "status must be 'free', 'occupied', or null" });
-      return;
-    }
+      if (status !== 'free' && status !== 'occupied') {
+        res
+          .status(400)
+          .json({ error: "status must be 'free', 'occupied', or null" })
+        return
+      }
 
-    const result = await pool.query(
-      `INSERT INTO spot_day_status (spot_id, date, status, set_by)
+      const result = await pool.query(
+        `INSERT INTO spot_day_status (spot_id, date, status, set_by)
        VALUES ($1, $2, $3, $4)
        ON CONFLICT (spot_id, date) DO UPDATE SET status = $3, set_by = $4
        RETURNING *`,
-      [spotId, date, status, req.user!.displayName],
-    );
-    broadcast();
-    res.json(result.rows[0]);
-  } catch (err) {
-    next(err);
-  }
-});
+        [spotId, date, status, req.user!.displayName],
+      )
+      broadcast()
+      res.json(result.rows[0])
+    } catch (err) {
+      next(err)
+    }
+  },
+)
 
 // PATCH /api/owners/:id/link — admin links an owner to an SSO username
-router.patch("/:id/link", requireAuth, requireAdmin, async (req, res, next) => {
+router.patch('/:id/link', requireAuth, requireAdmin, async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const { username } = req.body as { username: string | null };
+    const { id } = req.params
+    const { username } = req.body as { username: string | null }
 
     const result = await pool.query(
       `UPDATE owners SET user_id = $1 WHERE id = $2 RETURNING *`,
       [username?.trim() || null, id],
-    );
+    )
     if (result.rows.length === 0) {
-      res.status(404).json({ error: "Owner not found" });
-      return;
+      res.status(404).json({ error: 'Owner not found' })
+      return
     }
-    res.json(result.rows[0]);
+    res.json(result.rows[0])
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
 // BE-5: GET /api/owners — list all owners ordered by name
-router.get("/", requireAuth, requireAdmin, async (_req, res, next) => {
+router.get('/', requireAuth, requireAdmin, async (_req, res, next) => {
   try {
-    const result = await pool.query("SELECT * FROM owners ORDER BY name");
-    res.json(result.rows);
+    const result = await pool.query('SELECT * FROM owners ORDER BY name')
+    res.json(result.rows)
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
 // BE-6: POST /api/owners — create new owner, validate required name
-router.post("/", requireAuth, requireAdmin, async (req, res, next) => {
+router.post('/', requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { name, email, phone, vehicle_plate, notes, user_id } = req.body as {
-      name: string;
-      email?: string;
-      phone?: string;
-      vehicle_plate?: string;
-      notes?: string;
-      user_id?: string;
-    };
+      name: string
+      email?: string
+      phone?: string
+      vehicle_plate?: string
+      notes?: string
+      user_id?: string
+    }
 
-    if (!name || typeof name !== "string" || name.trim() === "") {
-      res.status(400).json({ error: "name is required" });
-      return;
+    if (!name || typeof name !== 'string' || name.trim() === '') {
+      res.status(400).json({ error: 'name is required' })
+      return
     }
 
     const result = await pool.query(
@@ -369,33 +395,33 @@ router.post("/", requireAuth, requireAdmin, async (req, res, next) => {
         notes ?? null,
         user_id?.trim() || null,
       ],
-    );
+    )
 
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(result.rows[0])
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
 // BE-7: PUT /api/owners/:id — update owner data
-router.put("/:id", requireAuth, requireAdmin, async (req, res, next) => {
+router.put('/:id', requireAuth, requireAdmin, async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params
     const { name, email, phone, vehicle_plate, notes, user_id } = req.body as {
-      name?: string;
-      email?: string;
-      phone?: string;
-      vehicle_plate?: string;
-      notes?: string;
-      user_id?: string | null;
-    };
+      name?: string
+      email?: string
+      phone?: string
+      vehicle_plate?: string
+      notes?: string
+      user_id?: string | null
+    }
 
     if (
       name !== undefined &&
-      (typeof name !== "string" || name.trim() === "")
+      (typeof name !== 'string' || name.trim() === '')
     ) {
-      res.status(400).json({ error: "name cannot be empty" });
-      return;
+      res.status(400).json({ error: 'name cannot be empty' })
+      return
     }
 
     const result = await pool.query(
@@ -417,42 +443,42 @@ router.put("/:id", requireAuth, requireAdmin, async (req, res, next) => {
         phone ?? null,
         vehicle_plate ?? null,
         notes ?? null,
-        user_id !== undefined,                          // $6: whether to update user_id
-        user_id !== undefined ? (user_id?.trim() || null) : null, // $7: new value
+        user_id !== undefined, // $6: whether to update user_id
+        user_id !== undefined ? user_id?.trim() || null : null, // $7: new value
         id,
       ],
-    );
+    )
 
     if (result.rows.length === 0) {
-      res.status(404).json({ error: "Owner not found" });
-      return;
+      res.status(404).json({ error: 'Owner not found' })
+      return
     }
 
-    res.json(result.rows[0]);
+    res.json(result.rows[0])
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
 // BE-8: DELETE /api/owners/:id — delete owner (spot owner_id becomes null via FK)
-router.delete("/:id", requireAuth, requireAdmin, async (req, res, next) => {
+router.delete('/:id', requireAuth, requireAdmin, async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params
 
     const result = await pool.query(
-      "DELETE FROM owners WHERE id = $1 RETURNING id",
+      'DELETE FROM owners WHERE id = $1 RETURNING id',
       [id],
-    );
+    )
 
     if (result.rows.length === 0) {
-      res.status(404).json({ error: "Owner not found" });
-      return;
+      res.status(404).json({ error: 'Owner not found' })
+      return
     }
 
-    res.status(200).json({ ok: true });
+    res.status(200).json({ ok: true })
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
-export default router;
+export default router

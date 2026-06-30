@@ -1,8 +1,8 @@
+import { Select } from '@mantine/core'
 import { Clock, ParkingCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { PreferenceRow } from '@/components/PreferenceRow/PreferenceRow'
-import { Select } from '@/components/ui/select'
 
 import { RemindersSection } from './RemindersSection'
 
@@ -53,7 +53,7 @@ export function PreferencesCard({
                 onChange={(v) => onPreferredLotChange(v ?? null)}
                 clearable
                 placeholder={t('profile.anyLot')}
-                className="min-w-28 text-xs"
+                classNames={{ input: 'min-w-28 text-xs' }}
                 data={lots.map((lot) => ({ value: lot.id, label: lot.name }))}
               />
             </PreferenceRow>

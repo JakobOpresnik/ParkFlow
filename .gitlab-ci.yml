@@ -95,6 +95,7 @@ backend_lint:
     - cd backend
     - bun install --frozen-lockfile
     - bunx tsc -p tsconfig.json --noEmit
+    - bunx prettier --check "src/**/*.ts"
 
 frontend_lint:
   stage: lint
@@ -102,6 +103,7 @@ frontend_lint:
     - cd frontend
     - bun install --frozen-lockfile
     - bun run lint
+    - bunx prettier --check "src/**/*.{ts,tsx,css}"
 
 compose_dockerfile_guard:
   stage: lint

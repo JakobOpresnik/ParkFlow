@@ -1,3 +1,4 @@
+import { Select } from '@mantine/core'
 import { useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Inbox, Loader2, Trash2 } from 'lucide-react'
 import { useState } from 'react'
@@ -11,7 +12,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Select } from '@/components/ui/select'
 import {
   useDeleteFeedback,
   useFeedbackList,

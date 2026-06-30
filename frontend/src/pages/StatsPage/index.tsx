@@ -1,7 +1,7 @@
+import { Select } from '@mantine/core'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { Select } from '@/components/ui/select'
 import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
 import { useLots } from '@/hooks/useLots'
 import { useStatsHistory } from '@/hooks/useStatsHistory'

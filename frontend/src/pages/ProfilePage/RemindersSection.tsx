@@ -1,8 +1,8 @@
+import { Switch } from '@mantine/core'
 import { Bell } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { PreferenceRow } from '@/components/PreferenceRow/PreferenceRow'
-import { Switch } from '@/components/ui/switch'
 import {
   useNotificationPrefs,
   useSetNotificationPref,
@@ -25,9 +25,13 @@ export function RemindersSection() {
             description={t(`profile.reminders.${c.type}.desc`, c.description)}
           >
             <Switch
+              size="md"
               checked={data.prefs[c.type] !== false}
-              onCheckedChange={(enabled) =>
-                setPref.mutate({ type: c.type, enabled })
+              onChange={(e) =>
+                setPref.mutate({
+                  type: c.type,
+                  enabled: e.currentTarget.checked,
+                })
               }
             />
           </PreferenceRow>

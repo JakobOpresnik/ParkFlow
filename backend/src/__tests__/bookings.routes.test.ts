@@ -1,54 +1,54 @@
-import jwt from 'jsonwebtoken';
-import request from 'supertest';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import jwt from 'jsonwebtoken'
+import request from 'supertest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createApp } from '../app.js';
+import { createApp } from '../app.js'
 
 vi.mock('../db/pool.js', () => ({
   pool: {
     query: vi.fn(),
     connect: vi.fn(),
   },
-}));
+}))
 
-const { pool } = await import('../db/pool.js');
-const mockQuery = pool.query as ReturnType<typeof vi.fn>;
-const mockConnect = pool.connect as ReturnType<typeof vi.fn>;
+const { pool } = await import('../db/pool.js')
+const mockQuery = pool.query as ReturnType<typeof vi.fn>
+const mockConnect = pool.connect as ReturnType<typeof vi.fn>
 
-const TEST_SECRET = 'dev-secret-change-in-production';
+const TEST_SECRET = 'dev-secret-change-in-production'
 const TEST_USER = {
   userId: 'user-1',
   username: 'admin',
   displayName: 'Admin',
   role: 'admin',
-};
-const AUTH_HEADER = `Bearer ${jwt.sign(TEST_USER, TEST_SECRET, { expiresIn: '1h' })}`;
+}
+const AUTH_HEADER = `Bearer ${jwt.sign(TEST_USER, TEST_SECRET, { expiresIn: '1h' })}`
 
 beforeEach(() => {
-  vi.resetAllMocks();
-});
+  vi.resetAllMocks()
+})
 
-const app = createApp();
+const app = createApp()
 
 describe('POST /api/bookings', () => {
   it('returns 401 without token', async () => {
     const res = await request(app)
       .post('/api/bookings')
-      .send({ spot_id: 'spot-1' });
-    expect(res.status).toBe(401);
-  });
+      .send({ spot_id: 'spot-1' })
+    expect(res.status).toBe(401)
+  })
 
   it('returns 400 when spot_id is missing', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] }); // expire stale
+    mockQuery.mockResolvedValueOnce({ rows: [] }) // expire stale
 
     const res = await request(app)
       .post('/api/bookings')
       .set('Authorization', AUTH_HEADER)
-      .send({});
+      .send({})
 
-    expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/spot_id/);
-  });
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/spot_id/)
+  })
 
   it('auto-cancels existing booking and creates new one', async () => {
     const mockClient = {
@@ -91,20 +91,20 @@ describe('POST /api/bookings', () => {
         }) // INSERT booking
         .mockResolvedValueOnce({}), // COMMIT
       release: vi.fn(),
-    };
+    }
 
-    mockQuery.mockResolvedValueOnce({ rows: [] }); // expire stale
-    mockConnect.mockResolvedValueOnce(mockClient);
+    mockQuery.mockResolvedValueOnce({ rows: [] }) // expire stale
+    mockConnect.mockResolvedValueOnce(mockClient)
 
     const res = await request(app)
       .post('/api/bookings')
       .set('Authorization', AUTH_HEADER)
-      .send({ spot_id: 'spot-1' });
+      .send({ spot_id: 'spot-1' })
 
-    expect(res.status).toBe(201);
-    expect(res.body.status).toBe('active');
-    expect(mockClient.release).toHaveBeenCalled();
-  });
+    expect(res.status).toBe(201)
+    expect(res.body.status).toBe('active')
+    expect(mockClient.release).toHaveBeenCalled()
+  })
 
   it('returns 409 when spot is not free', async () => {
     const mockClient = {
@@ -128,19 +128,19 @@ describe('POST /api/bookings', () => {
         .mockResolvedValueOnce({ rows: [] }) // SELECT spot_day_status
         .mockResolvedValueOnce({}), // ROLLBACK
       release: vi.fn(),
-    };
+    }
 
-    mockQuery.mockResolvedValueOnce({ rows: [] }); // expire stale
-    mockConnect.mockResolvedValueOnce(mockClient);
+    mockQuery.mockResolvedValueOnce({ rows: [] }) // expire stale
+    mockConnect.mockResolvedValueOnce(mockClient)
 
     const res = await request(app)
       .post('/api/bookings')
       .set('Authorization', AUTH_HEADER)
-      .send({ spot_id: 'spot-1' });
+      .send({ spot_id: 'spot-1' })
 
-    expect(res.status).toBe(409);
-    expect(res.body.error).toMatch(/not available/);
-  });
+    expect(res.status).toBe(409)
+    expect(res.body.error).toMatch(/not available/)
+  })
 
   it('returns 201 and creates booking for a free spot', async () => {
     const mockClient = {
@@ -178,20 +178,20 @@ describe('POST /api/bookings', () => {
         }) // INSERT booking
         .mockResolvedValueOnce({}), // COMMIT
       release: vi.fn(),
-    };
+    }
 
-    mockQuery.mockResolvedValueOnce({ rows: [] }); // expire stale
-    mockConnect.mockResolvedValueOnce(mockClient);
+    mockQuery.mockResolvedValueOnce({ rows: [] }) // expire stale
+    mockConnect.mockResolvedValueOnce(mockClient)
 
     const res = await request(app)
       .post('/api/bookings')
       .set('Authorization', AUTH_HEADER)
-      .send({ spot_id: 'spot-1' });
+      .send({ spot_id: 'spot-1' })
 
-    expect(res.status).toBe(201);
-    expect(res.body.status).toBe('active');
-    expect(res.body.spot_number).toBe(5);
-  });
+    expect(res.status).toBe(201)
+    expect(res.body.status).toBe('active')
+    expect(res.body.spot_number).toBe(5)
+  })
 
   it('returns 409 when an admin set an ACEX pool spot to occupied', async () => {
     const mockClient = {
@@ -215,19 +215,19 @@ describe('POST /api/bookings', () => {
         .mockResolvedValueOnce({ rows: [] }) // SELECT spot_day_status
         .mockResolvedValueOnce({}), // ROLLBACK
       release: vi.fn(),
-    };
+    }
 
-    mockQuery.mockResolvedValueOnce({ rows: [] }); // expire stale
-    mockConnect.mockResolvedValueOnce(mockClient);
+    mockQuery.mockResolvedValueOnce({ rows: [] }) // expire stale
+    mockConnect.mockResolvedValueOnce(mockClient)
 
     const res = await request(app)
       .post('/api/bookings')
       .set('Authorization', AUTH_HEADER)
-      .send({ spot_id: 'spot-1' });
+      .send({ spot_id: 'spot-1' })
 
-    expect(res.status).toBe(409);
-    expect(res.body.error).toMatch(/not available/);
-  });
+    expect(res.status).toBe(409)
+    expect(res.body.error).toMatch(/not available/)
+  })
 
   it('still books a free ACEX pool spot by default', async () => {
     const mockClient = {
@@ -265,26 +265,26 @@ describe('POST /api/bookings', () => {
         }) // INSERT booking
         .mockResolvedValueOnce({}), // COMMIT
       release: vi.fn(),
-    };
+    }
 
-    mockQuery.mockResolvedValueOnce({ rows: [] }); // expire stale
-    mockConnect.mockResolvedValueOnce(mockClient);
+    mockQuery.mockResolvedValueOnce({ rows: [] }) // expire stale
+    mockConnect.mockResolvedValueOnce(mockClient)
 
     const res = await request(app)
       .post('/api/bookings')
       .set('Authorization', AUTH_HEADER)
-      .send({ spot_id: 'spot-1' });
+      .send({ spot_id: 'spot-1' })
 
-    expect(res.status).toBe(201);
-    expect(res.body.status).toBe('active');
-  });
-});
+    expect(res.status).toBe(201)
+    expect(res.body.status).toBe('active')
+  })
+})
 
 describe('PATCH /api/bookings/:id/cancel', () => {
   it('returns 401 without token', async () => {
-    const res = await request(app).patch('/api/bookings/booking-1/cancel');
-    expect(res.status).toBe(401);
-  });
+    const res = await request(app).patch('/api/bookings/booking-1/cancel')
+    expect(res.status).toBe(401)
+  })
 
   it('returns 404 for non-existent booking', async () => {
     const mockClient = {
@@ -294,15 +294,15 @@ describe('PATCH /api/bookings/:id/cancel', () => {
         .mockResolvedValueOnce({ rows: [] }) // SELECT booking JOIN spots LEFT JOIN owners
         .mockResolvedValueOnce({}), // ROLLBACK
       release: vi.fn(),
-    };
-    mockConnect.mockResolvedValueOnce(mockClient);
+    }
+    mockConnect.mockResolvedValueOnce(mockClient)
 
     const res = await request(app)
       .patch('/api/bookings/non-existent/cancel')
-      .set('Authorization', AUTH_HEADER);
+      .set('Authorization', AUTH_HEADER)
 
-    expect(res.status).toBe(404);
-  });
+    expect(res.status).toBe(404)
+  })
 
   it('returns 409 when booking is already cancelled', async () => {
     const mockClient = {
@@ -322,15 +322,15 @@ describe('PATCH /api/bookings/:id/cancel', () => {
         }) // SELECT booking
         .mockResolvedValueOnce({}), // ROLLBACK
       release: vi.fn(),
-    };
-    mockConnect.mockResolvedValueOnce(mockClient);
+    }
+    mockConnect.mockResolvedValueOnce(mockClient)
 
     const res = await request(app)
       .patch('/api/bookings/b1/cancel')
-      .set('Authorization', AUTH_HEADER);
+      .set('Authorization', AUTH_HEADER)
 
-    expect(res.status).toBe(409);
-  });
+    expect(res.status).toBe(409)
+  })
 
   it('cancels an active booking successfully', async () => {
     const mockClient = {
@@ -353,16 +353,16 @@ describe('PATCH /api/bookings/:id/cancel', () => {
         .mockResolvedValueOnce({}) // UPDATE spots free
         .mockResolvedValueOnce({}), // COMMIT
       release: vi.fn(),
-    };
-    mockConnect.mockResolvedValueOnce(mockClient);
+    }
+    mockConnect.mockResolvedValueOnce(mockClient)
 
     const res = await request(app)
       .patch('/api/bookings/b1/cancel')
-      .set('Authorization', AUTH_HEADER);
+      .set('Authorization', AUTH_HEADER)
 
-    expect(res.status).toBe(200);
-    expect(res.body.ok).toBe(true);
-  });
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+  })
 
   it('notifies the booking user when someone else (owner/admin) cancels their reservation', async () => {
     const mockClient = {
@@ -391,20 +391,20 @@ describe('PATCH /api/bookings/:id/cancel', () => {
         .mockResolvedValueOnce({ rows: [{ id: 'notif-1' }] }) // INSERT notification
         .mockResolvedValueOnce({}), // COMMIT
       release: vi.fn(),
-    };
-    mockConnect.mockResolvedValueOnce(mockClient);
+    }
+    mockConnect.mockResolvedValueOnce(mockClient)
 
     const res = await request(app)
       .patch('/api/bookings/bk-1/cancel')
-      .set('Authorization', AUTH_HEADER);
+      .set('Authorization', AUTH_HEADER)
 
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ ok: true, notified: true });
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ ok: true, notified: true })
     expect(mockClient.query).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO notifications'),
       expect.arrayContaining(['bostjan']),
-    );
-  });
+    )
+  })
 
   it('does NOT notify when the user cancels their own booking', async () => {
     const mockClient = {
@@ -429,27 +429,27 @@ describe('PATCH /api/bookings/:id/cancel', () => {
         .mockResolvedValueOnce({}) // UPDATE spots free
         .mockResolvedValueOnce({}), // COMMIT  (NO notification insert)
       release: vi.fn(),
-    };
-    mockConnect.mockResolvedValueOnce(mockClient);
+    }
+    mockConnect.mockResolvedValueOnce(mockClient)
 
     const res = await request(app)
       .patch('/api/bookings/b1/cancel')
-      .set('Authorization', AUTH_HEADER);
+      .set('Authorization', AUTH_HEADER)
 
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ ok: true, notified: false });
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ ok: true, notified: false })
     expect(mockClient.query).not.toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO notifications'),
       expect.anything(),
-    );
-  });
-});
+    )
+  })
+})
 
 describe('GET /api/bookings/my', () => {
   it('returns 401 without token', async () => {
-    const res = await request(app).get('/api/bookings/my');
-    expect(res.status).toBe(401);
-  });
+    const res = await request(app).get('/api/bookings/my')
+    expect(res.status).toBe(401)
+  })
 
   it('returns bookings array for authenticated user', async () => {
     mockQuery
@@ -468,14 +468,14 @@ describe('GET /api/bookings/my', () => {
             spot_floor: 'P1',
           },
         ],
-      });
+      })
 
     const res = await request(app)
       .get('/api/bookings/my')
-      .set('Authorization', AUTH_HEADER);
+      .set('Authorization', AUTH_HEADER)
 
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0].spot_number).toBe(3);
-  });
-});
+    expect(res.status).toBe(200)
+    expect(res.body).toHaveLength(1)
+    expect(res.body[0].spot_number).toBe(3)
+  })
+})

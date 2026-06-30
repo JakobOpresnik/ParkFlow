@@ -48,14 +48,6 @@ export function useDeleteSpot() {
   })
 }
 
-export function useSpotByNumber(number: number | null) {
-  return useQuery({
-    queryKey: ['spots', 'number', number],
-    queryFn: () => api.getSpotByNumber(number!),
-    enabled: number !== null,
-  })
-}
-
 export function useAssignOwner() {
   return useMutation({
     mutationFn: ({ id, owner_id }: { id: string; owner_id: string | null }) =>

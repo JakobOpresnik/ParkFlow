@@ -24,7 +24,9 @@ Beyond presence-aware availability, ParkFlow provides:
 - A full admin panel for managing lots, spots, and owners
 - A complete audit log of every change
 - Real-time updates via Server-Sent Events
+- In-app notifications plus scheduled Rocket.Chat reminders
 - A feedback/feature request system for users
+- English and Slovenian localization, with read-only guest browsing
 
 ---
 
@@ -53,7 +55,8 @@ Beyond presence-aware availability, ParkFlow provides:
 ### 🏢 Parking Management
 
 - 🗂️ **Multi-lot support** — manage multiple parking locations (floors, zones, areas) independently, each with its own floor plan image
-- 🔴🟢 **Real-time spot status** — each spot reflects its live state: `free`, `occupied`, or `reserved`
+- 🔴🟢 **Real-time spot status** — each spot reflects its live state: `free`, `occupied`, `reserved`, or `spotted`
+- 👀 **"Spotted" reports** — any user can flag a free-looking spot as actually taken; it shows as `spotted` until the report expires or someone books it
 - 🚗 **Spot types** — `standard`, `ev` (EV charging), `handicap`, `compact` — filterable in the UI
 - 🗺️ **SVG map overlay** — interactive parking map drawn over real CAD floor plans with zoom, pan, and pinch-to-zoom
 - ✏️ **Visual map editor** — admin tool to draw and reposition spot coordinates directly on the floor plan image, persisted to the database
@@ -86,6 +89,7 @@ Beyond presence-aware availability, ParkFlow provides:
 ### 🔧 Administration
 
 - 🛡️ **Admin panel** with full CRUD for parking lots, spots, and owners
+- 🚧 **Take spots out of circulation** — admins can mark an ACEX shared-pool spot as `occupied`/`reserved` to remove it from the bookable pool
 - 👤 **Owner management** — create owners with name, email, phone, vehicle plate, and notes; link to SSO username for self-service login
 - 📋 **Audit log** — every spot status change is recorded with who changed it, when, and the before/after values (change types: `owner_assigned`, `owner_unassigned`, `status_changed`, `type_changed`)
 - 💬 **Feedback management** — view, triage, and update status of user-submitted feature requests and bug reports
@@ -95,17 +99,31 @@ Beyond presence-aware availability, ParkFlow provides:
 - 📡 **Server-Sent Events (SSE)** — clients subscribe to `/api/subscribe` for live spot status updates; no polling required
 - 🔄 All spot status changes are broadcast to connected clients instantly
 
+### 🔔 Notifications & Reminders
+
+- 🛎️ **In-app notifications** — a notification bell surfaces booking and spot events, with mark-as-read and mark-all-read
+- ⏰ **Scheduled reminders** — a `reminders-cron` service nudges users with a weekday-morning "you have a spot reserved today" and a Friday-afternoon "free your spot if you won't need it" to spot owners
+- 💬 **Rocket.Chat integration** — reminders and release notices are delivered as Rocket.Chat DMs, and an inbound webhook bot answers parking queries from chat
+- ⚙️ **Per-user opt-out** — users can disable any reminder type from their profile
+
+### 🌍 Localization
+
+- 🇬🇧 🇸🇮 Full **English and Slovenian** translations via `i18next` / `react-i18next`
+- 🔀 In-app language switcher; user-facing strings, relative times, and dates are all localized
+
 ### 🔐 Authentication & Access Control
 
 - 🔑 **Authentik SSO** — OAuth 2.0 with PKCE flow; no username/password stored locally
 - 🪪 Bearer tokens validated server-side against the Authentik userinfo endpoint on each request
 - 👑 **Admin role** — granted to members of the configured Authentik group (`AUTHENTIK_ADMIN_GROUP`)
-- 🚫 All write operations require authentication; admin operations additionally require the admin role
+- 👤 **Guest mode** — `POST /api/auth/guest` mints a short-lived read-only token so visitors can browse the map without an SSO account; all write actions are blocked for guests
+- 🚫 All endpoints require authentication; write operations additionally reject guests, and admin operations require the admin role
 
 ### 📊 Dashboard & Analytics
 
 - 📈 **Dashboard** — occupancy overview, weekly usage bar chart, live activity feed
 - 📉 **Analytics / Stats page** — per-floor breakdown, utilization metrics, stacked progress bars
+- 🔥 **Peak-hours heatmap** — historical occupancy by weekday/hour, derived from booking and override history (`GET /api/stats/history`)
 - 👤 **Profile page** — user preferences, attendance stats, active booking summary
 
 ### 💬 Feedback System
@@ -130,7 +148,8 @@ Beyond presence-aware availability, ParkFlow provides:
 | ------------------ | ------------------------------------------------------- |
 | ⚛️ Framework       | React 19 + TypeScript 5.9                               |
 | ⚡ Build           | Vite 7                                                  |
-| 🎨 UI              | shadcn/ui + Mantine 8 (notifications) + Tailwind CSS 4  |
+| 🎨 UI              | Mantine 8 + Tailwind CSS 4 (local `components/ui` primitives) |
+| 🌍 i18n            | i18next + react-i18next (English / Slovenian)           |
 | 🗃️ State           | Zustand 5                                               |
 | 🔄 Data Fetching   | TanStack Query 5                                        |
 | 🧭 Routing         | TanStack Router 1.16                                    |
@@ -153,7 +172,7 @@ Beyond presence-aware availability, ParkFlow provides:
 
 ## 📁 Project Structure
 
-```
+```text
 parkflow/
 ├── 🖥️  frontend/                   # React SPA
 │   ├── src/
@@ -162,8 +181,10 @@ parkflow/
 │   │   │   ├── ParkingMap/     # SVG canvas with zoom/pan
 │   │   │   ├── SpotGrid/       # Responsive spot card grid
 │   │   │   ├── SpotModal/      # Spot detail + booking modal
-│   │   │   └── ui/             # shadcn/ui primitives
+│   │   │   └── ui/             # Local UI primitives (Mantine + Tailwind wrappers)
 │   │   ├── hooks/              # React Query hooks (useSpots, useBookings, useEffectiveSpots, …)
+│   │   ├── i18n/               # i18next config + en/sl locale files
+│   │   ├── lib/                # Shared helpers (datetime, spots, utils)
 │   │   ├── pages/              # Route-level page components
 │   │   ├── store/              # Zustand state (auth, UI, lot selection)
 │   │   └── types/              # Shared TypeScript interfaces
@@ -173,7 +194,8 @@ parkflow/
 │
 ├── ⚙️  backend/                    # Express REST API
 │   ├── src/
-│   │   ├── routes/             # Route handlers (spots, owners, lots, bookings, auth, changes, presence)
+│   │   ├── routes/             # Route handlers (spots, owners, lots, bookings, auth, changes, presence, stats, feedback, notifications, subscribe, integrations, internal)
+│   │   ├── lib/                # Presence client, reminder scheduler, Rocket.Chat notify, SSE helpers
 │   │   ├── middleware/         # Auth, error handler
 │   │   ├── db/                 # pg connection pool
 │   │   └── __tests__/          # Vitest + Supertest test suites
@@ -223,9 +245,9 @@ docker compose up --build
 
 **Production deployment (CI/CD):**
 
-Deployment to production is handled automatically by the GitLab CI/CD pipeline on every git tag push. The pipeline builds Docker images, pushes them to the registry, and deploys via `compose.yml` using SSH. Required CI/CD variables (set in GitLab project settings):
+Deployment to production is handled automatically by the GitLab CI/CD pipeline on every git tag push. The pipeline builds Docker images, pushes them to the registry, and deploys via `compose.yml` using SSH. The production stack also runs a `reminders-cron` service that triggers the scheduled reminder endpoints. Required CI/CD variables (set in GitLab project settings):
 
-`JWT_SECRET`, `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET`, `TIMESHEET_APP_ID`, `TIMESHEET_SECRET`
+`POSTGRES_PASSWORD`, `JWT_SECRET`, `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET`, `TIMESHEET_APP_ID`, `TIMESHEET_SECRET`, `ROCKETCHAT_WEBHOOK_TOKEN`, `ROCKETCHAT_INCOMING_WEBHOOK_URL`, `REMINDER_TRIGGER_TOKEN`, `OWNERS_API_TOKEN`
 
 Database migrations run automatically on first startup.
 
@@ -236,7 +258,7 @@ Database migrations run automatically on first startup.
 
 ### 🔧 Manual Setup
 
-**1. Clone and configure environment variables**
+**1️⃣ Clone and configure environment variables**
 
 ```bash
 git clone <repo-url>
@@ -247,11 +269,11 @@ cp frontend/.env.example frontend/.env
 
 Edit both `.env` files — see [🔑 Environment Variables](#-environment-variables).
 
-**2. Start PostgreSQL**
+**2️⃣ Start PostgreSQL**
 
 Ensure a PostgreSQL 16 instance is running and accessible via the `DATABASE_URL` in `backend/.env`.
 
-**3. Run the backend**
+**3️⃣ Run the backend**
 
 ```bash
 cd backend
@@ -259,7 +281,7 @@ bun install
 bun dev        # starts on port 3001, runs migrations automatically
 ```
 
-**4. Run the frontend**
+**4️⃣ Run the frontend**
 
 ```bash
 cd frontend
@@ -286,6 +308,13 @@ bun dev        # starts on port 5173
 | `TIMESHEET_API_URL`      | 🗓️ Abelium timesheet API base URL                       | `https://timesheet.abelium.com/api`                      |
 | `TIMESHEET_APP_ID`       | 🔑 Abelium timesheet OAuth app ID                       | `app_c1ca32c01d4d18b4`                                   |
 | `TIMESHEET_SECRET`       | 🔒 Abelium timesheet OAuth secret                       | `your-timesheet-secret`                                  |
+| `ROCKETCHAT_WEBHOOK_TOKEN` | 💬 Shared secret expected from the Rocket.Chat outgoing webhook | `your-webhook-token`                          |
+| `ROCKETCHAT_INCOMING_WEBHOOK_URL` | 🔗 Rocket.Chat incoming webhook URL for outbound DMs | `https://chat.example.com/hooks/...`              |
+| `REMINDER_TRIGGER_TOKEN` | 🔑 Shared secret (`X-Reminder-Token`) gating the internal reminder endpoints | `your-reminder-token`               |
+| `REMINDER_TZ`            | 🕒 Timezone for scheduled reminders                     | `Europe/Ljubljana`                                       |
+| `REMINDER_MORNING_TIME`  | ☀️ Local time of the morning "you have a spot" reminder  | `07:30`                                                  |
+| `REMINDER_OWNER_TIME`    | 🌇 Local time of the Friday "free your spot" owner nudge | `15:00`                                                  |
+| `OWNERS_API_TOKEN`       | 🔑 Shared secret (`X-Owners-Token`) gating `GET /api/owners/timesheet-ids` | `your-owners-token`                  |
 
 ### 🖥️ Frontend (`frontend/.env`)
 
@@ -303,23 +332,25 @@ bun dev        # starts on port 5173
 
 **Base URL:** `http://localhost:3001`
 
-All write endpoints require an `Authorization: Bearer <token>` header. Admin-only endpoints additionally require the `admin` role.
+All endpoints require an `Authorization: Bearer <token>` header (a guest token works for read-only browsing). Write endpoints additionally reject guests; admin-only endpoints require the `admin` role. Service-to-service endpoints (see [🔌 Integrations & Internal](#-integrations--internal)) use shared-secret headers instead of a JWT.
 
 ### 🔐 Auth
 
 | Method | Endpoint              | Description                                         | Auth    |
 | ------ | --------------------- | --------------------------------------------------- | ------- |
 | `POST` | `/api/auth/exchange`  | Exchange OAuth code for JWT; returns `{token, id_token}` | —  |
+| `POST` | `/api/auth/guest`     | Mint a short-lived read-only guest JWT `{token, id_token: null}` | — |
 | `GET`  | `/api/auth/me`        | Get current user info `{id, username, displayName, role}` | 🔑 User |
 
 ### 🅿️ Spots
 
 | Method   | Endpoint                              | Description                                              | Auth     |
 | -------- | ------------------------------------- | -------------------------------------------------------- | -------- |
-| `GET`    | `/api/spots?lot_id=`                  | List all spots (optionally filter by lot); includes owner + active booking | — |
-| `GET`    | `/api/spots/:number`                  | Get single spot by number; includes owner + active booking | —      |
-| `GET`    | `/api/spots/:id/bookings?limit=`      | Booking history for a spot (default 50, max 200)         | —        |
-| `GET`    | `/api/spots/day-overrides?date=`      | Per-day status overrides for a date (`YYYY-MM-DD`)       | —        |
+| `GET`    | `/api/spots?lot_id=`                  | List all spots (optionally filter by lot); includes owner + active booking | 🔑 User |
+| `GET`    | `/api/spots/:number`                  | Get single spot by number; includes owner + active booking | 🔑 User |
+| `GET`    | `/api/spots/:id/bookings?limit=`      | Booking history for a spot (default 50, max 200)         | 🔑 User  |
+| `GET`    | `/api/spots/day-overrides?date=`      | Per-day status overrides for a date (`YYYY-MM-DD`)       | 🔑 User  |
+| `POST`   | `/api/spots/:id/spotted`              | Report a free spot as actually taken (shows as `spotted` until expiry); `412` if not currently free | 🔑 User |
 | `POST`   | `/api/spots`                          | Create a spot `{number, lot_id, label?, status?, type?}` | 🛡️ Admin |
 | `PUT`    | `/api/spots/:id`                      | Update spot `{number?, label?, lot_id?, status?, type?}` | 🛡️ Admin |
 | `DELETE` | `/api/spots/:id`                      | Delete a spot                                            | 🛡️ Admin |
@@ -347,7 +378,7 @@ All write endpoints require an `Authorization: Bearer <token>` header. Admin-onl
 
 | Method   | Endpoint        | Description                                                             | Auth     |
 | -------- | --------------- | ----------------------------------------------------------------------- | -------- |
-| `GET`    | `/api/lots`     | List all parking lots (ordered by `sort_order`, then name)              | —        |
+| `GET`    | `/api/lots`     | List all parking lots (ordered by `sort_order`, then name)              | 🔑 User  |
 | `POST`   | `/api/lots`     | Create a lot `{name, description?, image_filename?, image_width?, image_height?, sort_order?}` | 🛡️ Admin |
 | `PUT`    | `/api/lots/:id` | Update lot details                                                      | 🛡️ Admin |
 | `DELETE` | `/api/lots/:id` | Delete a lot (only allowed if no spots remain)                          | 🛡️ Admin |
@@ -367,21 +398,49 @@ All write endpoints require an `Authorization: Bearer <token>` header. Admin-onl
 | ------ | ------------------ | ------------------------------------------------------------------- | ------- |
 | `GET`  | `/api/subscribe`   | SSE stream for live spot updates; pass token as `?token=` query param | 🔑 User |
 
+### 🔔 Notifications
+
+| Method  | Endpoint                          | Description                                                       | Auth    |
+| ------- | --------------------------------- | ----------------------------------------------------------------- | ------- |
+| `GET`   | `/api/notifications?undelivered=` | List the user's notifications (newest unread first, max 50)        | 🔑 User |
+| `GET`   | `/api/notifications/prefs`        | Reminder catalog + the user's per-type on/off state               | 🔑 User |
+| `PUT`   | `/api/notifications/prefs/:type`  | Toggle a reminder type `{enabled: boolean}`                       | 🔑 User |
+| `PATCH` | `/api/notifications/read-all`     | Mark all of the user's notifications read                         | 🔑 User |
+| `PATCH` | `/api/notifications/:id/read`     | Mark a single notification read                                   | 🔑 User |
+
 ### 📋 Audit & Feedback
 
 | Method   | Endpoint                      | Description                                                  | Auth     |
 | -------- | ----------------------------- | ------------------------------------------------------------ | -------- |
-| `GET`    | `/api/changes?lot_id=`        | Last 50 spot changes with spot info; optionally filter by lot | —        |
+| `GET`    | `/api/changes?lot_id=`        | Last 50 spot changes with spot info; optionally filter by lot | 🔑 User  |
 | `POST`   | `/api/feedback`               | Submit feedback `{title, description, category?}`            | 🔑 User  |
 | `GET`    | `/api/feedback`               | List all feedback submissions (newest first)                 | 🛡️ Admin |
-| `PATCH`  | `/api/feedback/:id/status`    | Update feedback status `{status: open\|in_progress\|done\|dismissed}` | 🛡️ Admin |
+| `PATCH`  | `/api/feedback/:id/status`    | Update feedback status `{status: open\|in_progress\|done\|dismissed\|archived}` | 🛡️ Admin |
 | `DELETE` | `/api/feedback/:id`           | Delete a feedback entry                                      | 🛡️ Admin |
+
+### 📊 Stats
+
+| Method | Endpoint                                      | Description                                                                 | Auth    |
+| ------ | --------------------------------------------- | --------------------------------------------------------------------------- | ------- |
+| `GET`  | `/api/stats/history?lot_id=&days=&heatmap_days=` | Historical occupancy: a daily series (default 30 days) + weekday/hour heatmap (default 90 days), derived from bookings and `occupied` day-overrides | 🔑 User |
 
 ### 🗓️ Presence (Timesheet)
 
 | Method | Endpoint                      | Description                                                                           | Auth |
 | ------ | ----------------------------- | ------------------------------------------------------------------------------------- | ---- |
-| `GET`  | `/api/presence?date=`         | Weekly presence from Abelium timesheet for the week containing `date` (`YYYY-MM-DD`); defaults to today; cached 5 min | — |
+| `GET`  | `/api/presence?date=`         | Weekly presence from Abelium timesheet for the week containing `date` (`YYYY-MM-DD`); defaults to today; cached 5 min | 🔑 User |
+
+### 🔌 Integrations & Internal
+
+Service-to-service endpoints. These do **not** use a JWT — they are gated by shared-secret headers (or unauthenticated where noted).
+
+| Method | Endpoint                              | Description                                                        | Auth                 |
+| ------ | ------------------------------------- | ------------------------------------------------------------------ | -------------------- |
+| `POST` | `/api/integrations/rocketchat`        | Rocket.Chat outgoing-webhook bot for parking queries               | 🔑 Webhook token     |
+| `POST` | `/api/internal/reminders/run`         | Trigger the morning "you have a spot" reminder tick (`?dry=1` for dry run) | 🔑 `X-Reminder-Token` |
+| `POST` | `/api/internal/reminders/owners/run`  | Trigger the Friday "free your spot" owner nudge (`?dry=1` for dry run)     | 🔑 `X-Reminder-Token` |
+| `GET`  | `/api/owners/user-ids`                | SSO usernames of all spot owners (Friday reminder flow)            | —                    |
+| `GET`  | `/api/owners/timesheet-ids`           | Numeric Abelium timesheet ids of spot owners                       | 🔑 `X-Owners-Token`  |
 
 ### ⚙️ Health
 
@@ -393,7 +452,7 @@ All write endpoints require an `Authorization: Bearer <token>` header. Admin-onl
 
 ## 🗄️ Database Schema
 
-Eight PostgreSQL tables managed via ordered SQL migrations in `backend/migrations/`.
+Eleven PostgreSQL tables managed via ordered SQL migrations in `backend/migrations/`.
 
 ```bash
 cd backend
@@ -485,6 +544,7 @@ Parking reservations with automatic expiry.
 | `user_id`        | TEXT NOT NULL | SSO user identifier                                                  |
 | `spot_id`        | UUID FK       | → `spots(id)` ON DELETE CASCADE                                      |
 | `status`         | TEXT          | `active` \| `cancelled` \| `expired` — default `active`             |
+| `booking_date`   | DATE          | Local (Europe/Ljubljana) calendar day; unique active booking per spot+day enforced via partial index |
 | `reserved_by`    | TEXT          | Display name of the person who booked                                |
 | `booked_at`      | TIMESTAMPTZ   | `now()`                                                              |
 | `starts_at`      | TIMESTAMPTZ   | Optional booking start time                                          |
@@ -541,8 +601,58 @@ User-submitted feedback, bug reports, and feature requests.
 | `title`        | TEXT NOT NULL |                                                                  |
 | `description`  | TEXT NOT NULL |                                                                  |
 | `category`     | TEXT          | `general` \| `bug` \| `feature` \| `improvement` — default `general` |
-| `status`       | TEXT          | `open` \| `in_progress` \| `done` \| `dismissed` — default `open` |
+| `status`       | TEXT          | `open` \| `in_progress` \| `done` \| `dismissed` \| `archived` — default `open` |
 | `created_at`   | TIMESTAMPTZ   | `now()`                                                          |
+
+</details>
+
+<details>
+<summary><strong>👀 <code>spot_spotted_reports</code></strong></summary>
+
+User-reported "this spot is actually taken" flags. A free spot with an active, non-expired report is displayed as `spotted` in the API.
+
+| Column        | Type          | Notes                                                       |
+| ------------- | ------------- | ----------------------------------------------------------- |
+| `id`          | UUID PK       | `gen_random_uuid()`                                         |
+| `spot_id`     | UUID FK       | → `spots(id)` ON DELETE CASCADE                             |
+| `reported_by` | TEXT NOT NULL | Username who reported the spot                              |
+| `reported_at` | TIMESTAMPTZ   | `now()`                                                     |
+| `expires_at`  | TIMESTAMPTZ   | When the report lapses and the spot reverts                |
+| `cleared_by`  | TEXT          | Username who cleared it (e.g. on booking)                  |
+| `cleared_at`  | TIMESTAMPTZ   | Set when cleared; at most one active report per spot       |
+
+</details>
+
+<details>
+<summary><strong>🔔 <code>notifications</code></strong></summary>
+
+Durable per-user in-app notifications.
+
+| Column       | Type          | Notes                                              |
+| ------------ | ------------- | -------------------------------------------------- |
+| `id`         | UUID PK       | `gen_random_uuid()`                                |
+| `user_id`    | TEXT NOT NULL | SSO user identifier                                |
+| `type`       | TEXT NOT NULL | Notification/reminder type                         |
+| `title`      | TEXT NOT NULL |                                                    |
+| `body`       | TEXT NOT NULL |                                                    |
+| `data`       | JSONB         | Optional structured payload                        |
+| `created_at` | TIMESTAMPTZ   | `now()`                                            |
+| `read_at`    | TIMESTAMPTZ   | Set when the user reads it                         |
+| `pushed_at`  | TIMESTAMPTZ   | Set when proactively delivered (e.g. via chat)     |
+
+</details>
+
+<details>
+<summary><strong>⚙️ <code>notification_prefs</code></strong></summary>
+
+Per-user opt-out for scheduled reminder types. Absence of a row means enabled (default-on).
+
+| Column          | Type          | Notes                                       |
+| --------------- | ------------- | ------------------------------------------- |
+| `user_id`       | TEXT NOT NULL | SSO user identifier (PK with `reminder_type`) |
+| `reminder_type` | TEXT NOT NULL | Reminder type key (PK with `user_id`)        |
+| `enabled`       | BOOLEAN       | Default `true`                              |
+| `updated_at`    | TIMESTAMPTZ   | `now()`                                     |
 
 </details>
 
@@ -552,11 +662,11 @@ User-submitted feedback, bug reports, and feature requests.
 
 ```bash
 cd backend
-bun test               # run all test suites
-bun test --coverage    # with coverage report
+bun run test            # run all test suites (vitest run)
+bun run test --coverage # with coverage report
 ```
 
-The test suite covers all REST route handlers using Vitest + Supertest with 46+ test cases.
+The suite covers every REST route group, the auth middleware, and the reminder scheduler using Vitest + Supertest — 200+ test cases across 13 suites.
 
 ### 🖥️ Frontend
 
@@ -575,11 +685,11 @@ Both `frontend/` and `backend/` share the same standards:
 bun lint            # ESLint check  (equivalent to: bun run lint)
 bun run lint:fix    # Auto-fix lint issues
 bun run format      # Prettier formatting
-bun run lint:all    # lint:fix + format in one step (frontend only)
+bun run lint:all    # lint:fix + format in one step (frontend & backend)
 ```
 
 > [!TIP]
-> `bun run lint:all` (frontend) runs lint fixes and Prettier formatting in one step — run it before every commit.
+> `bun run lint:all` runs lint fixes and Prettier formatting in one step — run it before every commit.
 
 **Enforced rules:**
 
@@ -599,8 +709,7 @@ bun run lint:all    # lint:fix + format in one step (frontend only)
 ### 📌 Planned
 
 - 🧠 **Smart suggestions** — scoring algorithm to recommend the best available spot (floor preference, proximity, EV/compact filters)
-- 🔥 **Heatmap view** — historical occupancy overlay on the SVG floor map
-- 🔔 **Notification system** — in-app alerts for booking expiry and spot availability changes
+- 🔥 **Map heatmap overlay** — project the historical peak-hours data (already on the Stats page) onto the SVG floor map
 
 ---
 

@@ -1,50 +1,50 @@
-import type { NextFunction, Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
+import type { NextFunction, Request, Response } from 'express'
+import jwt from 'jsonwebtoken'
 
-export type Role = 'admin' | 'user' | 'guest';
+export type Role = 'admin' | 'user' | 'guest'
 
 export interface AuthPayload {
-  userId: string;
-  username: string;
-  displayName: string;
-  role: Role;
+  userId: string
+  username: string
+  displayName: string
+  role: Role
 }
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
-      user?: AuthPayload;
+      user?: AuthPayload
     }
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-secret-change-in-production'
 
 export function requireAuth(
   req: Request,
   res: Response,
   next: NextFunction,
 ): void {
-  const header = req.headers.authorization;
+  const header = req.headers.authorization
   if (!header?.startsWith('Bearer ')) {
-    res.status(401).json({ error: 'Authentication required' });
-    return;
+    res.status(401).json({ error: 'Authentication required' })
+    return
   }
 
-  const token = header.slice(7);
+  const token = header.slice(7)
   try {
     const payload = jwt.verify(token, JWT_SECRET) as AuthPayload &
-      jwt.JwtPayload;
+      jwt.JwtPayload
     req.user = {
       userId: payload.userId,
       username: payload.username,
       displayName: payload.displayName,
       role: payload.role,
-    };
-    next();
+    }
+    next()
   } catch {
-    res.status(401).json({ error: 'Invalid or expired token' });
+    res.status(401).json({ error: 'Invalid or expired token' })
   }
 }
 
@@ -54,10 +54,10 @@ export function requireAdmin(
   next: NextFunction,
 ): void {
   if (req.user?.role !== 'admin') {
-    res.status(403).json({ error: 'Admin access required' });
-    return;
+    res.status(403).json({ error: 'Admin access required' })
+    return
   }
-  next();
+  next()
 }
 
 export function requireNonGuest(
@@ -66,10 +66,8 @@ export function requireNonGuest(
   next: NextFunction,
 ): void {
   if (req.user?.role === 'guest') {
-    res
-      .status(403)
-      .json({ error: 'Guest accounts cannot perform this action' });
-    return;
+    res.status(403).json({ error: 'Guest accounts cannot perform this action' })
+    return
   }
-  next();
+  next()
 }

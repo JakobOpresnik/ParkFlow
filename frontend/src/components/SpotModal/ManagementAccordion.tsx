@@ -1,9 +1,9 @@
+import { Select } from '@mantine/core'
 import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
 import type { Spot, SpotStatus } from '@/types'
 
 import { ALL_STATUSES, STATUS_CONFIG } from './constants'

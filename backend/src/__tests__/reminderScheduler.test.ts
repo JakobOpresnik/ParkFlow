@@ -9,9 +9,8 @@ vi.mock('../lib/rocketchatNotify.js', () => ({
 
 const { pool } = await import('../db/pool.js')
 const { pushChatMessage } = await import('../lib/rocketchatNotify.js')
-const { runReminderTick, runOwnerReminderTick } = await import(
-  '../lib/reminderScheduler.js'
-)
+const { runReminderTick, runOwnerReminderTick } =
+  await import('../lib/reminderScheduler.js')
 
 const mockConnect = pool.connect as ReturnType<typeof vi.fn>
 const mockPush = pushChatMessage as ReturnType<typeof vi.fn>
@@ -48,7 +47,10 @@ describe('runReminderTick', () => {
       expect.stringContaining('INSERT INTO notifications'),
       expect.arrayContaining(['jsernec']),
     )
-    expect(mockPush).toHaveBeenCalledWith('jsernec', expect.stringContaining('A1'))
+    expect(mockPush).toHaveBeenCalledWith(
+      'jsernec',
+      expect.stringContaining('A1'),
+    )
     expect(client.query).toHaveBeenCalledWith(
       expect.stringContaining('pushed_at = now()'),
       ['n1'],

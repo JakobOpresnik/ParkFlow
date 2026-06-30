@@ -79,7 +79,9 @@ describe('GET /api/notifications/prefs', () => {
     const res = await request(app).get('/api/notifications/prefs')
     expect(res.status).toBe(200)
     expect(
-      res.body.catalog.some((c: { type: string }) => c.type === 'reservation_today'),
+      res.body.catalog.some(
+        (c: { type: string }) => c.type === 'reservation_today',
+      ),
     ).toBe(true)
     expect(res.body.prefs.reservation_today).toBe(false)
   })
