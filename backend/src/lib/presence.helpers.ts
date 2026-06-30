@@ -1,16 +1,16 @@
-import type { WeekPresenceResponse } from './presence.types.js';
+import type { WeekPresenceResponse } from './presence.types.js'
 
 // Returns YYYY-MM-DD for Mon–Fri of the week containing referenceDate
 export function getWeekDays(referenceDate: string): string[] {
-  const ref = new Date(referenceDate + 'T12:00:00Z');
-  const dow = ref.getUTCDay();
-  const monday = new Date(ref);
-  monday.setUTCDate(ref.getUTCDate() - (dow === 0 ? 6 : dow - 1));
+  const ref = new Date(referenceDate + 'T12:00:00Z')
+  const dow = ref.getUTCDay()
+  const monday = new Date(ref)
+  monday.setUTCDate(ref.getUTCDate() - (dow === 0 ? 6 : dow - 1))
   return Array.from({ length: 5 }, (_, index: number) => {
-    const date = new Date(monday);
-    date.setUTCDate(monday.getUTCDate() + index);
-    return date.toISOString().slice(0, 10);
-  });
+    const date = new Date(monday)
+    date.setUTCDate(monday.getUTCDate() + index)
+    return date.toISOString().slice(0, 10)
+  })
 }
 
 /**
@@ -24,16 +24,16 @@ export function isOwnerAbsent(
   ownerName: string,
   date: string,
 ): boolean {
-  if (presence.work_free_days.includes(date)) return true;
+  if (presence.work_free_days.includes(date)) return true
 
   const entry = presence.employees.find(
     (p) => p.name.toLowerCase() === ownerName.toLowerCase(),
-  );
-  if (!entry) return false;
-  const day = entry.week.find((d) => d.date === date);
-  if (!day) return false;
+  )
+  if (!entry) return false
+  const day = entry.week.find((d) => d.date === date)
+  if (!day) return false
 
-  return day.parking_available === true;
+  return day.parking_available === true
 }
 
 /**
@@ -58,13 +58,13 @@ export function ownerTimesheetIds(
         .map((segment) => segment.trim().toLowerCase())
         .filter(Boolean),
     ),
-  );
+  )
 
-  const ids = new Set<number>();
+  const ids = new Set<number>()
   for (const employee of presence.employees) {
     if (wanted.has(employee.name.trim().toLowerCase())) {
-      ids.add(employee.user_id);
+      ids.add(employee.user_id)
     }
   }
-  return [...ids].sort((a, b) => a - b);
+  return [...ids].sort((a, b) => a - b)
 }

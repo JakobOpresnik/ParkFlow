@@ -11,9 +11,8 @@ vi.mock('../lib/reminderScheduler.js', () => ({
   runOwnerReminderTick: vi.fn(),
 }))
 
-const { runReminderTick, runOwnerReminderTick } = await import(
-  '../lib/reminderScheduler.js'
-)
+const { runReminderTick, runOwnerReminderTick } =
+  await import('../lib/reminderScheduler.js')
 const mockTick = runReminderTick as ReturnType<typeof vi.fn>
 const mockOwnerTick = runOwnerReminderTick as ReturnType<typeof vi.fn>
 

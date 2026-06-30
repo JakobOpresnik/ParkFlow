@@ -1,21 +1,21 @@
-import { Router } from 'express';
+import { Router } from 'express'
 
-import { pool } from '../db/pool.js';
-import { requireAdmin, requireAuth } from '../middleware/auth.js';
+import { pool } from '../db/pool.js'
+import { requireAdmin, requireAuth } from '../middleware/auth.js'
 
-const router = Router();
+const router = Router()
 
 // GET /api/lots — all parking lots ordered by sort_order
 router.get('/', requireAuth, async (_req, res, next) => {
   try {
     const result = await pool.query(
       'SELECT * FROM parking_lots ORDER BY sort_order, name',
-    );
-    res.json(result.rows);
+    )
+    res.json(result.rows)
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
 // POST /api/lots — create a parking lot
 router.post('/', requireAuth, requireAdmin, async (req, res, next) => {
@@ -28,17 +28,17 @@ router.post('/', requireAuth, requireAdmin, async (req, res, next) => {
       image_height,
       sort_order,
     } = req.body as {
-      name?: string;
-      description?: string;
-      image_filename?: string;
-      image_width?: number;
-      image_height?: number;
-      sort_order?: number;
-    };
+      name?: string
+      description?: string
+      image_filename?: string
+      image_width?: number
+      image_height?: number
+      sort_order?: number
+    }
 
     if (!name || typeof name !== 'string' || name.trim() === '') {
-      res.status(400).json({ error: 'name is required' });
-      return;
+      res.status(400).json({ error: 'name is required' })
+      return
     }
 
     const result = await pool.query(
@@ -52,17 +52,17 @@ router.post('/', requireAuth, requireAdmin, async (req, res, next) => {
         image_height ?? 700,
         sort_order ?? 0,
       ],
-    );
-    res.status(201).json(result.rows[0]);
+    )
+    res.status(201).json(result.rows[0])
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
 // PUT /api/lots/:id — update a parking lot
 router.put('/:id', requireAuth, requireAdmin, async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params
     const {
       name,
       description,
@@ -71,13 +71,13 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res, next) => {
       image_height,
       sort_order,
     } = req.body as {
-      name?: string;
-      description?: string;
-      image_filename?: string;
-      image_width?: number;
-      image_height?: number;
-      sort_order?: number;
-    };
+      name?: string
+      description?: string
+      image_filename?: string
+      image_width?: number
+      image_height?: number
+      sort_order?: number
+    }
 
     const result = await pool.query(
       `UPDATE parking_lots
@@ -97,47 +97,47 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res, next) => {
         sort_order ?? null,
         id,
       ],
-    );
+    )
 
     if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Parking lot not found' });
-      return;
+      res.status(404).json({ error: 'Parking lot not found' })
+      return
     }
-    res.json(result.rows[0]);
+    res.json(result.rows[0])
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
 // DELETE /api/lots/:id — delete a parking lot (only if empty)
 router.delete('/:id', requireAuth, requireAdmin, async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params
 
     const spotsCheck = await pool.query(
       'SELECT COUNT(*) FROM spots WHERE lot_id = $1',
       [id],
-    );
+    )
     if (Number.parseInt(spotsCheck.rows[0].count) > 0) {
       res.status(409).json({
         error:
           'Cannot delete a lot that still has parking spots. Remove or reassign spots first.',
-      });
-      return;
+      })
+      return
     }
 
     const result = await pool.query(
       'DELETE FROM parking_lots WHERE id = $1 RETURNING id',
       [id],
-    );
+    )
     if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Parking lot not found' });
-      return;
+      res.status(404).json({ error: 'Parking lot not found' })
+      return
     }
-    res.json({ ok: true });
+    res.json({ ok: true })
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
-export default router;
+export default router

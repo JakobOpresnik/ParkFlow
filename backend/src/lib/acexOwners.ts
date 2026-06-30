@@ -6,7 +6,7 @@
 // migrations/005_real_parking_data.sql for the seed set).
 
 // The ACEX company pool ("first come, first served") — public, not a personal spot.
-export const ACEX_OWNER_NAME = 'ACEX - kdor prej pride, prej melje';
+export const ACEX_OWNER_NAME = 'ACEX - kdor prej pride, prej melje'
 
 // Owner rows that are NOT ACEX employees — the public pool, placeholders/
 // vehicles, and external companies/rentals. Excluded from employee-only views.
@@ -18,4 +18,4 @@ export const NOT_ACEX_OWNERS = new Set<string>([
   'oddano v najem: MIK',
   'ARHEA',
   'Reduxi',
-]);
+])

@@ -1,26 +1,26 @@
-import "dotenv/config";
+import 'dotenv/config'
 
-import { createApp } from "./app.js";
-import { runMigrations } from "./db/migrate.js";
-import { startTimesheetWs } from "./lib/timesheetWs.js";
-import { freeOrphanedReservedSpots } from "./routes/bookings.js";
+import { createApp } from './app.js'
+import { runMigrations } from './db/migrate.js'
+import { startTimesheetWs } from './lib/timesheetWs.js'
+import { freeOrphanedReservedSpots } from './routes/bookings.js'
 
-const PORT = process.env.PORT ?? 3001;
+const PORT = process.env.PORT ?? 3001
 
-const app = createApp();
+const app = createApp()
 
 app.listen(PORT, async () => {
-  console.log(`ParkFlow backend listening on http://localhost:${PORT}`);
+  console.log(`ParkFlow backend listening on http://localhost:${PORT}`)
 
   try {
     // Run database migrations on startup
-    await runMigrations();
+    await runMigrations()
 
-    await freeOrphanedReservedSpots();
+    await freeOrphanedReservedSpots()
 
     // Connect to Abelium timesheet WebSocket for real-time parking-availability updates
-    startTimesheetWs();
+    startTimesheetWs()
   } catch (err) {
-    console.error("[startup] initialization failed:", err);
+    console.error('[startup] initialization failed:', err)
   }
-});
+})

@@ -1,9 +1,9 @@
-import { Router } from "express";
+import { Router } from 'express'
 
-import { pool } from "../db/pool.js";
-import { requireAuth } from "../middleware/auth.js";
+import { pool } from '../db/pool.js'
+import { requireAuth } from '../middleware/auth.js'
 
-const router = Router();
+const router = Router()
 
 // GET /api/stats/history — historical occupancy signal derived from:
 //   1. bookings — each reservation contributes a tally per hour/day it covered,
@@ -15,32 +15,32 @@ const router = Router();
 //   lot_id?        — scope to a single parking lot
 //   days?          — window for the daily series (default 30, max 365)
 //   heatmap_days?  — window for the heatmap (default 90, max 365)
-router.get("/history", requireAuth, async (req, res, next) => {
+router.get('/history', requireAuth, async (req, res, next) => {
   try {
     const {
       lot_id,
       days: daysParam,
       heatmap_days: heatmapDaysParam,
     } = req.query as {
-      lot_id?: string;
-      days?: string;
-      heatmap_days?: string;
-    };
+      lot_id?: string
+      days?: string
+      heatmap_days?: string
+    }
 
     const clampDays = (raw: unknown, fallback: number): number => {
-      const n = Number(raw);
+      const n = Number(raw)
       return Number.isFinite(n) && n > 0
         ? Math.min(365, Math.max(1, Math.floor(n)))
-        : fallback;
-    };
+        : fallback
+    }
 
-    const days = clampDays(daysParam, 30);
-    const heatmapDays = clampDays(heatmapDaysParam, 90);
-    const dailyInterval = `${days} days`;
-    const heatmapInterval = `${heatmapDays} days`;
+    const days = clampDays(daysParam, 30)
+    const heatmapDays = clampDays(heatmapDaysParam, 90)
+    const dailyInterval = `${days} days`
+    const heatmapInterval = `${heatmapDays} days`
 
-    const lotFilter = lot_id ? "AND s.lot_id = $1" : "";
-    const params: string[] = lot_id ? [lot_id] : [];
+    const lotFilter = lot_id ? 'AND s.lot_id = $1' : ''
+    const params: string[] = lot_id ? [lot_id] : []
 
     const heatmapQuery = `
       WITH booking_hours AS (
@@ -83,7 +83,7 @@ router.get("/history", requireAuth, async (req, res, next) => {
       FROM combined
       GROUP BY 1, 2
       ORDER BY 1, 2
-    `;
+    `
 
     const dailyQuery = `
       WITH booking_days AS (
@@ -124,20 +124,20 @@ router.get("/history", requireAuth, async (req, res, next) => {
       FROM combined
       GROUP BY 1
       ORDER BY 1
-    `;
+    `
 
     const [heatmap, daily] = await Promise.all([
       pool.query(heatmapQuery, params),
       pool.query(dailyQuery, params),
-    ]);
+    ])
 
     res.json({
       heatmap: heatmap.rows,
       daily: daily.rows,
-    });
+    })
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
-export default router;
+export default router
