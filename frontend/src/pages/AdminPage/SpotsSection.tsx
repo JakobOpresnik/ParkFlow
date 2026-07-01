@@ -22,6 +22,7 @@ import { useLots } from '@/hooks/useLots'
 import { useOwners } from '@/hooks/useOwners'
 import { useSpots } from '@/hooks/useSpots'
 import { dedupeSpotsById } from '@/lib/dedupeSpots'
+import type { Spot } from '@/types'
 
 import { SpotCard } from './SpotCard'
 import { STICKY_ACTIONS_CLASS } from './spotConstants'
@@ -38,29 +39,27 @@ import { useSpotFilters } from './useSpotFilters'
 export function SpotsSection() {
   const { t } = useTranslation()
   const { data: lots = [] } = useLots()
-  const { data: rawSpots = [], isLoading } = useSpots()
   const { data: owners = [] } = useOwners()
 
-  // Collapse the per-active-booking duplicate rows the spots endpoint emits, so
-  // the admin table doesn't show a spot twice (and inflate counts) when it's
-  // booked on multiple days.
-  const allSpots = useMemo(() => dedupeSpotsById(rawSpots), [rawSpots])
-
-  // The raw spot list has no presence data, so a spot the admin flagged
-  // 'occupied' carries no hint of who's actually there. Layer in today's
-  // presence-derived occupant name (same computation the map/dashboard use)
-  // purely for display — it never overrides the admin-set status shown above.
-  const today = new Date().toISOString().slice(0, 10)
-  const { data: effectiveSpots = [] } = useEffectiveSpots(today)
-  const occupantBySpotId = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const s of effectiveSpots) {
-      if (s.status === 'occupied' && s.in_office_owner) {
-        map.set(s.id, s.in_office_owner)
-      }
-    }
+  // Raw spots (no presence/day computation) — the source of truth for
+  // editing. The edit dialog PUTs `status` back verbatim (backend
+  // `COALESCE($4, status)`), so it must always be seeded from the real
+  // persisted status, never a computed display value, or saving an unrelated
+  // field edit (e.g. the label) would silently overwrite it.
+  const { data: rawSpots = [], isLoading } = useSpots()
+  const rawSpotsDeduped = useMemo(() => dedupeSpotsById(rawSpots), [rawSpots])
+  const rawSpotById = useMemo(() => {
+    const map = new Map<string, Spot>()
+    for (const s of rawSpotsDeduped) map.set(s.id, s)
     return map
-  }, [effectiveSpots])
+  }, [rawSpotsDeduped])
+
+  // Effective spots — today's actual state (bookings for today, presence,
+  // day overrides), the same computation the Map page uses. This is what
+  // the table/cards display and filter, so "current state" here matches
+  // what end users see today, not a stale or arbitrary-day raw flag.
+  const today = new Date().toISOString().slice(0, 10)
+  const { data: allSpots = [] } = useEffectiveSpots(today)
 
   const {
     lotFilter,
@@ -84,7 +83,11 @@ export function SpotsSection() {
     handleOpenEdit,
     handleClose,
     handleSubmit,
-  } = useSpotDialog(lots, allSpots)
+  } = useSpotDialog(lots, rawSpotsDeduped)
+
+  function openEditDialog(displaySpot: Spot) {
+    handleOpenEdit(rawSpotById.get(displaySpot.id) ?? displaySpot)
+  }
 
   const { deleteTarget, setDeleteTarget, isDeleting, handleConfirmDelete } =
     useSpotDelete()
@@ -138,8 +141,7 @@ export function SpotsSection() {
                 key={spot.id}
                 spot={spot}
                 lotName={getLotName(spot.lot_id)}
-                occupantName={occupantBySpotId.get(spot.id)}
-                onEdit={handleOpenEdit}
+                onEdit={openEditDialog}
                 onDelete={setDeleteTarget}
               />
             ))}
@@ -172,8 +174,7 @@ export function SpotsSection() {
                     spot={spot}
                     spotSearch={spotSearch}
                     getLotName={getLotName}
-                    occupantName={occupantBySpotId.get(spot.id)}
-                    onEdit={handleOpenEdit}
+                    onEdit={openEditDialog}
                     onDelete={setDeleteTarget}
                   />
                 ))}

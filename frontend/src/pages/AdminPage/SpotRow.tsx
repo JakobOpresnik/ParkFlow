@@ -8,7 +8,6 @@ import { hasRealOwner } from '@/lib/spots'
 import type { Spot, SpotType } from '@/types'
 
 import {
-  adminSpotStatus,
   SpotTypeConfig,
   StatusClass,
   STICKY_ACTIONS_CLASS,
@@ -20,7 +19,6 @@ interface SpotRowProps {
   readonly spot: Spot
   readonly spotSearch: string
   readonly getLotName: (id: string | null) => string
-  readonly occupantName: string | undefined
   readonly onEdit: (spot: Spot) => void
   readonly onDelete: (spot: Spot) => void
 }
@@ -31,24 +29,25 @@ export function SpotRow({
   spot,
   spotSearch,
   getLotName,
-  occupantName,
   onEdit,
   onDelete,
 }: SpotRowProps) {
   const { t } = useTranslation()
   const typeConf = SpotTypeConfig[spot.type]
-  const displayStatus = adminSpotStatus(spot)
+  const displayStatus = spot.status
   // Who's actually there, not necessarily the owner: the reserver for a
-  // booked spot, or today's presence-confirmed occupant for one the admin
-  // flagged 'occupied' directly.
+  // booked spot, or today's presence-confirmed occupant for one flagged
+  // 'occupied' directly.
   let whoName: string | undefined | null
   if (displayStatus === 'reserved') whoName = spot.active_booking_reserved_by
-  else if (displayStatus === 'occupied') whoName = occupantName
+  else if (displayStatus === 'occupied') whoName = spot.in_office_owner
   const ownerIsReal = hasRealOwner(spot.owner_name)
   const STATUS_LABELS: Record<string, string> = {
     free: t('admin.freeStatus'),
     occupied: t('admin.occupiedStatus'),
     reserved: t('admin.reservedStatus'),
+    unconfirmed: t('spotModal.unconfirmedStatus'),
+    spotted: t('spotModal.spottedStatus'),
   }
   const TYPE_LABELS: Record<SpotType, string> = {
     standard: t('admin.standard'),

@@ -2,8 +2,6 @@ import { useMemo, useState } from 'react'
 
 import type { ParkingLot, Spot, SpotStatus, SpotType } from '@/types'
 
-import { adminSpotStatus } from './spotConstants'
-
 // — hook —
 
 export function useSpotFilters(allSpots: Spot[], lots: ParkingLot[]) {
@@ -19,7 +17,7 @@ export function useSpotFilters(allSpots: Spot[], lots: ParkingLot[]) {
         : allSpots.filter((s) => s.lot_id === lotFilter)
 
     if (statusFilter !== 'all') {
-      filtered = filtered.filter((s) => adminSpotStatus(s) === statusFilter)
+      filtered = filtered.filter((s) => s.status === statusFilter)
     }
 
     if (typeFilter !== 'all') {

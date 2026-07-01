@@ -70,6 +70,8 @@ export function SpotFilterBar({
               { value: 'free', label: t('admin.freeStatus') },
               { value: 'occupied', label: t('admin.occupiedStatus') },
               { value: 'reserved', label: t('admin.reservedStatus') },
+              { value: 'unconfirmed', label: t('spotModal.unconfirmedStatus') },
+              { value: 'spotted', label: t('spotModal.spottedStatus') },
             ]}
             size="xs"
             allowDeselect={false}

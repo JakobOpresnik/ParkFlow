@@ -1,4 +1,4 @@
-import type { Spot, SpotStatus, SpotType } from '@/types'
+import type { SpotStatus, SpotType } from '@/types'
 
 // — constants —
 
@@ -34,16 +34,6 @@ export const STICKY_ACTIONS_CLASS =
   "bg-card before:bg-border sticky right-0 before:absolute before:inset-y-0 before:left-0 before:w-px before:opacity-0 before:content-[''] group-data-[overflow=true]:before:opacity-100"
 
 // — helpers —
-
-// The admin spots list shows the raw API status, but the API forces ACEX spots
-// to 'free' regardless of any reservation (see SPOT_SELECT). So an active
-// booking would otherwise be invisible here. Surface it: any spot with an
-// active booking is shown as 'reserved'.
-export function adminSpotStatus(
-  spot: Pick<Spot, 'status' | 'active_booking_id'>,
-): SpotStatus {
-  return spot.active_booking_id ? 'reserved' : spot.status
-}
 
 export function buildPillClass(active: boolean): string {
   return `cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-colors ${

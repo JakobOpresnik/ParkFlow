@@ -5,36 +5,29 @@ import { Button } from '@/components/ui/button'
 import { hasRealOwner } from '@/lib/spots'
 import type { Spot } from '@/types'
 
-import { adminSpotStatus, SpotTypeConfig, StatusClass } from './spotConstants'
+import { SpotTypeConfig, StatusClass } from './spotConstants'
 
 // — types —
 
 interface SpotCardProps {
   readonly spot: Spot
   readonly lotName: string
-  readonly occupantName: string | undefined
   readonly onEdit: (spot: Spot) => void
   readonly onDelete: (spot: Spot) => void
 }
 
 // — main component —
 
-export function SpotCard({
-  spot,
-  lotName,
-  occupantName,
-  onEdit,
-  onDelete,
-}: SpotCardProps) {
+export function SpotCard({ spot, lotName, onEdit, onDelete }: SpotCardProps) {
   const typeConf = SpotTypeConfig[spot.type]
-  const displayStatus = adminSpotStatus(spot)
+  const displayStatus = spot.status
   const { t } = useTranslation()
   // Who's actually there, not necessarily the owner: the reserver for a
-  // booked spot, or today's presence-confirmed occupant for one the admin
-  // flagged 'occupied' directly.
+  // booked spot, or today's presence-confirmed occupant for one flagged
+  // 'occupied' directly.
   let whoName: string | undefined | null
   if (displayStatus === 'reserved') whoName = spot.active_booking_reserved_by
-  else if (displayStatus === 'occupied') whoName = occupantName
+  else if (displayStatus === 'occupied') whoName = spot.in_office_owner
   const ownerIsReal = hasRealOwner(spot.owner_name)
   return (
     <div className="bg-card rounded-lg border p-3 shadow-sm">
