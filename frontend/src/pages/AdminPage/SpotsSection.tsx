@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
 import { useLots } from '@/hooks/useLots'
 import { useOwners } from '@/hooks/useOwners'
 import { useSpots } from '@/hooks/useSpots'
@@ -44,6 +45,22 @@ export function SpotsSection() {
   // the admin table doesn't show a spot twice (and inflate counts) when it's
   // booked on multiple days.
   const allSpots = useMemo(() => dedupeSpotsById(rawSpots), [rawSpots])
+
+  // The raw spot list has no presence data, so a spot the admin flagged
+  // 'occupied' carries no hint of who's actually there. Layer in today's
+  // presence-derived occupant name (same computation the map/dashboard use)
+  // purely for display — it never overrides the admin-set status shown above.
+  const today = new Date().toISOString().slice(0, 10)
+  const { data: effectiveSpots = [] } = useEffectiveSpots(today)
+  const occupantBySpotId = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const s of effectiveSpots) {
+      if (s.status === 'occupied' && s.in_office_owner) {
+        map.set(s.id, s.in_office_owner)
+      }
+    }
+    return map
+  }, [effectiveSpots])
 
   const {
     lotFilter,
@@ -121,6 +138,7 @@ export function SpotsSection() {
                 key={spot.id}
                 spot={spot}
                 lotName={getLotName(spot.lot_id)}
+                occupantName={occupantBySpotId.get(spot.id)}
                 onEdit={handleOpenEdit}
                 onDelete={setDeleteTarget}
               />
@@ -154,6 +172,7 @@ export function SpotsSection() {
                     spot={spot}
                     spotSearch={spotSearch}
                     getLotName={getLotName}
+                    occupantName={occupantBySpotId.get(spot.id)}
                     onEdit={handleOpenEdit}
                     onDelete={setDeleteTarget}
                   />

@@ -216,13 +216,12 @@ const sl = {
       'Imate rezervirano mesto {{label}}. Premik sem bo preklical to rezervacijo.',
     bannerReservedMine: 'To mesto ste rezervirali vi.',
     bannerReservedByCoOwner: 'Solastnik ima rezervirano to mesto.',
-    bannerReservedOther: 'To mesto je že rezervirano.',
     bannerOccupiedMine: 'Vaše mesto — trenutno ga uporabljate.',
     bannerOccupiedOwner: 'To mesto trenutno uporablja lastnik.',
     bannerOccupiedSharedByMe: 'To mesto trenutno uporabljate vi.',
     bannerOccupiedSharedByCoOwner:
       'To mesto trenutno uporablja eden od solastnikov.',
-    bannerOccupied: 'To mesto je trenutno v uporabi.',
+    bannerUnavailable: 'To mesto trenutno ni na voljo.',
     bannerUnconfirmed:
       'Več solastnikov ima označeno, da bodo prišli — ne moremo ugotoviti, kateri od njih danes uporablja mesto.',
     bannerUnconfirmedNamed:
@@ -483,6 +482,7 @@ const sl = {
     freeStatus: 'Prosto',
     occupiedStatus: 'Zasedeno',
     reservedStatus: 'Rezervirano',
+    unavailable: 'Ni na voljo',
     editSpot: 'Uredi mesto',
     deleteSpot: 'Izbriši mesto',
   },

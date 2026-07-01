@@ -215,13 +215,12 @@ const en = {
       'You have spot {{label}} reserved. Moving here will cancel it.',
     bannerReservedMine: 'You have reserved this spot.',
     bannerReservedByCoOwner: 'A co-owner has reserved this spot.',
-    bannerReservedOther: 'This spot has already been reserved.',
     bannerOccupiedMine: 'Your spot — you are currently using it.',
     bannerOccupiedOwner: 'This spot is currently in use by the owner.',
     bannerOccupiedSharedByMe: 'This spot is currently in use by you.',
     bannerOccupiedSharedByCoOwner:
       'This spot is currently in use by one of the co-owners.',
-    bannerOccupied: 'This spot is currently in use.',
+    bannerUnavailable: 'This spot is currently unavailable.',
     bannerUnconfirmed:
       "Multiple co-owners are flagged as coming in — we can't tell which one is using the spot today.",
     bannerUnconfirmedNamed:
@@ -480,6 +479,7 @@ const en = {
     freeStatus: 'Free',
     occupiedStatus: 'Occupied',
     reservedStatus: 'Reserved',
+    unavailable: 'Unavailable',
     editSpot: 'Edit spot',
     deleteSpot: 'Delete spot',
   },

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
+import { hasRealOwner } from '@/lib/spots'
 import { useAuthStore } from '@/store/authStore'
 import { useParkingStore } from '@/store/parkingStore'
 import { usePrefsStore } from '@/store/prefsStore'
@@ -28,6 +29,31 @@ function formatRelativeMinutes(iso: string, t: TFunc): string {
   return t('spotModal.hoursAgo', { count: hours })
 }
 
+// Names whoever is actually occupying/holding the spot, for viewers who are
+// neither the booker nor an owner. Priority:
+//   1. An active booking → the real reserver (owner or a coworker who booked
+//      while the owner was away) — most authoritative, always a real person.
+//   2. No booking, but presence data confirms the real owner is in office —
+//      genuinely in use, just not via a formal reservation.
+//   3. Neither → an admin flagged the spot directly with nothing behind it;
+//      there is no one to name.
+// Guests never reach branch 1 or the named half of branch 2: the backend
+// scrubs active_booking_reserved_by, and the hook nulls in_office_owner, for
+// guest requests — they naturally fall through to the generic owner text.
+function resolveOccupantSubtext(spot: Spot, t: TFunc): string {
+  if (spot.active_booking_reserved_by) {
+    return t('spotModal.reservedBy', {
+      name: spot.active_booking_reserved_by,
+    })
+  }
+  if (hasRealOwner(spot.owner_name)) {
+    return spot.in_office_owner
+      ? t('spotModal.reservedBy', { name: spot.in_office_owner })
+      : t('spotModal.bannerOccupiedOwner')
+  }
+  return t('spotModal.bannerUnavailable')
+}
+
 function buildBannerSubtext(
   spot: Spot,
   myReservedElsewhere: Spot | undefined,
@@ -49,7 +75,7 @@ function buildBannerSubtext(
   if (spot.status === 'reserved') {
     if (isMyBooking) return t('spotModal.bannerReservedMine')
     if (isCoOwnerBooking) return t('spotModal.bannerReservedByCoOwner')
-    return t('spotModal.bannerReservedOther')
+    return resolveOccupantSubtext(spot, t)
   }
   if (spot.status === 'unconfirmed') {
     if (isGuest) return t('spotModal.bannerUnconfirmed')
@@ -72,9 +98,7 @@ function buildBannerSubtext(
         : t('spotModal.bannerOccupiedSharedByCoOwner')
     return t('spotModal.bannerOccupiedMine')
   }
-  return spot.owner_name
-    ? t('spotModal.bannerOccupiedOwner')
-    : t('spotModal.bannerOccupied')
+  return resolveOccupantSubtext(spot, t)
 }
 
 // — main component —
