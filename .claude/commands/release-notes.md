@@ -76,6 +76,8 @@ CRITICAL formatting rules:
 - The title line uses `##` (two hashes), e.g. `## 🚀 ParkFlow v1.1.0 – Week Navigation`.
 - Place `<hr/>` on its own line immediately after the title and again immediately before the Contributors section.
 - Bullet points use `- ` with no extra indentation.
+- List each contributor on its own bullet line (`- Name`), never comma-separated.
+- Place a `---` horizontal rule on its own line immediately before the **Full Changelog** line.
 - The **Full Changelog** line MUST be a fully resolved GitLab compare URL in this exact shape: `https://git.matheo.si/jakobo/parkflow/-/compare/<last_tag>...<new_tag>` — with `<last_tag>` and `<new_tag>` replaced by the real tag strings (e.g. `v1.2.8` and `v1.2.9`). Always use the `git.matheo.si/jakobo/parkflow` GitLab path with the `/-/compare/` segment — never `github.com`, never `/compare/` without the `/-/`. Never emit literal `<last_tag>` / `<new_tag>` placeholders. Correct example: `https://git.matheo.si/jakobo/parkflow/-/compare/v1.2.8...v1.2.9`.
 
 Template:
@@ -117,11 +119,14 @@ Template:
 <hr/>
 
 ### 👥 Contributors
-<comma-separated list of unique authors>
+- <author name>
+- <author name>
+
+---
 
 **Full Changelog:** https://git.matheo.si/jakobo/parkflow/-/compare/<last_tag>...<new_tag>
 
-> Replace `<last_tag>` and `<new_tag>` with the actual tag strings from steps 1 and 2. Final rendered line must look like: `**Full Changelog:** https://git.matheo.si/jakobo/parkflow/-/compare/v1.2.8...v1.2.9` — never leave the angle-bracket placeholders in the output, never substitute `github.com`, never omit the `/-/` segment.
+> One bullet per unique contributor (never comma-separated), then a `---` rule before the Full Changelog line. Replace `<last_tag>` and `<new_tag>` with the actual tag strings from steps 1 and 2. Final rendered line must look like: `**Full Changelog:** https://git.matheo.si/jakobo/parkflow/-/compare/v1.2.8...v1.2.9` — never leave the angle-bracket placeholders in the output, never substitute `github.com`, never omit the `/-/` segment.
 
 ---
 
