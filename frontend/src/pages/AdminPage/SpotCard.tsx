@@ -2,7 +2,7 @@ import { Pencil, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
-import { hasRealOwner } from '@/lib/spots'
+import { hasRealOwner, isDisplayedUnavailable } from '@/lib/spots'
 import type { Spot } from '@/types'
 
 import { SpotTypeConfig, StatusClass } from './spotConstants'
@@ -26,17 +26,19 @@ export function SpotCard({ spot, lotName, onEdit, onDelete }: SpotCardProps) {
   // booked spot, or today's presence-confirmed occupant for one flagged
   // 'occupied' directly.
   let whoName: string | undefined | null
-  if (displayStatus === 'reserved') whoName = spot.active_booking_reserved_by
+  if (displayStatus === 'reserved')
+    whoName = spot.active_booking_reserved_by ?? spot.status_set_by
   else if (displayStatus === 'occupied') whoName = spot.in_office_owner
   const ownerIsReal = hasRealOwner(spot.owner_name)
+  const isUnavailable = isDisplayedUnavailable(spot)
   return (
     <div className="bg-card rounded-lg border p-3 shadow-sm">
       <div className="flex items-center gap-2">
         <span className="text-sm font-bold tabular-nums">#{spot.number}</span>
         <span
-          className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${StatusClass[displayStatus]}`}
+          className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${isUnavailable ? 'bg-muted text-muted-foreground' : StatusClass[displayStatus]}`}
         >
-          {displayStatus}
+          {isUnavailable ? t('admin.unavailable') : displayStatus}
         </span>
         {whoName && (
           <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">

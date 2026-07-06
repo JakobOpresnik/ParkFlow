@@ -1,12 +1,17 @@
 import { useMemo, useState } from 'react'
 
+import { isDisplayedUnavailable } from '@/lib/spots'
 import type { ParkingLot, Spot, SpotStatus, SpotType } from '@/types'
+
+// 'unavailable' is a display-only status (reserved with no reserver name),
+// not a backend SpotStatus — see isDisplayedUnavailable.
+export type SpotStatusFilter = SpotStatus | 'unavailable' | 'all'
 
 // — hook —
 
 export function useSpotFilters(allSpots: Spot[], lots: ParkingLot[]) {
   const [lotFilter, setLotFilter] = useState<string>('all')
-  const [statusFilter, setStatusFilter] = useState<SpotStatus | 'all'>('all')
+  const [statusFilter, setStatusFilter] = useState<SpotStatusFilter>('all')
   const [typeFilter, setTypeFilter] = useState<SpotType | 'all'>('all')
   const [spotSearch, setSpotSearch] = useState('')
 
@@ -17,7 +22,11 @@ export function useSpotFilters(allSpots: Spot[], lots: ParkingLot[]) {
         : allSpots.filter((s) => s.lot_id === lotFilter)
 
     if (statusFilter !== 'all') {
-      filtered = filtered.filter((s) => s.status === statusFilter)
+      filtered = filtered.filter((s) =>
+        statusFilter === 'unavailable'
+          ? isDisplayedUnavailable(s)
+          : s.status === statusFilter && !isDisplayedUnavailable(s),
+      )
     }
 
     if (typeFilter !== 'all') {

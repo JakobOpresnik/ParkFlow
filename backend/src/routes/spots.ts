@@ -53,12 +53,29 @@ const SPOT_SELECT = `
     to_char(b.booking_date, 'YYYY-MM-DD') AS active_booking_date,
     b.booked_by_owner  AS active_booking_booked_by_owner,
     sr.reported_at     AS spotted_reported_at,
-    sr.expires_at      AS spotted_expires_at
+    sr.expires_at      AS spotted_expires_at,
+    CASE
+      WHEN s.status = 'reserved'
+       AND lsc.new_value = 'reserved'
+       AND lsc.changed_by <> 'system'
+      THEN lsc.changed_by
+    END AS status_set_by
   FROM spots s
   LEFT JOIN owners o ON s.owner_id = o.id
   LEFT JOIN bookings b ON b.spot_id = s.id AND b.status = 'active'
   LEFT JOIN spot_spotted_reports sr
     ON sr.spot_id = s.id AND sr.cleared_at IS NULL AND sr.expires_at > now()
+  -- Who last manually changed this spot's status (audit log). Surfaced as
+  -- status_set_by only while the spot is still 'reserved' and that last change
+  -- was to 'reserved' — i.e. an admin-forced reservation with no booking.
+  -- Legacy rows were logged as 'system' before changed_by was populated.
+  LEFT JOIN LATERAL (
+    SELECT changed_by, new_value
+    FROM spot_changes
+    WHERE spot_id = s.id AND change_type = 'status_changed'
+    ORDER BY changed_at DESC
+    LIMIT 1
+  ) lsc ON true
 `
 
 // Strip owner contact details and booker identity from spot rows before
@@ -75,6 +92,7 @@ function scrubSpotForGuest<T extends Record<string, unknown>>(row: T): T {
     active_booking_user_id: null,
     active_booking_reserved_by: null,
     active_booking_booked_by_owner: null,
+    status_set_by: null,
   }
 }
 
@@ -90,10 +108,11 @@ async function auditedSpotUpdate(
     field: 'owner_id' | 'status' | 'type'
     newValue: string | null
     changeType: string
+    changedBy: string
     returning: string
   },
 ): Promise<void> {
-  const { id, field, newValue, changeType, returning } = opts
+  const { id, field, newValue, changeType, changedBy, returning } = opts
 
   const before = await pool.query(`SELECT ${field} FROM spots WHERE id = $1`, [
     id,
@@ -115,9 +134,9 @@ async function auditedSpotUpdate(
 
   await pool
     .query(
-      `INSERT INTO spot_changes (spot_id, change_type, old_value, new_value)
-       VALUES ($1, $2, $3, $4)`,
-      [id, changeType, oldValue, newValue],
+      `INSERT INTO spot_changes (spot_id, change_type, old_value, new_value, changed_by)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [id, changeType, oldValue, newValue, changedBy],
     )
     .catch(() => {
       /* audit log failure is non-fatal */
@@ -627,6 +646,7 @@ router.patch(
         field: 'owner_id',
         newValue: owner_id,
         changeType: owner_id ? 'owner_assigned' : 'owner_unassigned',
+        changedBy: req.user!.displayName,
         returning:
           'id, number, label, floor, lot_id, status, owner_id, coordinates',
       })
@@ -658,6 +678,7 @@ router.patch(
         field: 'status',
         newValue: status,
         changeType: 'status_changed',
+        changedBy: req.user!.displayName,
         returning:
           'id, number, label, floor, lot_id, status, owner_id, coordinates',
       })
@@ -685,6 +706,7 @@ router.patch('/:id/type', requireAuth, requireAdmin, async (req, res, next) => {
       field: 'type',
       newValue: type,
       changeType: 'type_changed',
+      changedBy: req.user!.displayName,
       returning:
         'id, number, label, floor, lot_id, status, type, owner_id, coordinates',
     })

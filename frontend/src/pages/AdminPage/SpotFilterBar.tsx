@@ -4,9 +4,10 @@ import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { ParkingLot, SpotStatus, SpotType } from '@/types'
+import type { ParkingLot, SpotType } from '@/types'
 
 import { buildPillClass } from './spotConstants'
+import type { SpotStatusFilter } from './useSpotFilters'
 
 // — types —
 
@@ -14,8 +15,8 @@ interface SpotFilterBarProps {
   readonly lots: ParkingLot[]
   readonly lotFilter: string
   readonly onLotFilter: (id: string) => void
-  readonly statusFilter: SpotStatus | 'all'
-  readonly onStatusFilter: (v: SpotStatus | 'all') => void
+  readonly statusFilter: SpotStatusFilter
+  readonly onStatusFilter: (v: SpotStatusFilter) => void
   readonly typeFilter: SpotType | 'all'
   readonly onTypeFilter: (v: SpotType | 'all') => void
   readonly spotSearch: string
@@ -64,12 +65,13 @@ export function SpotFilterBar({
           {/* Status filter */}
           <Select
             value={statusFilter}
-            onChange={(v) => onStatusFilter((v ?? 'all') as SpotStatus | 'all')}
+            onChange={(v) => onStatusFilter((v ?? 'all') as SpotStatusFilter)}
             data={[
               { value: 'all', label: t('admin.allStatuses') },
               { value: 'free', label: t('admin.freeStatus') },
               { value: 'occupied', label: t('admin.occupiedStatus') },
               { value: 'reserved', label: t('admin.reservedStatus') },
+              { value: 'unavailable', label: t('admin.unavailable') },
               { value: 'unconfirmed', label: t('spotModal.unconfirmedStatus') },
               { value: 'spotted', label: t('spotModal.spottedStatus') },
             ]}

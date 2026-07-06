@@ -212,8 +212,16 @@ export function SpotModal() {
 
   const isGuest = user?.role === 'guest'
 
+  // An admin-forced 'reserved' has no booking — surface the admin recorded in
+  // status_set_by as the reserver, same as a real booking's reserved_by.
   const bannerSubtext = buildBannerSubtext(
-    { ...spot, status: bannerStatus },
+    {
+      ...spot,
+      status: bannerStatus,
+      active_booking_reserved_by:
+        spot.active_booking_reserved_by ??
+        (spot.status === 'reserved' ? spot.status_set_by : null),
+    },
     myReservedElsewhere,
     isMyBooking,
     isCurrentUserOwner,

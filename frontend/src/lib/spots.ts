@@ -18,6 +18,18 @@ export function hasRealOwner(ownerName: string | null | undefined): boolean {
   return !!ownerName && !NON_OCCUPANT_OWNER_NAMES.has(ownerName)
 }
 
+// 'reserved' must always name the reserver — the booker, or the admin who
+// forced the status (status_set_by). No name at all means we can't tell who
+// holds it — such spots display as grey "unavailable" instead of reserved,
+// in the admin list and its status filter alike.
+export function isDisplayedUnavailable(spot: Spot): boolean {
+  return (
+    spot.status === 'reserved' &&
+    !spot.active_booking_reserved_by &&
+    !spot.status_set_by
+  )
+}
+
 export function countByStatus(
   spots: readonly Spot[],
   status: SpotStatus,

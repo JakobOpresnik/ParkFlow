@@ -118,6 +118,9 @@ export interface Spot {
   // active user "this spot is taken" report (if any) — reporter name is not exposed
   spotted_reported_at: string | null
   spotted_expires_at: string | null
+  // Admin who forced status to 'reserved' (derived from the audit log; only
+  // set while status is 'reserved' with no booking). Null for guests.
+  status_set_by: string | null
 }
 
 export type SpotChangeType =

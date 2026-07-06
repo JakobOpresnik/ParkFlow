@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Highlight } from '@/components/ui/highlight'
 import { TableCell, TableRow } from '@/components/ui/table'
-import { hasRealOwner } from '@/lib/spots'
+import { hasRealOwner, isDisplayedUnavailable } from '@/lib/spots'
 import type { Spot, SpotType } from '@/types'
 
 import {
@@ -39,9 +39,11 @@ export function SpotRow({
   // booked spot, or today's presence-confirmed occupant for one flagged
   // 'occupied' directly.
   let whoName: string | undefined | null
-  if (displayStatus === 'reserved') whoName = spot.active_booking_reserved_by
+  if (displayStatus === 'reserved')
+    whoName = spot.active_booking_reserved_by ?? spot.status_set_by
   else if (displayStatus === 'occupied') whoName = spot.in_office_owner
   const ownerIsReal = hasRealOwner(spot.owner_name)
+  const isUnavailable = isDisplayedUnavailable(spot)
   const STATUS_LABELS: Record<string, string> = {
     free: t('admin.freeStatus'),
     occupied: t('admin.occupiedStatus'),
@@ -69,9 +71,11 @@ export function SpotRow({
       <TableCell>
         <div className="flex flex-wrap items-center gap-1.5">
           <span
-            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${StatusClass[displayStatus]}`}
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${isUnavailable ? 'bg-muted text-muted-foreground' : StatusClass[displayStatus]}`}
           >
-            {STATUS_LABELS[displayStatus] ?? displayStatus}
+            {isUnavailable
+              ? t('admin.unavailable')
+              : (STATUS_LABELS[displayStatus] ?? displayStatus)}
           </span>
           {whoName && (
             <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
