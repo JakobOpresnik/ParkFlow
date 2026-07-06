@@ -15,6 +15,12 @@ const router = Router()
 
 const validTypes = ['standard', 'ev', 'handicap', 'compact']
 const validStatuses = ['free', 'occupied', 'reserved']
+// Statuses admins may force via PATCH /:id/status. 'reserved' is deliberately
+// excluded — it's booking-managed, and forcing it faked a nameless reservation
+// that didn't block bookings and was freed on every restart anyway. PUT/POST
+// keep accepting 'reserved' (validStatuses) because the edit dialog round-trips
+// a booked spot's stored status verbatim.
+const adminSettableStatuses = ['free', 'occupied']
 
 // Base effective status: ACEX-owned (public pool) spots default to 'free', but an
 // admin's explicit non-'free' status (occupied/reserved) wins — so an admin can take
@@ -666,9 +672,9 @@ router.patch(
       const { id } = req.params
       const { status } = req.body as { status: string }
 
-      if (!validStatuses.includes(status)) {
+      if (!adminSettableStatuses.includes(status)) {
         res.status(400).json({
-          error: `status must be one of: ${validStatuses.join(', ')}`,
+          error: `status must be one of: ${adminSettableStatuses.join(', ')}`,
         })
         return
       }

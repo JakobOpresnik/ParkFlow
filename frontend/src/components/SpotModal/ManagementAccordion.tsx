@@ -1,12 +1,11 @@
-import { Select } from '@mantine/core'
+import { Select, Switch } from '@mantine/core'
 import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { Spot, SpotStatus } from '@/types'
+import type { Spot } from '@/types'
 
-import { ALL_STATUSES, STATUS_CONFIG } from './constants'
 import { useManagementAccordion } from './useManagementAccordion'
 import { useNewOwnerForm } from './useNewOwnerForm'
 import { useOwnerAssignment } from './useOwnerAssignment'
@@ -21,14 +20,6 @@ interface ManagementAccordionProps {
 
 export function ManagementAccordion({ spot }: ManagementAccordionProps) {
   const { t } = useTranslation()
-
-  const STATUS_LABELS: Record<SpotStatus, string> = {
-    free: t('spotModal.available'),
-    occupied: t('spotModal.occupied'),
-    reserved: t('spotModal.reservedStatus'),
-    unconfirmed: t('spotModal.unconfirmedStatus'),
-    spotted: t('spotModal.spottedStatus'),
-  }
 
   const {
     expanded,
@@ -82,28 +73,26 @@ export function ManagementAccordion({ spot }: ManagementAccordionProps) {
 
       {expanded && (
         <div className="space-y-5 border-t px-4 pt-4 pb-4">
-          {/* Change status */}
+          {/* Toggle availability: checked = free, unchecked = any taken state */}
           <div>
             <p className="text-muted-foreground mb-2.5 text-xs font-medium tracking-widest uppercase">
               {t('spotModal.statusSection')}
             </p>
-            <div className="flex flex-wrap gap-2">
-              {ALL_STATUSES.map((s) => (
-                <Button
-                  key={s}
-                  size="sm"
-                  variant="outline"
-                  color={STATUS_CONFIG[s].color}
-                  disabled={s === spot.status || isStatusPending}
-                  onClick={() => handleStatusChange(s)}
-                  className={
-                    s === spot.status ? 'cursor-default opacity-40' : ''
-                  }
-                >
-                  {STATUS_LABELS[s]}
-                </Button>
-              ))}
-            </div>
+            <Switch
+              checked={spot.status === 'free'}
+              onChange={(e) =>
+                handleStatusChange(
+                  e.currentTarget.checked ? 'free' : 'occupied',
+                )
+              }
+              disabled={isStatusPending}
+              color="green"
+              label={
+                spot.status === 'free'
+                  ? t('spotModal.available')
+                  : t('spotModal.occupied')
+              }
+            />
           </div>
 
           {/* Assign owner */}

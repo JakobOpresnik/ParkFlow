@@ -77,7 +77,6 @@ export function SpotForm({ value, onChange, lots, owners }: SpotFormProps) {
             data={[
               { value: 'free', label: t('admin.freeStatus') },
               { value: 'occupied', label: t('admin.occupiedStatus') },
-              { value: 'reserved', label: t('admin.reservedStatus') },
             ]}
             allowDeselect={false}
           />
