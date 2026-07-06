@@ -89,7 +89,8 @@ Beyond presence-aware availability, ParkFlow provides:
 ### 🔧 Administration
 
 - 🛡️ **Admin panel** with full CRUD for parking lots, spots, and owners
-- 🚧 **Take spots out of circulation** — admins can mark an ACEX shared-pool spot as `occupied`/`reserved` to remove it from the bookable pool
+- 🚧 **Take spots out of circulation** — admins can toggle a spot between available and occupied to remove an ACEX shared-pool spot from the bookable pool (forcing `reserved` is deliberately not possible — reservations always belong to a person)
+- 🏷️ **Named status badges** — the admin spots list shows today's effective status and names who holds each spot (the booker, the admin who forced it, or the presence-confirmed occupant); a reserved spot with no nameable holder displays as `unavailable`, with a matching status filter
 - 👤 **Owner management** — create owners with name, email, phone, vehicle plate, and notes; link to SSO username for self-service login
 - 📋 **Audit log** — every spot status change is recorded with who changed it, when, and the before/after values (change types: `owner_assigned`, `owner_unassigned`, `status_changed`, `type_changed`)
 - 💬 **Feedback management** — view, triage, and update status of user-submitted feature requests and bug reports
@@ -245,7 +246,7 @@ docker compose up --build
 
 **Production deployment (CI/CD):**
 
-Deployment to production is handled automatically by the GitLab CI/CD pipeline on every git tag push. The pipeline builds Docker images, pushes them to the registry, and deploys via `compose.yml` using SSH. The production stack also runs a `reminders-cron` service that triggers the scheduled reminder endpoints. Required CI/CD variables (set in GitLab project settings):
+Deployment to production is handled by the GitLab CI/CD pipeline on every git tag push. The pipeline lints and tests both apps, builds Docker images, pushes them to the registry, and — after a manual approval click on the deploy job in the GitLab UI — deploys via `compose.yml` using SSH. The production stack also runs a `reminders-cron` service that triggers the scheduled reminder endpoints. Required CI/CD variables (set in GitLab project settings):
 
 `POSTGRES_PASSWORD`, `JWT_SECRET`, `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET`, `TIMESHEET_APP_ID`, `TIMESHEET_SECRET`, `ROCKETCHAT_WEBHOOK_TOKEN`, `ROCKETCHAT_INCOMING_WEBHOOK_URL`, `REMINDER_TRIGGER_TOKEN`, `OWNERS_API_TOKEN`
 
@@ -355,7 +356,7 @@ All endpoints require an `Authorization: Bearer <token>` header (a guest token w
 | `PUT`    | `/api/spots/:id`                      | Update spot `{number?, label?, lot_id?, status?, type?}` | 🛡️ Admin |
 | `DELETE` | `/api/spots/:id`                      | Delete a spot                                            | 🛡️ Admin |
 | `PATCH`  | `/api/spots/:id/owner`                | Assign/unassign owner `{owner_id: string\|null}`         | 🛡️ Admin |
-| `PATCH`  | `/api/spots/:id/status`               | Change status `{status: free\|occupied\|reserved}`       | 🛡️ Admin |
+| `PATCH`  | `/api/spots/:id/status`               | Change status `{status: free\|occupied}`                 | 🛡️ Admin |
 | `PATCH`  | `/api/spots/:id/type`                 | Change type `{type: standard\|ev\|handicap\|compact}`    | 🛡️ Admin |
 | `PATCH`  | `/api/spots/:id/coordinates`          | Save/clear SVG map coordinates `{coordinates: {...}\|null}` | 🛡️ Admin |
 
@@ -564,7 +565,7 @@ Full audit log of every spot status/ownership change.
 | ------------- | ------------- | ---------------------------------------------------------------------- |
 | `id`          | UUID PK       | `gen_random_uuid()`                                                    |
 | `spot_id`     | UUID FK       | → `spots(id)` ON DELETE CASCADE                                        |
-| `changed_by`  | TEXT          | Username or `'system'`                                                 |
+| `changed_by`  | TEXT          | Display name of the acting admin, or `'system'` (legacy rows)          |
 | `change_type` | TEXT NOT NULL | `owner_assigned` \| `owner_unassigned` \| `status_changed` \| `type_changed` |
 | `old_value`   | TEXT          |                                                                        |
 | `new_value`   | TEXT          |                                                                        |
