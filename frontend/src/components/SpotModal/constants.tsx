@@ -57,6 +57,3 @@ export const STATUS_CONFIG: Record<SpotStatus, StatusConfigDetails> = {
     icon: <AlertTriangle className="size-4 shrink-0" />,
   },
 }
-
-// Admins manually set only these statuses; 'unconfirmed' and 'spotted' are derived.
-export const ALL_STATUSES: SpotStatus[] = ['free', 'occupied', 'reserved']
