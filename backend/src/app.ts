@@ -21,10 +21,8 @@ import subscribeRouter from './routes/subscribe.js'
 export function createApp() {
   const app = express()
 
-  // Allowed browser origins: local dev only (any localhost port). Production
-  // browsers reach the API through the frontend's same-origin /api proxy. The
-  // timesheet integration is outbound-only — ParkFlow calls AI uprava, nothing
-  // there calls us — so no external origin needs allowing.
+  // Local dev only: prod browsers use the frontend's same-origin /api proxy, and
+  // the timesheet integration is outbound-only (nothing external calls us).
   app.use(
     cors({
       origin: [/^https?:\/\/localhost(:\d+)?$/],

@@ -1,24 +1,5 @@
-/**
- * ownerSync.ts
- *
- * Persists each timesheet employee's identity — numeric AI uprava `user_id`,
- * work email, and assigned `parking_spot` — onto the matching `owners` row, so
- * ParkFlow holds the same ids the timesheet app does instead of resolving
- * employees by name at request time.
- *
- * Deliberately does NOT touch spot↔owner assignment: `spots.owner_id` stays
- * admin-managed, and a `parking_spot` that disagrees with it is logged as drift,
- * not "corrected". The timesheet API is the source of truth for who an employee
- * is, the admin panel for which spot is theirs.
- *
- * Owner rows are not 1:1 with employees, which is why nothing is ever created
- * or deleted here:
- *   - shared spots keep 2–3 co-owners in one row ("Iztok Kavkler / Jan Grošelj")
- *     and only the co-owner the timesheet reports gets linked;
- *   - the ACEX pool, placeholders (Tesla S/X) and external rentals (ARHEA, MIK,
- *     Reduxi) match no employee at all;
- *   - an employee with no owner row is reported and skipped.
- */
+// Writes each employee's timesheet user_id, email and parking_spot onto their owners
+// row. Never creates rows or touches spots.owner_id — mismatches are reported as drift.
 
 import { pool } from '../db/pool.js'
 import { NOT_ACEX_OWNERS } from './acexOwners.js'
@@ -29,21 +10,12 @@ interface MatchedOwner {
   timesheet_user_id: number | null
   email: string | null
   parking_spot: string | null
-  // Owner the spot named by the timesheet currently belongs to in ParkFlow
-  // (NULL when that label doesn't exist or the spot has no owner) — used only
-  // to report drift.
+  // Who owns that spot in ParkFlow today (NULL if unknown/unowned) — drift only.
   spot_owner: string | null
 }
 
-// Find the one owner row an employee belongs to. Candidates are matched on any
-// of four links and ranked narrowest-first: an id we already stored, then the
-// work email, then the spot the timesheet assigns them (its label is our
-// spots.label), then a name segment — the pre-existing heuristic, and the only
-// one that can hit a shared "A / B" row.
-//
-// $5 excludes owner rows that aren't employees (public pool, placeholders,
-// external rentals). Without it, a spot still parked on a placeholder row would
-// hand that row a real person's email and id via the spot-label match.
+// The employee's owner row, matched narrowest-first: stored id, email, spot label,
+// name segment. $5 excludes non-employee rows (placeholders must not be linked).
 const MATCH_SQL = `
   WITH candidates AS (
     SELECT
@@ -80,9 +52,9 @@ const MATCH_SQL = `
 
 export interface OwnerSyncSummary {
   updated: number
-  /** Employees with no owner row — expected for staff without a parking spot. */
+  /** Employees with no owner row — expected for staff without a spot. */
   unmatched: string[]
-  /** Spot assignments where the timesheet and ParkFlow disagree. */
+  /** Spots where the timesheet and ParkFlow disagree. */
   drift: string[]
 }
 
@@ -91,10 +63,8 @@ export async function syncOwnersFromTimesheet(
 ): Promise<OwnerSyncSummary> {
   const summary: OwnerSyncSummary = { updated: 0, unmatched: [], drift: [] }
   const notEmployees = [...NOT_ACEX_OWNERS]
-  // One owner row per employee within a pass. A shared row ("Iztok Kavkler /
-  // Jan Grošelj") matches either co-owner by name, so if the timesheet ever
-  // reports both, the second would silently overwrite the first's id on every
-  // sync. First match wins, and the loser is reported.
+  // Both co-owners of a shared row match it by name — first wins, loser reported,
+  // so they can't overwrite each other's id on every sync.
   const claimed = new Set<string>()
 
   for (const employee of employees) {
@@ -144,8 +114,7 @@ export async function syncOwnersFromTimesheet(
       )
       summary.updated++
     } catch (err) {
-      // One row failing (e.g. two owner rows racing for the same employee id,
-      // which the unique index rejects) must not abort the rest of the sync.
+      // One bad row must not abort the rest of the sync.
       console.error(
         `[ownerSync] ${employee.name} (user_id=${employee.user_id}) failed:`,
         err instanceof Error ? err.message : err,

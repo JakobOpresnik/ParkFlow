@@ -16,11 +16,8 @@ export interface PresenceDayEntry {
 export interface EmployeeWeekPresence {
   user_id: number
   name: string
-  // Work email and the parking spot the timesheet app has this employee
-  // assigned to. Both are persisted onto the matching `owners` row (see
-  // lib/ownerSync.ts) and stripped from the /api/presence response — no UI reads
-  // them. Null when the source doesn't supply one (the dormant WS payload
-  // carries neither).
+  // Persisted onto the owners row (ownerSync.ts) and stripped from /api/presence.
+  // Null when the source doesn't supply them (the dormant WS payload carries neither).
   email: string | null
   parking_spot: string | null
   week: PresenceDayEntry[]

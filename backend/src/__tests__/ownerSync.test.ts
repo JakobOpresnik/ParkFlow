@@ -30,8 +30,7 @@ function employee(
   }
 }
 
-// The row a match returns: already linked to this employee and holding the same
-// spot, i.e. nothing to write.
+// A row already linked to this employee with the same spot — nothing to write.
 const SYNCED_OWNER = {
   id: 'owner-1',
   timesheet_user_id: 11,
@@ -149,8 +148,7 @@ describe('syncOwnersFromTimesheet', () => {
   })
 
   it('gives a shared owner row to the first employee only', async () => {
-    // Both co-owners of "Iztok Kavkler / Jan Grošelj" match that one row by
-    // name; without a guard the second would overwrite the first's id.
+    // Both co-owners match the one row by name; the second must not overwrite.
     const sharedRow = {
       id: 'shared-row',
       timesheet_user_id: null,

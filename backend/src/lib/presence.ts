@@ -17,19 +17,14 @@ export type {
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-// AI uprava timesheet API — replaced timesheet.abelium.com, which is gone. Same
-// per-employee weekly data plus `email` and `parking_spot` (persisted onto owner
-// rows by lib/ownerSync.ts). Reachable from the company network only.
+// AI uprava timesheet API (replaced timesheet.abelium.com) — company network only.
 export const TIMESHEET_BASE_URL =
   process.env.TIMESHEET_API_URL ??
   'https://ai-uprava.matheo.si/api/v1/timesheet'
-// No push channel yet — lib/timesheetWs.ts is dormant until AI uprava ships one,
-// and lib/presencePoll.ts polls the REST endpoint in the meantime. Unset means
-// "no WebSocket", which is why the WS client is not started.
+// Empty = no push channel yet, so the WS client stays dormant. See presencePoll.ts.
 export const TIMESHEET_WS_URL = process.env.TIMESHEET_WS_URL ?? ''
 
-// Static bearer token (no OAuth handshake any more). Read per call, not at
-// module load, so a late dotenv/test env assignment still applies.
+// Static bearer token, read per call so a late dotenv/test assignment applies.
 export function timesheetApiToken(): string {
   return process.env.TIMESHEET_API_TOKEN ?? ''
 }
@@ -51,8 +46,7 @@ async function fetchTimesheetEntries(
   })
 
   if (!response.ok) {
-    // The API reports failures as JSON `{"detail": "..."}` (401 invalid token,
-    // 400 bad date) — include it so a misconfigured token is obvious in the log.
+    // Include the API's `{"detail": ...}` so a bad token/date is obvious in the log.
     const detail = await response.text().catch(() => '')
     throw new Error(
       `Timesheet API error: ${response.status} ${response.statusText}` +

@@ -5,8 +5,7 @@ import type {
   WeekPresenceResponse,
 } from '../lib/presence.types.js'
 
-// The fingerprints are pure, but importing them pulls in ownerSync → db/pool,
-// which refuses to load without DATABASE_URL.
+// Importing the pure fingerprints pulls in ownerSync → db/pool, which needs a URL.
 vi.mock('../db/pool.js', () => ({
   pool: { query: vi.fn(), connect: vi.fn() },
 }))
@@ -14,9 +13,8 @@ vi.mock('../db/pool.js', () => ({
 const { availabilityFingerprint, identityFingerprint } =
   await import('../lib/presencePoll.js')
 
-// The fingerprints decide whether a poll broadcasts to every connected client
-// (availability) and whether it writes to the owners table (identity), so each
-// must react to exactly the fields it covers and ignore the rest.
+// One fingerprint drives the broadcast, the other the owner write — so each must
+// react to exactly its own fields and ignore the other's.
 
 function employee(
   over: Partial<EmployeeWeekPresence> = {},
@@ -82,8 +80,7 @@ describe('availabilityFingerprint', () => {
   })
 
   it('ignores the leave reason — only parking availability matters', () => {
-    // status flips in_office -> remote but the spot stays occupied: clients
-    // render nothing differently, so no broadcast should be triggered.
+    // in_office -> remote but the spot stays occupied: nothing to broadcast.
     const remote = employee({
       week: [
         {

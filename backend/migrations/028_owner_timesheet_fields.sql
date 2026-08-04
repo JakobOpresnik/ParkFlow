@@ -1,23 +1,10 @@
--- 028_owner_timesheet_fields.sql
--- Store each parking-spot owner's AI uprava timesheet identity on their owner
--- row: the numeric employee id (`user_id` from
--- https://ai-uprava.matheo.si/api/v1/timesheet/entries), their work email, and
--- the parking spot the timesheet app has them assigned to.
---
--- owners.id deliberately stays a UUID: spots.owner_id foreign-keys to it, and
--- owner rows are not 1:1 with employees — shared spots keep 2-3 co-owners in a
--- single row, while the ACEX pool, placeholders (Tesla S/X) and external rentals
--- (ARHEA, MIK, Reduxi) have no employee at all.
---
--- The backfill below is a snapshot of the 21 employees the API returned on
--- 2026-08-04. lib/ownerSync.ts re-syncs these three columns from the live API on
--- every poll, so this only has to make the database correct at deploy time.
+-- Store each owner's timesheet identity (employee id, email, assigned spot).
+-- owners.id stays a UUID; the 2026-08-04 backfill is re-synced live by ownerSync.ts.
 
 ALTER TABLE owners ADD COLUMN IF NOT EXISTS timesheet_user_id INTEGER;
 ALTER TABLE owners ADD COLUMN IF NOT EXISTS parking_spot TEXT;
 
--- Partial unique index rather than a UNIQUE constraint: one owner row per
--- employee, but any number of rows may carry no timesheet identity at all.
+-- Partial, so any number of rows may carry no timesheet identity.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_owners_timesheet_user_id
   ON owners (timesheet_user_id) WHERE timesheet_user_id IS NOT NULL;
 
@@ -45,11 +32,8 @@ WITH snapshot (user_id, email, parking_spot, name) AS (
     (42,     'timotej.vesel@acex.si',           'K2-56',           'Timotej Vesel'),
     (173,    'primoz@abelium.com',              'K1-19',           'Primož Lukšič')
 ),
--- Owner rows that are not employees must never receive a timesheet identity:
--- the public pool, placeholders/vehicles and external rentals. Without this a
--- spot still parked on a placeholder row (1VP55 is owned by "Tesla X" in the
--- seed data) would be handed a real person's email. Keep in sync with
--- NOT_ACEX_OWNERS in src/lib/acexOwners.ts.
+-- Non-employee rows: a placeholder-owned spot (1VP55 is "Tesla X" in seed data)
+-- would otherwise be handed a real person's email. Mirrors NOT_ACEX_OWNERS.
 excluded AS (
   SELECT id FROM owners WHERE name IN (
     'ACEX - kdor prej pride, prej melje',
@@ -61,9 +45,8 @@ excluded AS (
     'Reduxi'
   )
 ),
--- Pass 1 — by spot: the API's parking_spot values are exactly our spots.label,
--- so this survives diacritic/spelling drift in names and still resolves shared
--- rows ("Iztok Kavkler / Jan Grošelj" owns K1-18).
+-- Pass 1 — by spot label (the API's parking_spot is exactly our spots.label), so
+-- name spelling drift doesn't matter and shared rows still resolve.
 by_spot AS (
   SELECT DISTINCT ON (sp.owner_id)
          sp.owner_id, s.user_id, s.email, s.parking_spot
@@ -73,9 +56,8 @@ by_spot AS (
     AND sp.owner_id NOT IN (SELECT id FROM excluded)
   ORDER BY sp.owner_id, s.user_id
 ),
--- Pass 2 — by name, for employees whose spot has no owner row attached yet
--- (K1-23 / K1-29 / K1-38 are unassigned in the seed data). Matches a whole name
--- or one segment of a shared "A / B" row.
+-- Pass 2 — by name, for employees whose spot has no owner attached yet (K1-23 /
+-- K1-29 / K1-38 in seed data). Matches a whole name or one "A / B" segment.
 by_name AS (
   SELECT DISTINCT ON (o.id)
          o.id AS owner_id, s.user_id, s.email, s.parking_spot
@@ -88,8 +70,7 @@ by_name AS (
     AND s.user_id NOT IN (SELECT user_id FROM by_spot)
   ORDER BY o.id, s.user_id
 ),
--- One row per employee AND one per owner, so neither the unique index above nor
--- an arbitrary-winner UPDATE can bite.
+-- One row per employee and per owner, so the unique index can't be violated.
 matched AS (
   SELECT DISTINCT ON (user_id) owner_id, user_id, email, parking_spot
   FROM (SELECT * FROM by_spot UNION ALL SELECT * FROM by_name) u

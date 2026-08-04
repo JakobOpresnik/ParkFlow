@@ -18,8 +18,7 @@ app.listen(PORT, async () => {
 
     await freeOrphanedReservedSpots()
 
-    // Poll the AI uprava timesheet API for parking-availability changes and to
-    // keep owner rows in sync. No WebSocket: that API is REST-only for now.
+    // Poll the timesheet API — it is REST-only, so there is no WebSocket.
     startPresencePolling()
   } catch (err) {
     console.error('[startup] initialization failed:', err)

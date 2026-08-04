@@ -1,23 +1,5 @@
-/**
- * timesheetWs.ts — DORMANT. Nothing starts this.
- *
- * Maintains a persistent WebSocket connection to a timesheet Action Cable
- * channel: receives real-time parking-availability updates, merges them into the
- * shared presence cache, and broadcasts a `spot_change` SSE event so all
- * connected frontend clients re-fetch.
- *
- * The AI uprava timesheet API is REST-only for now, so lib/presencePoll.ts polls
- * instead and startTimesheetWs() is never called. This client is kept because
- * push is expected later; when it lands, set TIMESHEET_WS_URL and call
- * startTimesheetWs() from index.ts. Expect to revisit the Action Cable framing
- * below (subscribe handshake, `Api::ParkingChannel`, ~3 s pings) — it was
- * written against Abelium's Rails cable and the new channel may differ.
- *
- * Original Abelium behavior (observed):
- *   - Action Cable pings arrive every ~3 s regardless of update activity.
- *     Pings do NOT stop when updates stop — the ping watchdog is only used
- *     to detect a dead TCP connection, not a stale subscription.
- */
+// DORMANT — nothing starts this; presencePoll.ts polls instead. To revive: set
+// TIMESHEET_WS_URL, call startTimesheetWs(), re-check the Action Cable framing.
 
 import { broadcast } from './broadcast.js'
 import {

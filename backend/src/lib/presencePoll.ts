@@ -1,16 +1,5 @@
-/**
- * presencePoll.ts
- *
- * The AI uprava timesheet API is REST-only — it has no push channel yet, so the
- * near-instant updates the Abelium Action Cable connection used to give us are
- * replaced by polling once a minute. (lib/timesheetWs.ts is kept, dormant, for
- * when a WebSocket does appear.)
- *
- * Each tick refreshes the presence cache, persists employee identity onto owner
- * rows, and emits an SSE `spot_change` only when parking availability actually
- * changed — clients re-fetch on that event, so broadcasting an unchanged week
- * would make every connected client refetch for nothing.
- */
+// No push channel yet, so poll once a minute: refresh the cache, sync owner rows,
+// and broadcast only on a real availability change (clients re-fetch on that).
 
 import { broadcast } from './broadcast.js'
 import { ljubljanaDate } from './localDate.js'
@@ -18,8 +7,7 @@ import { syncOwnersFromTimesheet } from './ownerSync.js'
 import { fetchWeekPresence } from './presence.js'
 import type { WeekPresenceResponse } from './presence.types.js'
 
-// 0 disables polling — useful for local dev off the company VPN, where every
-// tick would otherwise log a connection failure.
+// 0 disables polling — for local dev off the VPN, where every tick would fail.
 const POLL_MS = Number(process.env.PRESENCE_POLL_MS ?? 60_000)
 
 /** What clients render: per-employee day availability plus holidays. */
@@ -55,8 +43,7 @@ let lastAvailability = ''
 let lastIdentity = ''
 
 async function poll(): Promise<void> {
-  // fresh: true so the poll bypasses (and refreshes) the 30-minute presence
-  // cache. A failed fetch leaves the last good data in place.
+  // fresh: bypass and refresh the cache; a failed fetch keeps the last good data.
   const presence = await fetchWeekPresence(ljubljanaDate(new Date()), {
     fresh: true,
   })
@@ -69,8 +56,7 @@ async function poll(): Promise<void> {
 
   const availability = availabilityFingerprint(presence)
   if (availability === lastAvailability) return
-  // First successful poll: seed the baseline without broadcasting — clients
-  // fetch presence on load anyway, nothing has changed for them yet.
+  // First poll just seeds the baseline — clients fetch on load anyway.
   const isFirstPoll = lastAvailability === ''
   lastAvailability = availability
   if (!isFirstPoll) {

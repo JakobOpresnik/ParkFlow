@@ -95,10 +95,8 @@ describe('GET /api/owners/user-ids', () => {
   })
 })
 
-// /api/owners/timesheet-ids is gone: it existed so the Abelium timesheet app
-// could learn which employees own a spot, and AI uprava returns each employee's
-// parking_spot itself. Express has no route left, so this 404s (the :id routes
-// are all PATCH/PUT/DELETE, never GET).
+// Gone: AI uprava reports each employee's parking_spot itself, and no GET route
+// is left to match (the :id routes are all PATCH/PUT/DELETE).
 describe('GET /api/owners/timesheet-ids', () => {
   it('no longer exists', async () => {
     const res = await request(app).get('/api/owners/timesheet-ids')

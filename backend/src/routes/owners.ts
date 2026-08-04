@@ -45,12 +45,8 @@ async function resolveOwner(
   return owner
 }
 
-// GET /api/owners/user-ids — no auth. Lists the SSO usernames of every linked
-// parking-spot owner (rows whose user_id is set). Consumed only by the internal
-// Friday "free your spot" reminder flow to know which owners to DM. An owner
-// row's user_id may hold a comma-separated list of co-owners, split here into
-// individual usernames; the result is a flat, de-duplicated, sorted string array
-// (only user IDs, never the PII-carrying owner objects).
+// GET /api/owners/user-ids — no auth. Flat, de-duplicated SSO usernames of linked
+// owners (comma-separated co-owners split out), for the Friday reminder flow only.
 router.get('/user-ids', async (_req, res, next) => {
   try {
     const result = await pool.query(
