@@ -35,36 +35,3 @@ export function isOwnerAbsent(
 
   return day.parking_available === true
 }
-
-/**
- * Numeric Abelium timesheet user_ids for the given parking-spot owner names,
- * resolved by matching each name (case-insensitive) against the timesheet
- * presence roster — the only link between an owner row and its numeric id, since
- * the `owners` table stores SSO usernames + names, never numeric ids.
- *
- * Owner names may be slash-separated co-owners ("Jakob Opresnik/Jan Novak");
- * each segment is matched independently. Owners with no matching timesheet
- * employee (external/placeholder rows, or a name that doesn't line up) are
- * omitted. Returns a de-duplicated, ascending array.
- */
-export function ownerTimesheetIds(
-  presence: WeekPresenceResponse,
-  ownerNames: string[],
-): number[] {
-  const wanted = new Set(
-    ownerNames.flatMap((name) =>
-      name
-        .split('/')
-        .map((segment) => segment.trim().toLowerCase())
-        .filter(Boolean),
-    ),
-  )
-
-  const ids = new Set<number>()
-  for (const employee of presence.employees) {
-    if (wanted.has(employee.name.trim().toLowerCase())) {
-      ids.add(employee.user_id)
-    }
-  }
-  return [...ids].sort((a, b) => a - b)
-}

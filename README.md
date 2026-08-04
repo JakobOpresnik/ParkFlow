@@ -15,7 +15,7 @@ Real-time spot tracking, presence-aware booking, and administration.
 
 ParkFlow is a full-stack web application built for internal parking management at facilities with multiple parking lots or floors. It solves a common workplace problem: reserved spots sitting empty when their owners are working remotely or on leave, while other employees have nowhere to park.
 
-**The core value proposition:** ParkFlow integrates with the Abelium timesheet system to know who is in the office each day. When a spot's owner is absent, their reserved spot is automatically shown as available — no manual intervention required. Employees can book it for the day directly from an interactive map, and the spot returns to its reserved state the following day.
+**The core value proposition:** ParkFlow integrates with the AI uprava timesheet system to know who is in the office each day. When a spot's owner is absent, their reserved spot is automatically shown as available — no manual intervention required. Employees can book it for the day directly from an interactive map, and the spot returns to its reserved state the following day.
 
 Beyond presence-aware availability, ParkFlow provides:
 - A visual SVG parking map drawn over real CAD floor plans, with zoom, pan, and pinch-to-zoom
@@ -73,10 +73,12 @@ Beyond presence-aware availability, ParkFlow provides:
 
 ### 🗓️ Timesheet Integration
 
-- 🔗 **Presence-aware availability** — spot availability is automatically adjusted based on employee presence data fetched from the Abelium timesheet system
+- 🔗 **Presence-aware availability** — spot availability is automatically adjusted based on employee presence data fetched from the AI uprava timesheet API (`GET /api/v1/timesheet/entries?from=&to=`, static bearer token, company network only)
 - 🗓️ **Week navigation** — users can browse any Mon–Fri week with prev/next controls; the current workday is auto-selected on load
 - 🏠 If a spot's owner is absent (remote, sick, on leave, etc.), their reserved spot is shown as **free** for that day without modifying the database
-- 📅 Presence data is fetched for the full week and cached for 5 minutes; the frontend merges it with spot data client-side via `useEffectiveSpots`
+- 📅 Presence data is fetched for the full week and cached; the frontend merges it with spot data client-side via `useEffectiveSpots`
+- 🔄 **Polled once a minute** (`lib/presencePoll.ts`) — the timesheet API is REST-only, so an SSE `spot_change` is pushed to clients whenever parking availability actually changes. The Action Cable client in `lib/timesheetWs.ts` is kept **dormant** for when a push channel appears; set `TIMESHEET_WS_URL` and call `startTimesheetWs()` to revive it
+- 🪪 **Owner identity sync** (`lib/ownerSync.ts`) — each poll writes the employee's timesheet `user_id`, work email and assigned `parking_spot` onto their `owners` row. Spot↔owner assignment stays admin-managed: a disagreement is logged as drift, never auto-corrected
 - ✅ **Presence-aware booking** — a spot whose owner is absent can be booked directly even if its DB status is `occupied`
 - 🌍 Work-free days (public holidays) are detected automatically from the timesheet and all spots are treated as available
 
@@ -248,7 +250,7 @@ docker compose up --build
 
 Deployment to production is handled by the GitLab CI/CD pipeline on every git tag push. The pipeline lints and tests both apps, builds Docker images, pushes them to the registry, and — after a manual approval click on the deploy job in the GitLab UI — deploys via `compose.yml` using SSH. The production stack also runs a `reminders-cron` service that triggers the scheduled reminder endpoints. Required CI/CD variables (set in GitLab project settings):
 
-`POSTGRES_PASSWORD`, `JWT_SECRET`, `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET`, `TIMESHEET_APP_ID`, `TIMESHEET_SECRET`, `ROCKETCHAT_WEBHOOK_TOKEN`, `ROCKETCHAT_INCOMING_WEBHOOK_URL`, `REMINDER_TRIGGER_TOKEN`, `OWNERS_API_TOKEN`
+`POSTGRES_PASSWORD`, `JWT_SECRET`, `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET`, `TIMESHEET_API_TOKEN`, `ROCKETCHAT_WEBHOOK_TOKEN`, `ROCKETCHAT_INCOMING_WEBHOOK_URL`, `REMINDER_TRIGGER_TOKEN`
 
 Database migrations run automatically on first startup.
 
@@ -306,16 +308,16 @@ bun dev        # starts on port 5173
 | `OAUTH_TOKEN_URL`        | 🔗 Authentik token endpoint                             | `https://sso.example.com/application/o/token/`           |
 | `AUTHENTIK_USERINFO_URL` | 🔗 Authentik userinfo endpoint for token validation     | `https://sso.example.com/application/o/userinfo/`        |
 | `AUTHENTIK_ADMIN_GROUP`  | 👥 Authentik group name that grants admin role          | `parkflow-admins`                                        |
-| `TIMESHEET_API_URL`      | 🗓️ Abelium timesheet API base URL                       | `https://timesheet.abelium.com/api`                      |
-| `TIMESHEET_APP_ID`       | 🔑 Abelium timesheet OAuth app ID                       | `app_c1ca32c01d4d18b4`                                   |
-| `TIMESHEET_SECRET`       | 🔒 Abelium timesheet OAuth secret                       | `your-timesheet-secret`                                  |
+| `TIMESHEET_API_URL`      | 🗓️ AI uprava timesheet API base URL                     | `https://ai-uprava.matheo.si/api/v1/timesheet`           |
+| `TIMESHEET_API_TOKEN`    | 🔒 Static bearer token for the timesheet API            | `your-timesheet-token`                                   |
+| `PRESENCE_POLL_MS`       | 🔄 Presence poll interval in ms (`0` disables polling)   | `60000`                                                  |
+| `TIMESHEET_WS_URL`       | 🔌 Timesheet WebSocket URL — unset (no push channel yet) | _(empty)_                                                |
 | `ROCKETCHAT_WEBHOOK_TOKEN` | 💬 Shared secret expected from the Rocket.Chat outgoing webhook | `your-webhook-token`                          |
 | `ROCKETCHAT_INCOMING_WEBHOOK_URL` | 🔗 Rocket.Chat incoming webhook URL for outbound DMs | `https://chat.example.com/hooks/...`              |
 | `REMINDER_TRIGGER_TOKEN` | 🔑 Shared secret (`X-Reminder-Token`) gating the internal reminder endpoints | `your-reminder-token`               |
 | `REMINDER_TZ`            | 🕒 Timezone for scheduled reminders                     | `Europe/Ljubljana`                                       |
 | `REMINDER_MORNING_TIME`  | ☀️ Local time of the morning "you have a spot" reminder  | `07:30`                                                  |
 | `REMINDER_OWNER_TIME`    | 🌇 Local time of the Friday "free your spot" owner nudge | `15:00`                                                  |
-| `OWNERS_API_TOKEN`       | 🔑 Shared secret (`X-Owners-Token`) gating `GET /api/owners/timesheet-ids` | `your-owners-token`                  |
 
 ### 🖥️ Frontend (`frontend/.env`)
 
@@ -429,7 +431,7 @@ All endpoints require an `Authorization: Bearer <token>` header (a guest token w
 
 | Method | Endpoint                      | Description                                                                           | Auth |
 | ------ | ----------------------------- | ------------------------------------------------------------------------------------- | ---- |
-| `GET`  | `/api/presence?date=`         | Weekly presence from Abelium timesheet for the week containing `date` (`YYYY-MM-DD`); defaults to today; cached 5 min | 🔑 User |
+| `GET`  | `/api/presence?date=`         | Weekly presence from the AI uprava timesheet for the week containing `date` (`YYYY-MM-DD`); defaults to today; cached 30 min and refreshed by the poller. The timesheet's `email` / `parking_spot` are stripped for every caller; the per-day leave `status` for everyone but admins | 🔑 User |
 
 ### 🔌 Integrations & Internal
 
@@ -441,7 +443,6 @@ Service-to-service endpoints. These do **not** use a JWT — they are gated by s
 | `POST` | `/api/internal/reminders/run`         | Trigger the morning "you have a spot" reminder tick (`?dry=1` for dry run) | 🔑 `X-Reminder-Token` |
 | `POST` | `/api/internal/reminders/owners/run`  | Trigger the Friday "free your spot" owner nudge (`?dry=1` for dry run)     | 🔑 `X-Reminder-Token` |
 | `GET`  | `/api/owners/user-ids`                | SSO usernames of all spot owners (Friday reminder flow)            | —                    |
-| `GET`  | `/api/owners/timesheet-ids`           | Numeric Abelium timesheet ids of spot owners                       | 🔑 `X-Owners-Token`  |
 
 ### ⚙️ Health
 
@@ -472,11 +473,13 @@ Vehicle owners linked to reserved parking spots.
 | --------------- | ------------- | ------------------------------------------ |
 | `id`            | UUID PK       | `gen_random_uuid()`                        |
 | `name`          | TEXT NOT NULL | Display name (may contain `/` for co-owners) |
-| `email`         | TEXT          |                                            |
+| `email`         | TEXT          | Work email, synced from the timesheet API   |
 | `phone`         | TEXT          |                                            |
 | `vehicle_plate` | TEXT          |                                            |
 | `notes`         | TEXT          |                                            |
 | `user_id`       | TEXT UNIQUE   | SSO username; enables owner self-service login |
+| `timesheet_user_id` | INTEGER   | AI uprava employee id (unique where set), synced from the timesheet API |
+| `parking_spot`  | TEXT          | Spot label the timesheet assigns this employee; informational — `spots.owner_id` remains authoritative |
 | `created_at`    | TIMESTAMPTZ   | `now()`                                    |
 
 </details>

@@ -21,17 +21,13 @@ import subscribeRouter from './routes/subscribe.js'
 export function createApp() {
   const app = express()
 
-  // Allowed browser origins: local dev (any localhost port) and the Abelium
-  // timesheet app, which calls the token-gated GET /api/owners/timesheet-ids
-  // endpoint (and so must also be allowed to send the X-Owners-Token header).
+  // Local dev only: prod browsers use the frontend's same-origin /api proxy, and
+  // the timesheet integration is outbound-only (nothing external calls us).
   app.use(
     cors({
-      origin: [
-        /^https?:\/\/localhost(:\d+)?$/,
-        'https://timesheet.abelium.com',
-      ],
+      origin: [/^https?:\/\/localhost(:\d+)?$/],
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Owners-Token'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
     }),
   )
 

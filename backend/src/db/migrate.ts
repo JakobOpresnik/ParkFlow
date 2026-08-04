@@ -27,6 +27,13 @@ const SCHEMA_PROBES: Record<string, string> = {
         AND table_name = 'bookings'
         AND column_name = 'booking_date'
     ) AS present`,
+  '028_owner_timesheet_fields.sql': `
+    SELECT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'owners'
+        AND column_name = 'timesheet_user_id'
+    ) AS present`,
 }
 
 export async function runMigrations() {

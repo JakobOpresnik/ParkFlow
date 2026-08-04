@@ -1,24 +1,12 @@
-/**
- * timesheetWs.ts
- *
- * Maintains a persistent WebSocket connection to the Abelium timesheet
- * Api::ParkingChannel (Action Cable). Receives real-time parking-availability
- * updates and merges them into the shared presence cache, then broadcasts
- * a `spot_change` SSE event so all connected frontend clients re-fetch.
- *
- * Abelium behavior (observed):
- *   - Action Cable pings arrive every ~3 s regardless of update activity.
- *     Pings do NOT stop when updates stop — the ping watchdog is only used
- *     to detect a dead TCP connection, not a stale subscription.
- */
+// DORMANT — nothing starts this; presencePoll.ts polls instead. To revive: set
+// TIMESHEET_WS_URL, call startTimesheetWs(), re-check the Action Cable framing.
 
 import { broadcast } from './broadcast.js'
 import {
-  getAppApiToken,
-  invalidateAppApiToken,
   setPresenceCacheFromWs,
-  updatePresenceCacheEmployee,
   TIMESHEET_WS_URL,
+  timesheetApiToken,
+  updatePresenceCacheEmployee,
 } from './presence.js'
 import type {
   EmployeeWeekPresence,
@@ -115,6 +103,9 @@ function buildEmployee(
 ): EmployeeWeekPresence {
   return {
     user_id: userId,
+    // The WS payload carries neither; owner rows get these from the REST sync.
+    email: null,
+    parking_spot: null,
     name,
     week: days.map(
       (d): PresenceDayEntry => ({
@@ -156,8 +147,7 @@ async function handleMessage(raw: string) {
   }
 
   if (msg.type === 'reject_subscription' || msg.type === 'disconnect') {
-    console.warn('[timesheetWs] rejected/disconnected — refreshing token')
-    invalidateAppApiToken()
+    console.warn('[timesheetWs] rejected/disconnected — reconnecting')
     isPlannedClose = true
     ws?.close()
     return
@@ -196,11 +186,14 @@ async function handleMessage(raw: string) {
 async function connect() {
   if (stopped) return
 
-  let token: string
-  try {
-    token = await getAppApiToken()
-  } catch (err) {
-    console.error('[timesheetWs] failed to get token:', err)
+  if (!TIMESHEET_WS_URL) {
+    console.warn('[timesheetWs] TIMESHEET_WS_URL is unset — not connecting')
+    return
+  }
+
+  const token = timesheetApiToken()
+  if (!token) {
+    console.error('[timesheetWs] TIMESHEET_API_TOKEN is not configured')
     consecutiveFailures++
     scheduleReconnect()
     return
