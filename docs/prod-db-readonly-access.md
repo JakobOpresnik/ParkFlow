@@ -16,9 +16,13 @@ debugging and data inspection only — never write to prod.
 
 - **Host:** `parkflow.int.matheo.si` → internal IP `10.0.0.9`
 - **Deploy account:** `deploy` (CI/CD-managed deploy dir `~/parkflow`)
-- **Stack:** `compose.yml`, db = `postgres:16` listening on `5432` inside the network
-- **Superuser** `parkflow:parkflow` exists but **do not use it for browsing** — use the
-  read-only role below.
+- **Stack:** `compose.yml`, db = `postgres:16`. Inside the compose network it's `db:5432`;
+  on the host it is published to the **loopback only** (`127.0.0.1:5432`), which is what
+  makes the SSH tunnel below work while keeping it unreachable from the wider network.
+- **Superuser** `parkflow` — its password is injected at deploy from the
+  `POSTGRES_PASSWORD` CI/CD variable (never in this repo). **Don't browse with it** — use
+  the read-only role below. The `docker compose exec db psql -U parkflow` commands in this
+  doc need no password: they authenticate over the container's local socket.
 - `docker compose` commands may warn `Found multiple config files: compose.yml,
   docker-compose.yml` — harmless, it picks `compose.yml`.
 
@@ -32,11 +36,14 @@ Host parkflow
   User deploy
   IdentityFile ~/.ssh/id_rsa
   AddKeysToAgent yes
-  UseKeychain yes
   LocalForward 15432 localhost:5432
 ```
 
 `LocalForward` tunnels your local port **15432** to the database's `5432` on the server.
+
+On **macOS** you may add `UseKeychain yes` to store the key passphrase in the Keychain.
+Don't add it on Windows or Linux — it's an Apple-only option, and their OpenSSH aborts
+every `ssh` call with `Unsupported option UseKeychain`.
 
 ## 2. Read-only DB role
 
