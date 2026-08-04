@@ -1,12 +1,19 @@
 /**
- * timesheetWs.ts
+ * timesheetWs.ts — DORMANT. Nothing starts this.
  *
- * Maintains a persistent WebSocket connection to the Abelium timesheet
- * Api::ParkingChannel (Action Cable). Receives real-time parking-availability
- * updates and merges them into the shared presence cache, then broadcasts
- * a `spot_change` SSE event so all connected frontend clients re-fetch.
+ * Maintains a persistent WebSocket connection to a timesheet Action Cable
+ * channel: receives real-time parking-availability updates, merges them into the
+ * shared presence cache, and broadcasts a `spot_change` SSE event so all
+ * connected frontend clients re-fetch.
  *
- * Abelium behavior (observed):
+ * The AI uprava timesheet API is REST-only for now, so lib/presencePoll.ts polls
+ * instead and startTimesheetWs() is never called. This client is kept because
+ * push is expected later; when it lands, set TIMESHEET_WS_URL and call
+ * startTimesheetWs() from index.ts. Expect to revisit the Action Cable framing
+ * below (subscribe handshake, `Api::ParkingChannel`, ~3 s pings) — it was
+ * written against Abelium's Rails cable and the new channel may differ.
+ *
+ * Original Abelium behavior (observed):
  *   - Action Cable pings arrive every ~3 s regardless of update activity.
  *     Pings do NOT stop when updates stop — the ping watchdog is only used
  *     to detect a dead TCP connection, not a stale subscription.
@@ -14,11 +21,10 @@
 
 import { broadcast } from './broadcast.js'
 import {
-  getAppApiToken,
-  invalidateAppApiToken,
   setPresenceCacheFromWs,
-  updatePresenceCacheEmployee,
   TIMESHEET_WS_URL,
+  timesheetApiToken,
+  updatePresenceCacheEmployee,
 } from './presence.js'
 import type {
   EmployeeWeekPresence,
@@ -115,6 +121,9 @@ function buildEmployee(
 ): EmployeeWeekPresence {
   return {
     user_id: userId,
+    // The WS payload carries neither; owner rows get these from the REST sync.
+    email: null,
+    parking_spot: null,
     name,
     week: days.map(
       (d): PresenceDayEntry => ({
@@ -156,8 +165,7 @@ async function handleMessage(raw: string) {
   }
 
   if (msg.type === 'reject_subscription' || msg.type === 'disconnect') {
-    console.warn('[timesheetWs] rejected/disconnected — refreshing token')
-    invalidateAppApiToken()
+    console.warn('[timesheetWs] rejected/disconnected — reconnecting')
     isPlannedClose = true
     ws?.close()
     return
@@ -196,11 +204,14 @@ async function handleMessage(raw: string) {
 async function connect() {
   if (stopped) return
 
-  let token: string
-  try {
-    token = await getAppApiToken()
-  } catch (err) {
-    console.error('[timesheetWs] failed to get token:', err)
+  if (!TIMESHEET_WS_URL) {
+    console.warn('[timesheetWs] TIMESHEET_WS_URL is unset — not connecting')
+    return
+  }
+
+  const token = timesheetApiToken()
+  if (!token) {
+    console.error('[timesheetWs] TIMESHEET_API_TOKEN is not configured')
     consecutiveFailures++
     scheduleReconnect()
     return

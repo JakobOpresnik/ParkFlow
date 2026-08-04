@@ -1,18 +1,13 @@
 import { getWeekDays } from './presence.helpers.js'
 import type {
   EmployeeWeekPresence,
-  OAuthResponse,
   TimesheetDayEntry,
   TimesheetEntry,
   WeekPresenceResponse,
 } from './presence.types.js'
 
 // re-export types and helpers so existing imports from 'lib/presence' keep working
-export {
-  getWeekDays,
-  isOwnerAbsent,
-  ownerTimesheetIds,
-} from './presence.helpers.js'
+export { getWeekDays, isOwnerAbsent } from './presence.helpers.js'
 export type {
   EmployeeWeekPresence,
   PresenceDayEntry,
@@ -22,88 +17,57 @@ export type {
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
+// AI uprava timesheet API — replaced timesheet.abelium.com, which is gone. Same
+// per-employee weekly data plus `email` and `parking_spot` (persisted onto owner
+// rows by lib/ownerSync.ts). Reachable from the company network only.
 export const TIMESHEET_BASE_URL =
-  process.env.TIMESHEET_API_URL ?? 'https://timesheet.abelium.com/api'
-export const TIMESHEET_WS_URL =
-  process.env.TIMESHEET_WS_URL ?? 'wss://timesheet.abelium.com/cable'
-const TIMESHEET_APP_ID = process.env.TIMESHEET_APP_ID ?? ''
-const TIMESHEET_SECRET = process.env.TIMESHEET_SECRET ?? ''
+  process.env.TIMESHEET_API_URL ??
+  'https://ai-uprava.matheo.si/api/v1/timesheet'
+// No push channel yet — lib/timesheetWs.ts is dormant until AI uprava ships one,
+// and lib/presencePoll.ts polls the REST endpoint in the meantime. Unset means
+// "no WebSocket", which is why the WS client is not started.
+export const TIMESHEET_WS_URL = process.env.TIMESHEET_WS_URL ?? ''
 
-// ─── OAuth token cache ───────────────────────────────────────────────────────
-
-let cachedToken: string | null = null
-let tokenExpiresAt = 0
-
-export async function getAppApiToken(): Promise<string> {
-  if (cachedToken && Date.now() < tokenExpiresAt) {
-    return cachedToken
-  }
-
-  const response = await fetch(`${TIMESHEET_BASE_URL}/oauth`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      app_id: TIMESHEET_APP_ID,
-      secret: TIMESHEET_SECRET,
-    }),
-  })
-
-  if (!response.ok) {
-    throw new Error(
-      `Timesheet OAuth error: ${response.status} ${response.statusText}`,
-    )
-  }
-
-  const data = (await response.json()) as OAuthResponse
-  cachedToken = data.access_token
-  // Refresh 5 minutes before actual expiry to be safe
-  tokenExpiresAt = new Date(data.expires_at).getTime() - 5 * 60 * 1000
-  return cachedToken
+// Static bearer token (no OAuth handshake any more). Read per call, not at
+// module load, so a late dotenv/test env assignment still applies.
+export function timesheetApiToken(): string {
+  return process.env.TIMESHEET_API_TOKEN ?? ''
 }
 
-// ─── Timesheet entries fetch (with token retry) ─────────────────────────────
+// ─── Timesheet entries fetch ─────────────────────────────────────────────────
 
 async function fetchTimesheetEntries(
   from: string,
   to: string,
 ): Promise<TimesheetEntry[]> {
-  const attempt = async (): Promise<TimesheetEntry[]> => {
-    const token = await getAppApiToken()
-    const url = `${TIMESHEET_BASE_URL}/entries?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
-    const response = await fetch(url, {
-      headers: { 'X-APP-API-TOKEN': token },
-    })
-
-    if (!response.ok) {
-      throw new Error(
-        `Timesheet API error: ${response.status} ${response.statusText}`,
-      )
-    }
-
-    const raw = await response.json()
-    if (!Array.isArray(raw)) {
-      // The API returned an error object (e.g. auth expired) with HTTP 200
-      throw new TimesheetAuthError(
-        `Timesheet API returned unexpected shape: ${JSON.stringify(raw)}`,
-      )
-    }
-    return raw as TimesheetEntry[]
+  const token = timesheetApiToken()
+  if (!token) {
+    throw new Error('TIMESHEET_API_TOKEN is not configured')
   }
 
-  try {
-    return await attempt()
-  } catch (err) {
-    if (err instanceof TimesheetAuthError) {
-      // Invalidate cached token and retry once
-      cachedToken = null
-      tokenExpiresAt = 0
-      return await attempt()
-    }
-    throw err
+  const url = `${TIMESHEET_BASE_URL}/entries?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+
+  if (!response.ok) {
+    // The API reports failures as JSON `{"detail": "..."}` (401 invalid token,
+    // 400 bad date) — include it so a misconfigured token is obvious in the log.
+    const detail = await response.text().catch(() => '')
+    throw new Error(
+      `Timesheet API error: ${response.status} ${response.statusText}` +
+        (detail ? ` — ${detail.slice(0, 200)}` : ''),
+    )
   }
+
+  const raw = await response.json()
+  if (!Array.isArray(raw)) {
+    throw new Error(
+      `Timesheet API returned unexpected shape: ${JSON.stringify(raw).slice(0, 200)}`,
+    )
+  }
+  return raw as TimesheetEntry[]
 }
-
-class TimesheetAuthError extends Error {}
 
 // ─── Presence data cache ─────────────────────────────────────────────────────
 
@@ -161,6 +125,8 @@ export async function fetchWeekPresence(
     return {
       user_id: entry.user_id,
       name: entry.name,
+      email: entry.email ?? null,
+      parking_spot: entry.parking_spot ?? null,
       week: (entry.data ?? []).map((d: TimesheetDayEntry) => ({
         date: d.date,
         status: d.status,
@@ -245,10 +211,4 @@ export function updatePresenceCacheEmployee(
 
   // Keep cache fresh — reset TTL so a REST call doesn't overwrite us too soon
   presenceCacheExpiresAt = Date.now() + PRESENCE_CACHE_TTL
-}
-
-/** Invalidates the cached OAuth token (call when WebSocket reports auth failure). */
-export function invalidateAppApiToken(): void {
-  cachedToken = null
-  tokenExpiresAt = 0
 }

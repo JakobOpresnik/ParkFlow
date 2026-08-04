@@ -2,7 +2,7 @@ import 'dotenv/config'
 
 import { createApp } from './app.js'
 import { runMigrations } from './db/migrate.js'
-import { startTimesheetWs } from './lib/timesheetWs.js'
+import { startPresencePolling } from './lib/presencePoll.js'
 import { freeOrphanedReservedSpots } from './routes/bookings.js'
 
 const PORT = process.env.PORT ?? 3001
@@ -18,8 +18,9 @@ app.listen(PORT, async () => {
 
     await freeOrphanedReservedSpots()
 
-    // Connect to Abelium timesheet WebSocket for real-time parking-availability updates
-    startTimesheetWs()
+    // Poll the AI uprava timesheet API for parking-availability changes and to
+    // keep owner rows in sync. No WebSocket: that API is REST-only for now.
+    startPresencePolling()
   } catch (err) {
     console.error('[startup] initialization failed:', err)
   }

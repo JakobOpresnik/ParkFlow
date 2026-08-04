@@ -1,14 +1,7 @@
 import { Router, type Request, type Response } from 'express'
 
 import { pool } from '../db/pool.js'
-import { NOT_ACEX_OWNERS } from '../lib/acexOwners.js'
 import { broadcast } from '../lib/broadcast.js'
-import { ljubljanaDate } from '../lib/localDate.js'
-import {
-  fetchWeekPresence,
-  ownerTimesheetIds,
-  type WeekPresenceResponse,
-} from '../lib/presence.js'
 import {
   requireAdmin,
   requireAuth,
@@ -54,12 +47,10 @@ async function resolveOwner(
 
 // GET /api/owners/user-ids — no auth. Lists the SSO usernames of every linked
 // parking-spot owner (rows whose user_id is set). Consumed only by the internal
-// Friday "free your spot" reminder flow to know which owners to DM; the timesheet
-// integration uses the numeric /timesheet-ids endpoint (which is the sole
-// consumer of OWNERS_API_TOKEN). An owner row's user_id may hold a comma-separated
-// list of co-owners, split here into individual usernames; the result is a flat,
-// de-duplicated, sorted string array (only user IDs, never the PII-carrying owner
-// objects).
+// Friday "free your spot" reminder flow to know which owners to DM. An owner
+// row's user_id may hold a comma-separated list of co-owners, split here into
+// individual usernames; the result is a flat, de-duplicated, sorted string array
+// (only user IDs, never the PII-carrying owner objects).
 router.get('/user-ids', async (_req, res, next) => {
   try {
     const result = await pool.query(
@@ -71,62 +62,6 @@ router.get('/user-ids', async (_req, res, next) => {
        ORDER BY user_id`,
     )
     res.json(result.rows.map((r) => r.user_id as string))
-  } catch (err) {
-    next(err)
-  }
-})
-
-// GET /api/owners/timesheet-ids — token-gated (no JWT). Returns the numeric
-// Abelium timesheet user_ids (the same ids returned by /api/presence) of every
-// employee who owns a real parking spot — i.e. owners actually referenced by a
-// spot (spots.owner_id), with the ACEX public pool and placeholder/external
-// rows excluded (NOT_ACEX_OWNERS).
-//
-// The owners table stores only SSO usernames + names, never numeric ids, so the
-// numeric id is resolved by cross-referencing the live timesheet presence roster
-// by name; owners not found there are omitted. This is what the timesheet app
-// used /user-ids for before; /user-ids now serves only the internal Friday
-// reminder flow. Auth is a shared secret: the X-Owners-Token header must equal
-// OWNERS_API_TOKEN — this endpoint is its sole consumer. Result is a flat,
-// de-duplicated, ascending array of numbers (never the PII-carrying owner
-// objects).
-router.get('/timesheet-ids', async (req, res, next) => {
-  try {
-    const expected = process.env.OWNERS_API_TOKEN
-    if (!expected) {
-      res.status(500).json({ error: 'Owners API token is not configured.' })
-      return
-    }
-    if (req.get('x-owners-token') !== expected) {
-      res.status(401).json({ error: 'Unauthorized' })
-      return
-    }
-
-    // Names of owners that actually own a spot (one row per distinct name).
-    const result = await pool.query(
-      `SELECT DISTINCT o.name AS name
-       FROM owners o
-       JOIN spots s ON s.owner_id = o.id
-       WHERE o.name IS NOT NULL
-         AND TRIM(o.name) <> ''`,
-    )
-    const ownerNames = result.rows
-      .map((r) => r.name as string)
-      .filter((name) => !NOT_ACEX_OWNERS.has(name))
-
-    // Resolve numeric ids from the timesheet roster (matched by name). If the
-    // timesheet API is down we can't translate names to ids — fail loudly rather
-    // than return an empty list the caller would read as "no owners".
-    let presence: WeekPresenceResponse
-    try {
-      presence = await fetchWeekPresence(ljubljanaDate(new Date()))
-    } catch (err) {
-      console.error('[owners/timesheet-ids] presence fetch failed:', err)
-      res.status(502).json({ error: 'Timesheet presence is unavailable.' })
-      return
-    }
-
-    res.json(ownerTimesheetIds(presence, ownerNames))
   } catch (err) {
     next(err)
   }

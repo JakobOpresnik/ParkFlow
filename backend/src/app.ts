@@ -21,17 +21,15 @@ import subscribeRouter from './routes/subscribe.js'
 export function createApp() {
   const app = express()
 
-  // Allowed browser origins: local dev (any localhost port) and the Abelium
-  // timesheet app, which calls the token-gated GET /api/owners/timesheet-ids
-  // endpoint (and so must also be allowed to send the X-Owners-Token header).
+  // Allowed browser origins: local dev only (any localhost port). Production
+  // browsers reach the API through the frontend's same-origin /api proxy. The
+  // timesheet integration is outbound-only — ParkFlow calls AI uprava, nothing
+  // there calls us — so no external origin needs allowing.
   app.use(
     cors({
-      origin: [
-        /^https?:\/\/localhost(:\d+)?$/,
-        'https://timesheet.abelium.com',
-      ],
+      origin: [/^https?:\/\/localhost(:\d+)?$/],
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Owners-Token'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
     }),
   )
 
