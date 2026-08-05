@@ -32,8 +32,8 @@ WITH snapshot (user_id, email, parking_spot, name) AS (
     (42,     'timotej.vesel@acex.si',           'K2-56',           'Timotej Vesel'),
     (173,    'primoz@abelium.com',              'K1-19',           'Primož Lukšič')
 ),
--- Non-employee rows: a placeholder-owned spot (1VP55 is "Tesla X" in seed data)
--- would otherwise be handed a real person's email. Mirrors NOT_ACEX_OWNERS.
+-- Rows that aren't people (pool, placeholders, rentals) must never be handed an
+-- employee identity, even if one is ever renamed. Mirrors NOT_ACEX_OWNERS.
 excluded AS (
   SELECT id FROM owners WHERE name IN (
     'ACEX - kdor prej pride, prej melje',
@@ -45,35 +45,25 @@ excluded AS (
     'Reduxi'
   )
 ),
--- Pass 1 — by spot label (the API's parking_spot is exactly our spots.label), so
--- name spelling drift doesn't matter and shared rows still resolve.
-by_spot AS (
-  SELECT DISTINCT ON (sp.owner_id)
-         sp.owner_id, s.user_id, s.email, s.parking_spot
-  FROM snapshot s
-  JOIN spots sp ON sp.label = s.parking_spot
-  WHERE sp.owner_id IS NOT NULL
-    AND sp.owner_id NOT IN (SELECT id FROM excluded)
-  ORDER BY sp.owner_id, s.user_id
-),
--- Pass 2 — by name, for employees whose spot has no owner attached yet (K1-23 /
--- K1-29 / K1-38 in seed data). Matches a whole name or one "A / B" segment.
-by_name AS (
-  SELECT DISTINCT ON (o.id)
-         o.id AS owner_id, s.user_id, s.email, s.parking_spot
-  FROM snapshot s
-  JOIN owners o ON LOWER(s.name) IN (
-    SELECT TRIM(LOWER(n)) FROM unnest(string_to_array(o.name, '/')) AS t(n)
-  )
-  WHERE o.id NOT IN (SELECT id FROM excluded)
-    AND o.id NOT IN (SELECT owner_id FROM by_spot)
-    AND s.user_id NOT IN (SELECT user_id FROM by_spot)
-  ORDER BY o.id, s.user_id
-),
--- One row per employee and per owner, so the unique index can't be violated.
+-- Match by NAME only — a whole owner name or one segment of a shared "A / B" row.
+-- Never by spot label: spots.owner_id is admin-managed and may disagree with the
+-- timesheet, so identifying people through it writes one employee's email and id
+-- onto another's row wherever the two differ. Employees no name matches are left
+-- unlinked and reported by lib/ownerSync.ts, for an admin to link by hand.
+-- DISTINCT ON both ways keeps it one row per owner and per employee, so the unique
+-- index can't be violated and no UPDATE has an arbitrary winner.
 matched AS (
   SELECT DISTINCT ON (user_id) owner_id, user_id, email, parking_spot
-  FROM (SELECT * FROM by_spot UNION ALL SELECT * FROM by_name) u
+  FROM (
+    SELECT DISTINCT ON (o.id)
+           o.id AS owner_id, s.user_id, s.email, s.parking_spot
+    FROM snapshot s
+    JOIN owners o ON LOWER(s.name) IN (
+      SELECT TRIM(LOWER(n)) FROM unnest(string_to_array(o.name, '/')) AS t(n)
+    )
+    WHERE o.id NOT IN (SELECT id FROM excluded)
+    ORDER BY o.id, s.user_id
+  ) u
   ORDER BY user_id, owner_id
 )
 UPDATE owners o

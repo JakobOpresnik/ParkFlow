@@ -97,9 +97,18 @@ default:
 backend_test:
   stage: test
   extends: .bun_cache
+  # Real Postgres: ownerSync.db.test.ts runs the actual owner-matching SQL against it
+  # (the other suites mock the pool and don't touch this). Without a reachable
+  # database that test would skip, so it fails the job in CI instead.
+  services:
+    - name: postgres:16
+      alias: postgres
   variables:
     NODE_ENV: test
-    DATABASE_URL: postgresql://localhost:5432/postgres
+    POSTGRES_DB: parkflow_test
+    POSTGRES_USER: parkflow
+    POSTGRES_PASSWORD: parkflow
+    DATABASE_URL: postgresql://parkflow:parkflow@postgres:5432/parkflow_test
     JWT_SECRET: test-secret
   script:
     - cd backend

@@ -2,13 +2,15 @@
 // and broadcast only on a real availability change (clients re-fetch on that).
 
 import { broadcast } from './broadcast.js'
+import { envOr } from './env.js'
 import { ljubljanaDate } from './localDate.js'
 import { syncOwnersFromTimesheet } from './ownerSync.js'
 import { fetchWeekPresence } from './presence.js'
 import type { WeekPresenceResponse } from './presence.types.js'
 
 // 0 disables polling — for local dev off the VPN, where every tick would fail.
-const POLL_MS = Number(process.env.PRESENCE_POLL_MS ?? 60_000)
+// envOr keeps an empty deploy value from reading as Number('') === 0, i.e. "off".
+const POLL_MS = Number(envOr('PRESENCE_POLL_MS', '60000'))
 
 /** What clients render: per-employee day availability plus holidays. */
 export function availabilityFingerprint(p: WeekPresenceResponse): string {
@@ -29,18 +31,7 @@ export function availabilityFingerprint(p: WeekPresenceResponse): string {
   )
 }
 
-/** What gets persisted onto owner rows (see lib/ownerSync.ts). */
-export function identityFingerprint(p: WeekPresenceResponse): string {
-  return p.employees
-    .map(
-      (e) => `${e.user_id}:${e.name}:${e.email ?? ''}:${e.parking_spot ?? ''}`,
-    )
-    .sort()
-    .join('|')
-}
-
 let lastAvailability = ''
-let lastIdentity = ''
 
 async function poll(): Promise<void> {
   // fresh: bypass and refresh the cache; a failed fetch keeps the last good data.
@@ -48,19 +39,21 @@ async function poll(): Promise<void> {
     fresh: true,
   })
 
-  const identity = identityFingerprint(presence)
-  if (identity !== lastIdentity) {
-    lastIdentity = identity
-    await syncOwnersFromTimesheet(presence.employees)
-  }
+  // Every tick, not only when the roster changes: the timesheet is authoritative for
+  // spot ownership, so an admin edit in between has to be reconciled too. Writes only
+  // happen when something actually differs.
+  const sync = await syncOwnersFromTimesheet(presence.employees)
+  let changed = sync.reassigned.length > 0
 
   const availability = availabilityFingerprint(presence)
-  if (availability === lastAvailability) return
-  // First poll just seeds the baseline — clients fetch on load anyway.
-  const isFirstPoll = lastAvailability === ''
-  lastAvailability = availability
-  if (!isFirstPoll) {
-    console.log('[presencePoll] parking availability changed — broadcasting')
+  if (availability !== lastAvailability) {
+    // First poll just seeds the baseline — clients fetch on load anyway.
+    if (lastAvailability !== '') changed = true
+    lastAvailability = availability
+  }
+
+  if (changed) {
+    console.log('[presencePoll] spots changed — broadcasting')
     broadcast('spot_change')
   }
 }

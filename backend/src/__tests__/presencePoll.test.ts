@@ -10,11 +10,10 @@ vi.mock('../db/pool.js', () => ({
   pool: { query: vi.fn(), connect: vi.fn() },
 }))
 
-const { availabilityFingerprint, identityFingerprint } =
-  await import('../lib/presencePoll.js')
+const { availabilityFingerprint } = await import('../lib/presencePoll.js')
 
-// One fingerprint drives the broadcast, the other the owner write — so each must
-// react to exactly its own fields and ignore the other's.
+// This fingerprint decides whether every connected client gets told to re-fetch, so it
+// must react to what they render and ignore everything else.
 
 function employee(
   over: Partial<EmployeeWeekPresence> = {},
@@ -97,50 +96,13 @@ describe('availabilityFingerprint', () => {
     )
   })
 
-  it('ignores email and spot changes — those are the identity sync', () => {
+  // Email/spot changes are the owner sync's business; it reports its own
+  // reassignments, and the poller broadcasts on those separately.
+  it('ignores email and spot changes', () => {
     expect(
       availabilityFingerprint(
         presence([employee({ email: 'new@acex.si', parking_spot: 'K1-99' })]),
       ),
     ).toBe(availabilityFingerprint(presence([employee()])))
-  })
-})
-
-describe('identityFingerprint', () => {
-  it('is stable across employee ordering', () => {
-    const a = employee()
-    const b = employee({ user_id: 3, name: 'Boris Horvat' })
-
-    expect(identityFingerprint(presence([a, b]))).toBe(
-      identityFingerprint(presence([b, a])),
-    )
-  })
-
-  it('changes when an email or spot changes', () => {
-    const base = identityFingerprint(presence([employee()]))
-
-    expect(
-      identityFingerprint(presence([employee({ email: 'x@acex.si' })])),
-    ).not.toBe(base)
-    expect(
-      identityFingerprint(presence([employee({ parking_spot: 'K1-99' })])),
-    ).not.toBe(base)
-  })
-
-  it('ignores day-level availability — that is the broadcast signal', () => {
-    const freed = employee({
-      week: [
-        {
-          date: '2026-08-04',
-          status: 'vacation',
-          is_work_free_day: false,
-          parking_available: true,
-        },
-      ],
-    })
-
-    expect(identityFingerprint(presence([freed]))).toBe(
-      identityFingerprint(presence([employee()])),
-    )
   })
 })

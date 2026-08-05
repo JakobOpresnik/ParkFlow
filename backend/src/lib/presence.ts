@@ -1,3 +1,4 @@
+import { envOr } from './env.js'
 import { getWeekDays } from './presence.helpers.js'
 import type {
   EmployeeWeekPresence,
@@ -18,15 +19,18 @@ export type {
 // ─── Config ──────────────────────────────────────────────────────────────────
 
 // AI uprava timesheet API (replaced timesheet.abelium.com) — company network only.
-export const TIMESHEET_BASE_URL =
-  process.env.TIMESHEET_API_URL ??
-  'https://ai-uprava.matheo.si/api/v1/timesheet'
+// envOr, not ??: an unset deploy variable arrives as '' and must not blank the URL.
+export const TIMESHEET_BASE_URL = envOr(
+  'TIMESHEET_API_URL',
+  'https://ai-uprava.matheo.si/api/v1/timesheet',
+)
 // Empty = no push channel yet, so the WS client stays dormant. See presencePoll.ts.
-export const TIMESHEET_WS_URL = process.env.TIMESHEET_WS_URL ?? ''
+export const TIMESHEET_WS_URL = envOr('TIMESHEET_WS_URL', '')
 
 // Static bearer token, read per call so a late dotenv/test assignment applies.
+// A blank value fails loudly as "not configured" rather than sending `Bearer `.
 export function timesheetApiToken(): string {
-  return process.env.TIMESHEET_API_TOKEN ?? ''
+  return envOr('TIMESHEET_API_TOKEN', '')
 }
 
 // ─── Timesheet entries fetch ─────────────────────────────────────────────────

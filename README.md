@@ -78,7 +78,8 @@ Beyond presence-aware availability, ParkFlow provides:
 - 🏠 If a spot's owner is absent (remote, sick, on leave, etc.), their reserved spot is shown as **free** for that day without modifying the database
 - 📅 Presence data is fetched for the full week and cached; the frontend merges it with spot data client-side via `useEffectiveSpots`
 - 🔄 **Polled once a minute** (`lib/presencePoll.ts`) — the timesheet API is REST-only, so an SSE `spot_change` is pushed to clients whenever parking availability actually changes. The Action Cable client in `lib/timesheetWs.ts` is kept **dormant** for when a push channel appears; set `TIMESHEET_WS_URL` and call `startTimesheetWs()` to revive it
-- 🪪 **Owner identity sync** (`lib/ownerSync.ts`) — each poll writes the employee's timesheet `user_id`, work email and assigned `parking_spot` onto their `owners` row. Spot↔owner assignment stays admin-managed: a disagreement is logged as drift, never auto-corrected
+- 🪪 **Owner sync** (`lib/ownerSync.ts`) — **the timesheet is the source of truth.** Each poll writes the employee's `user_id`, work email and `parking_spot` onto their `owners` row, and re-points `spots.owner_id` to match: if AI uprava says `1VP55` is Bernard Sovdat's, it is his everywhere in the app. Reassignments are audited in `spot_changes` as `owner_assigned` by `timesheet`, exactly like an admin change, and trigger an SSE `spot_change`
+- 🔒 Identity is resolved by stored id, work email or name — **never** by the parking spot. Spot-first matching wrote one employee's email onto another person's row wherever ParkFlow and the timesheet disagreed. Owner rows that aren't people (pool, placeholders, rentals) are never linked, employees with no owner row are reported rather than created, and spot labels unknown to ParkFlow are reported too
 - ✅ **Presence-aware booking** — a spot whose owner is absent can be booked directly even if its DB status is `occupied`
 - 🌍 Work-free days (public holidays) are detected automatically from the timesheet and all spots are treated as available
 
@@ -479,7 +480,7 @@ Vehicle owners linked to reserved parking spots.
 | `notes`         | TEXT          |                                            |
 | `user_id`       | TEXT UNIQUE   | SSO username; enables owner self-service login |
 | `timesheet_user_id` | INTEGER   | AI uprava employee id (unique where set), synced from the timesheet API |
-| `parking_spot`  | TEXT          | Spot label the timesheet assigns this employee; informational — `spots.owner_id` remains authoritative |
+| `parking_spot`  | TEXT          | Spot label the timesheet assigns this employee; `spots.owner_id` is re-pointed to match it on every sync |
 | `created_at`    | TIMESTAMPTZ   | `now()`                                    |
 
 </details>
