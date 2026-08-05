@@ -107,8 +107,11 @@ backend_test:
     NODE_ENV: test
     POSTGRES_DB: parkflow_test
     POSTGRES_USER: parkflow
-    POSTGRES_PASSWORD: parkflow
-    DATABASE_URL: postgresql://parkflow:parkflow@postgres:5432/parkflow_test
+    # trust auth instead of a password, so no credential-shaped connection string
+    # lands in the repo for the secret scanners to flag. The service is ephemeral and
+    # reachable only from this job's own container.
+    POSTGRES_HOST_AUTH_METHOD: trust
+    DATABASE_URL: postgresql://parkflow@postgres:5432/parkflow_test
     JWT_SECRET: test-secret
   script:
     - cd backend

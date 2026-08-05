@@ -49,6 +49,41 @@ function employee(over: Partial<EmployeeWeekPresence>): EmployeeWeekPresence {
   }
 }
 
+// A refused connection surfaces as an AggregateError with an empty message, so fall
+// back to the errno code or the class name — otherwise the failure reads as blank.
+function describeError(err: unknown): string {
+  if (!(err instanceof Error)) return String(err)
+  const { code } = err as Error & { code?: string }
+  if (err.message.length > 0) return err.message
+  if (code !== undefined) return code
+  return err.name
+}
+
+/** Waits for Postgres to accept a query, or throws after `timeoutMs` saying so. */
+async function waitForDatabase(timeoutMs = 30_000): Promise<void> {
+  const { Client } = await import('pg')
+  const deadline = Date.now() + timeoutMs
+
+  for (;;) {
+    const client = new Client({ connectionString: DB_URL })
+    try {
+      await client.connect()
+      await client.query('SELECT 1')
+      await client.end()
+      return
+    } catch (err) {
+      await client.end().catch(() => {})
+      if (Date.now() >= deadline) {
+        throw new Error(
+          `Postgres not reachable within ${timeoutMs}ms: ${describeError(err)}`,
+          { cause: err },
+        )
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500))
+    }
+  }
+}
+
 describe.skipIf(!shouldRun)('syncOwnersFromTimesheet (real Postgres)', () => {
   /* eslint-disable @typescript-eslint/no-explicit-any */
   let pool: any
@@ -56,6 +91,11 @@ describe.skipIf(!shouldRun)('syncOwnersFromTimesheet (real Postgres)', () => {
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
   beforeAll(async () => {
+    // GitLab starts the postgres service alongside the job without waiting for it to
+    // accept connections, so connecting straight away is a race. Probe with a
+    // throwaway client — not the shared pool, whose error handler exits the process.
+    await waitForDatabase()
+
     // Imported lazily: db/pool.js throws at import time without DATABASE_URL.
     pool = (await import('../db/pool.js')).pool
     ;({ syncOwnersFromTimesheet } = await import('../lib/ownerSync.js'))
