@@ -25,14 +25,8 @@ import { OwnerTableSection } from './OwnerTableSection'
 import { useOwnerDialog } from './useOwnerDialog'
 import { useOwnerLinkDialog } from './useOwnerLinkDialog'
 
-// Hidden from this list only — nothing is deleted: the public pool still owns spots,
-// and the spot owner-assignment dropdown reads the same unfiltered list.
-//   - the pool is not a person;
-//   - rows linking two co-owners are leftovers from shared ownership, which no longer
-//     exists — every spot now belongs to the single owner the timesheet names.
-// Co-owner rows are detected by their comma-separated user_id ("iztok,jgroselj"), the
-// format the backend splits on, rather than by matching their display name — so an
-// admin renaming one doesn't make it reappear.
+// Hidden from this page only, never deleted — the pool still owns spots and the owner
+// dropdown needs it. Defunct co-owner rows are matched by their multi-user user_id.
 function isHiddenFromOwnerList(owner: Owner): boolean {
   return (
     owner.name === ACEX_OWNER_NAME || (owner.user_id?.includes(',') ?? false)
