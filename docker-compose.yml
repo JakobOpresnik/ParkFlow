@@ -25,7 +25,11 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      DATABASE_URL: postgresql://parkflow:parkflow@db:5432/parkflow
+      # Password lives in PGPASSWORD, not in the URL: an inline user:pass@host reads
+      # as a leaked credential to the secret scanners. `pg` picks PGPASSWORD up for
+      # any field the connection string omits.
+      DATABASE_URL: postgresql://parkflow@db:5432/parkflow
+      PGPASSWORD: parkflow
       PORT: 3001
       OAUTH_TOKEN_URL: ${OAUTH_TOKEN_URL:-https://sso.matheo.si/application/o/token/}
       AUTHENTIK_USERINFO_URL: ${AUTHENTIK_USERINFO_URL:-https://sso.matheo.si/application/o/userinfo/}

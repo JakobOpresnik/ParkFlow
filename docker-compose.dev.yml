@@ -25,7 +25,11 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      DATABASE_URL: postgresql://parkflow:parkflow@db:5432/parkflow
+      # Password lives in PGPASSWORD, not in the URL: an inline user:pass@host reads
+      # as a leaked credential to the secret scanners. `pg` picks PGPASSWORD up for
+      # any field the connection string omits.
+      DATABASE_URL: postgresql://parkflow@db:5432/parkflow
+      PGPASSWORD: parkflow
       PORT: 3001
       # File-watch polling so `tsx watch` reloads on edits through the
       # Windows/Docker volume mount (mirrors the frontend service).

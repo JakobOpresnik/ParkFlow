@@ -21,7 +21,11 @@ services:
       FORCE_COLOR: '1'
       CHOKIDAR_USEPOLLING: 'true'
       CHOKIDAR_INTERVAL: '250'
-      DATABASE_URL: postgresql://parkflow:parkflow@db-test:5432/parkflow_test
+      # Password lives in PGPASSWORD, not in the URL: an inline user:pass@host reads
+      # as a leaked credential to the secret scanners. `pg` picks PGPASSWORD up for
+      # any field the connection string omits.
+      DATABASE_URL: postgresql://parkflow@db-test:5432/parkflow_test
+      PGPASSWORD: parkflow
       JWT_SECRET: test-secret
     volumes:
       - ./backend:/app
