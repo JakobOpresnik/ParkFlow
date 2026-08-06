@@ -24,7 +24,6 @@ export function computeFloorStats(
   const occupied =
     countByStatus(spots, 'occupied') +
     countByStatus(spots, 'reserved') +
-    countByStatus(spots, 'unconfirmed') +
     countByStatus(spots, 'spotted')
   return {
     lotId,

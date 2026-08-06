@@ -59,10 +59,6 @@ function buildBannerSubtext(
   myReservedElsewhere: Spot | undefined,
   isMyBooking: boolean,
   isCurrentUserOwner: boolean,
-  isCoOwnerBooking: boolean,
-  isSharedSpot: boolean,
-  isCurrentUserInOffice: boolean,
-  isGuest: boolean,
   t: TFunc,
 ): string {
   if (spot.status === 'free') {
@@ -74,15 +70,7 @@ function buildBannerSubtext(
   }
   if (spot.status === 'reserved') {
     if (isMyBooking) return t('spotModal.bannerReservedMine')
-    if (isCoOwnerBooking) return t('spotModal.bannerReservedByCoOwner')
     return resolveOccupantSubtext(spot, t)
-  }
-  if (spot.status === 'unconfirmed') {
-    if (isGuest) return t('spotModal.bannerUnconfirmed')
-    const names = (spot.possible_occupiers ?? []).join(', ')
-    return names
-      ? t('spotModal.bannerUnconfirmedNamed', { names })
-      : t('spotModal.bannerUnconfirmed')
   }
   if (spot.status === 'spotted') {
     return spot.spotted_reported_at
@@ -92,10 +80,6 @@ function buildBannerSubtext(
       : t('spotModal.bannerSpotted')
   }
   if (isCurrentUserOwner && spot.status === 'occupied') {
-    if (isSharedSpot)
-      return isCurrentUserInOffice
-        ? t('spotModal.bannerOccupiedSharedByMe')
-        : t('spotModal.bannerOccupiedSharedByCoOwner')
     return t('spotModal.bannerOccupiedMine')
   }
   return resolveOccupantSubtext(spot, t)
@@ -125,28 +109,14 @@ export function SpotModal() {
 
   if (!spot) return null
 
-  // A user counts as a co-owner if EITHER signal matches:
-  //   - owner_user_id (admin-linked SSO usernames, comma-separated) contains user.username
-  //   - owner_name (canonical "Name1 / Name2 / ...") contains user.displayName
-  // The displayName fallback is required because owner_user_id is admin-populated
-  // and often incomplete for shared spots — without it, co-owners whose username
-  // wasn't linked lose access to PP / unconfirmed reservation flows.
+  // The owner is whoever matches EITHER signal: the admin-linked SSO username, or
+  // the display name. The name fallback is required because owner_user_id is
+  // admin-populated and sometimes missing — without it that owner would lose
+  // access to their own spot.
   const isCurrentUserOwner =
     !!user &&
-    ((!!spot?.owner_user_id &&
-      spot.owner_user_id
-        .split(',')
-        .map((u) => u.trim())
-        .includes(user.username)) ||
-      (!!spot?.owner_name &&
-        spot.owner_name
-          .split('/')
-          .map((n) => n.trim().toLowerCase())
-          .includes(user.displayName.toLowerCase())))
-
-  const isSharedSpot =
-    (spot.owner_name?.includes('/') ?? false) ||
-    (spot.owner_user_id?.includes(',') ?? false)
+    (spot.owner_user_id?.trim() === user.username ||
+      spot.owner_name?.trim().toLowerCase() === user.displayName.toLowerCase())
 
   const myOwnedSpot = user
     ? allSpots.find(
@@ -173,14 +143,6 @@ export function SpotModal() {
     spot.active_booking_user_id === user.id &&
     spot.active_booking_date === selectedDate
 
-  // Whether the active booking was made by a co-owner (not the current user).
-  // Used to show context and suppress cancel for the other co-owner.
-  const isCoOwnerBooking =
-    isCurrentUserOwner &&
-    !isMyBooking &&
-    spot.status === 'reserved' &&
-    !!spot.active_booking_booked_by_owner
-
   // Whether the logged-in user (or admin) can cancel this spot's active booking.
   // Must also verify the booking is for the selected date — stale booking data
   // from a different day can appear on the spot when viewing future/past dates.
@@ -197,19 +159,6 @@ export function SpotModal() {
       ? 'occupied'
       : spot.status
 
-  const isCurrentUserInOffice =
-    isCurrentUserOwner &&
-    !!spot.in_office_owner &&
-    !!user &&
-    spot.in_office_owner.toLowerCase() === user.displayName.toLowerCase()
-
-  // Any co-owner of an unconfirmed shared spot can finalize the reservation,
-  // including co-owners who set PP=true. The unconfirmed state only resolves
-  // into 'occupied' when exactly one co-owner has PP=false; until then, any
-  // co-owner clicking Reserve converts the ambiguous state into a concrete booking.
-  const isCurrentUserCoOwnerOnUnconfirmed =
-    isCurrentUserOwner && spot.status === 'unconfirmed'
-
   const isGuest = user?.role === 'guest'
 
   // An admin-forced 'reserved' has no booking — surface the admin recorded in
@@ -225,10 +174,6 @@ export function SpotModal() {
     myReservedElsewhere,
     isMyBooking,
     isCurrentUserOwner,
-    isCoOwnerBooking,
-    isSharedSpot,
-    isCurrentUserInOffice,
-    isGuest,
     t as TFunc,
   )
 
@@ -269,7 +214,7 @@ export function SpotModal() {
             status={bannerStatus}
             subtext={bannerSubtext}
             titleOverride={
-              isCurrentUserOwner && !isSharedSpot && bannerStatus === 'occupied'
+              isCurrentUserOwner && bannerStatus === 'occupied'
                 ? t('spotModal.yourSpot')
                 : undefined
             }
@@ -304,10 +249,6 @@ export function SpotModal() {
             reservationDuration={reservationDuration}
             myReservedElsewhere={myReservedElsewhere}
             canCancelThisBooking={canCancelThisBooking}
-            isCoOwnerBooking={isCoOwnerBooking}
-            isCurrentUserCoOwnerOnUnconfirmed={
-              isCurrentUserCoOwnerOnUnconfirmed
-            }
             myOwnedSpot={myOwnedSpot}
           />
         </div>

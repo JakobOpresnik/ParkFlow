@@ -58,10 +58,6 @@ const StatusConfig: Record<SpotStatus, StatusConfigDetails> = {
   free: { fill: 'rgba(34,197,94,0.45)', stroke: 'rgba(34,197,94,0.9)' },
   occupied: { fill: 'rgba(239,68,68,0.45)', stroke: 'rgba(239,68,68,0.9)' },
   reserved: { fill: 'rgba(59,130,246,0.45)', stroke: 'rgba(59,130,246,0.9)' },
-  unconfirmed: {
-    fill: 'rgba(139,92,246,0.45)',
-    stroke: 'rgba(139,92,246,0.9)',
-  },
   spotted: {
     fill: `url(#${SPOTTED_PATTERN_ID})`,
     stroke: 'rgba(249,115,22,0.95)',

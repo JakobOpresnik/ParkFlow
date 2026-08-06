@@ -31,8 +31,6 @@ interface BookingCtaProps {
   readonly reservationDuration: number
   readonly myReservedElsewhere: Spot | undefined
   readonly canCancelThisBooking: boolean
-  readonly isCoOwnerBooking: boolean
-  readonly isCurrentUserCoOwnerOnUnconfirmed: boolean
   readonly myOwnedSpot?: Spot
 }
 
@@ -53,8 +51,6 @@ export function BookingCta({
   reservationDuration,
   myReservedElsewhere,
   canCancelThisBooking,
-  isCoOwnerBooking,
-  isCurrentUserCoOwnerOnUnconfirmed,
   myOwnedSpot,
 }: BookingCtaProps) {
   const { t } = useTranslation()
@@ -95,13 +91,8 @@ export function BookingCta({
   } = useIntervalEditor(spot, arrivalTime)
 
   const isGuest = user?.role === 'guest'
-  // Any co-owner of an unconfirmed shared spot can reserve it — including
-  // co-owners with PP=true — which converts the ambiguous state into a
-  // concrete reservation. Once the spot is 'occupied' (single PP=false owner),
-  // no co-owner can reserve it anymore.
   const isSpotted = spot.status === 'spotted'
-  const isReservableForUser =
-    spot.status === 'free' || isSpotted || isCurrentUserCoOwnerOnUnconfirmed
+  const isReservableForUser = spot.status === 'free' || isSpotted
   const canReserveNow =
     isReservableForUser &&
     !!user &&
@@ -120,7 +111,6 @@ export function BookingCta({
     isReservableForUser && !guestCannotReserve && (!user || !isBookableDate)
   const isUnavailableSpot =
     spot.status === 'occupied' ||
-    (spot.status === 'unconfirmed' && !isCurrentUserCoOwnerOnUnconfirmed) ||
     (spot.status === 'reserved' && !canCancelThisBooking)
   // Anyone authenticated (not guest) may report on a free spot. Clearing the
   // spotted flag is handled inside the StatusBanner action slot.
@@ -358,13 +348,6 @@ export function BookingCta({
       {/* Occupied, or reserved by someone else */}
       {isUnavailableSpot && (
         <div className="text-muted-foreground flex flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed py-3 text-sm">
-          {isCoOwnerBooking && spot.active_booking_reserved_by && (
-            <span className="text-foreground text-xs font-medium">
-              {isGuest
-                ? t('spotModal.anonymizedReserver')
-                : spot.active_booking_reserved_by}
-            </span>
-          )}
           {spot.active_booking_date === selectedDate &&
           spot.active_booking_expires_at ? (
             <>
@@ -388,10 +371,6 @@ export function BookingCta({
                 })}
               </span>
             </div>
-          ) : spot.status === 'unconfirmed' ? (
-            <span className="px-3 text-center text-xs leading-snug">
-              {t('spotModal.spotUnavailableUnconfirmed')}
-            </span>
           ) : (
             <span>{unavailableMsg}</span>
           )}

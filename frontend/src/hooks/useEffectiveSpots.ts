@@ -98,83 +98,40 @@ export function useEffectiveSpots(date: string) {
         return { ...spot, status }
       }
 
-      // Support shared spots: owner_name may be "Name1 / Name2"
-      const ownerNames = (spot.owner_name ?? '')
-        .split('/')
-        .map((n) => n.trim())
-        .filter(Boolean)
+      // Exactly one owner per spot — the timesheet names a single person.
+      const ownerName = (spot.owner_name ?? '').trim()
+      const presence = ownerName
+        ? presenceByName.get(ownerName.toLowerCase())
+        : undefined
 
-      const inOfficeIndices: number[] = []
-      const awayIndices: number[] = []
-      let anyPresenceData = false
-      for (let i = 0; i < ownerNames.length; i++) {
-        const presence = presenceByName.get(ownerNames[i]!.toLowerCase())
-        if (presence !== undefined) anyPresenceData = true
-        if (presence === 'in_office') inOfficeIndices.push(i)
-        else if (presence === 'absent') awayIndices.push(i)
-      }
-      const inOfficeOwners = inOfficeIndices.map((i) => ownerNames[i]!)
-      const awayOwners = awayIndices.map((i) => ownerNames[i]!)
-
-      // No presence data for any owner → reset non-today reservations to free.
-      if (!anyPresenceData) {
+      // No presence data for the owner → reset non-today reservations to free.
+      if (presence === undefined) {
         return spot.status === 'reserved'
           ? { ...spot, status: 'free' as const }
           : spot
       }
 
-      // For guests, strip name-based presence fields and emit positional
-      // indices instead — keeps real co-owner names out of React state.
-      const guestFields = isGuest
-        ? {
-            in_office_owner: null,
-            possible_occupiers: null,
-            away_owners: null,
-          }
-        : null
-
-      // Shared-spot ambiguity rule:
-      //   0 in-office co-owners → spot is free
-      //   1 in-office co-owner  → confirmed, that's the occupier
-      //  2+ in-office co-owners → unconfirmed (PP signal can't pick one)
-      if (inOfficeIndices.length >= 2) {
-        return {
-          ...spot,
-          status: 'unconfirmed' as const,
-          ...(guestFields ?? {
-            in_office_owner: null,
-            possible_occupiers: inOfficeOwners,
-            away_owners: awayOwners,
-          }),
-          in_office_owner_index: null,
-          possible_occupier_indices: isGuest ? inOfficeIndices : null,
-          away_owner_indices: isGuest ? awayIndices : null,
-        }
-      }
+      const isInOffice = presence === 'in_office'
 
       // Layer 'spotted' on top of a presence-derived 'free' when there's an
       // active user report — i.e. nothing else is claiming the spot, so the
       // user's report remains the only signal. This must run for owned spots
       // too: the API leaves their raw status as 'occupied' regardless of
       // presence, so we can't rely on spot.status === 'spotted' alone.
-      const fallbackStatus: SpotStatus =
-        inOfficeIndices.length === 1
-          ? 'occupied'
-          : hasActiveSpottedReport(spot)
-            ? 'spotted'
-            : 'free'
+      let effectiveStatus: SpotStatus = 'free'
+      if (isInOffice) effectiveStatus = 'occupied'
+      else if (hasActiveSpottedReport(spot)) effectiveStatus = 'spotted'
 
+      // Guests get a positional flag instead of the name — the owner's
+      // attendance isn't theirs to read by name (the status already says
+      // whether the spot is taken).
       return {
         ...spot,
-        status: fallbackStatus,
-        ...(guestFields ?? {
-          in_office_owner: inOfficeOwners[0] ?? null,
-          possible_occupiers: null,
-          away_owners: awayOwners,
-        }),
-        in_office_owner_index: isGuest ? (inOfficeIndices[0] ?? null) : null,
-        possible_occupier_indices: null,
-        away_owner_indices: isGuest ? awayIndices : null,
+        status: effectiveStatus,
+        in_office_owner: !isGuest && isInOffice ? ownerName : null,
+        away_owners: isGuest || isInOffice ? null : [ownerName],
+        in_office_owner_index: isGuest && isInOffice ? 0 : null,
+        away_owner_indices: isGuest && !isInOffice ? [0] : null,
       }
     })
 

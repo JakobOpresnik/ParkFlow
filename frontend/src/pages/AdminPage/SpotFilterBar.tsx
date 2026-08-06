@@ -72,7 +72,6 @@ export function SpotFilterBar({
               { value: 'occupied', label: t('admin.occupiedStatus') },
               { value: 'reserved', label: t('admin.reservedStatus') },
               { value: 'unavailable', label: t('admin.unavailable') },
-              { value: 'unconfirmed', label: t('spotModal.unconfirmedStatus') },
               { value: 'spotted', label: t('spotModal.spottedStatus') },
             ]}
             size="xs"

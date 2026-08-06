@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { useDeleteOwner, useOwners } from '@/hooks/useOwners'
+import { ACEX_OWNER_NAME } from '@/lib/spots'
 import { useUIStore } from '@/store/uiStore'
 import type { Owner } from '@/types'
 
@@ -23,6 +24,14 @@ import { OwnerLinkDialog } from './OwnerLinkDialog'
 import { OwnerTableSection } from './OwnerTableSection'
 import { useOwnerDialog } from './useOwnerDialog'
 import { useOwnerLinkDialog } from './useOwnerLinkDialog'
+
+// Hidden from this page only, never deleted — the pool still owns spots and the owner
+// dropdown needs it. Defunct co-owner rows are matched by their multi-user user_id.
+function isHiddenFromOwnerList(owner: Owner): boolean {
+  return (
+    owner.name === ACEX_OWNER_NAME || (owner.user_id?.includes(',') ?? false)
+  )
+}
 
 // — main component —
 
@@ -58,17 +67,22 @@ export function OwnersPage() {
     closeLink,
   } = useOwnerLinkDialog(owners)
 
+  const visibleOwners = useMemo(
+    () => owners.filter((o) => !isHiddenFromOwnerList(o)),
+    [owners],
+  )
+
   const filteredOwners = useMemo(() => {
-    if (!ownerSearch.trim()) return owners
+    if (!ownerSearch.trim()) return visibleOwners
     const q = ownerSearch.toLowerCase()
-    return owners.filter(
+    return visibleOwners.filter(
       (o) =>
         o.name.toLowerCase().includes(q) ||
         (o.email?.toLowerCase().includes(q) ?? false) ||
         (o.phone?.toLowerCase().includes(q) ?? false) ||
         (o.vehicle_plate?.toLowerCase().includes(q) ?? false),
     )
-  }, [owners, ownerSearch])
+  }, [visibleOwners, ownerSearch])
 
   const deleteTarget = owners.find((o) => o.id === deleteTargetId)
 

@@ -151,7 +151,6 @@ const en = {
     free: 'Free',
     occupied: 'Occupied',
     reserved: 'Reserved',
-    unconfirmed: 'Unconfirmed',
     spotted: 'Reported taken',
     mapView: 'Map',
     gridView: 'Grid',
@@ -185,23 +184,17 @@ const en = {
     available: 'Available',
     occupied: 'Occupied',
     reservedStatus: 'Reserved',
-    unconfirmedStatus: 'Unconfirmed',
     spottedStatus: 'Reported as taken',
     floor: 'Floor',
     type: 'Type',
     owner: 'Owner',
-    owners: 'Co-owners',
     unassigned: 'Unassigned',
     you: 'You',
     inOffice: 'in office',
-    maybeInOffice: 'may be in office',
     notInOffice: 'not in office',
     inOfficeTooltip: 'Confirmed in office via the company timesheet',
-    maybeInOfficeTooltip:
-      'Flagged as coming in — presence not yet confirmed for today',
     notInOfficeTooltip: 'Confirmed absent via the company timesheet',
     anonymizedOwner: 'Owner',
-    anonymizedOwnerNumbered: 'Owner {{n}}',
     anonymizedReserver: 'Someone',
     guestViewHint: 'Visitor view',
     guestViewHintTooltip:
@@ -214,17 +207,9 @@ const en = {
     bannerFreeElsewhere:
       'You have spot {{label}} reserved. Moving here will cancel it.',
     bannerReservedMine: 'You have reserved this spot.',
-    bannerReservedByCoOwner: 'A co-owner has reserved this spot.',
     bannerOccupiedMine: 'Your spot — you are currently using it.',
     bannerOccupiedOwner: 'This spot is currently in use by the owner.',
-    bannerOccupiedSharedByMe: 'This spot is currently in use by you.',
-    bannerOccupiedSharedByCoOwner:
-      'This spot is currently in use by one of the co-owners.',
     bannerUnavailable: 'This spot is currently unavailable.',
-    bannerUnconfirmed:
-      "Multiple co-owners are flagged as coming in — we can't tell which one is using the spot today.",
-    bannerUnconfirmedNamed:
-      "Multiple co-owners are flagged as coming in ({{names}}) — we can't tell which one is using the spot today.",
     bannerSpotted:
       'Someone reported that a car is parked here even though the spot is marked free.',
     bannerSpottedRelative: '{{when}}',
@@ -261,8 +246,6 @@ const en = {
     spotUnavailableOccupied: 'Spot unavailable — currently occupied',
     occupiedHours: 'In use today: {{start}} – {{end}}',
     spotUnavailableReserved: 'Spot unavailable — already reserved',
-    spotUnavailableUnconfirmed:
-      'Spot unavailable — a co-owner may be using it today',
     manageSpot: 'Manage spot',
     statusSection: 'Status',
     unassign: 'Unassign',
@@ -598,7 +581,6 @@ const en = {
     statusReserved: 'Reserved',
     reservedBy: 'Reserved:',
     until: 'Until:',
-    coOwner: 'co-owner',
     freeSpot: 'Free spot',
     occupySpot: 'Occupy spot',
     cancelReservation: 'Cancel reservation',

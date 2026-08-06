@@ -1,10 +1,4 @@
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  HelpCircle,
-  XCircle,
-} from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Clock, XCircle } from 'lucide-react'
 
 import type { SpotStatus } from '@/types'
 
@@ -41,13 +35,6 @@ export const STATUS_CONFIG: Record<SpotStatus, StatusConfigDetails> = {
     bg: 'bg-blue-500/10 border-blue-500/20',
     text: 'text-blue-600 dark:text-blue-400',
     icon: <Clock className="size-4 shrink-0" />,
-  },
-  unconfirmed: {
-    label: 'Unconfirmed',
-    color: 'violet',
-    bg: 'bg-violet-500/10 border-violet-500/20',
-    text: 'text-violet-600 dark:text-violet-400',
-    icon: <HelpCircle className="size-4 shrink-0" />,
   },
   spotted: {
     label: 'Reported as taken',

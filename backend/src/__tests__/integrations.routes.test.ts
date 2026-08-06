@@ -735,37 +735,17 @@ describe('spotStatusOnDate', () => {
     )
   })
 
-  it('is unconfirmed when 2+ co-owners may be in office (shared spot)', () => {
-    const allIn = byName({
-      Ana: 'in_office',
-      Boris: 'in_office',
-      Cveto: 'in_office',
-    })
-    expect(
-      spotStatusOnDate(owned('Ana / Boris / Cveto'), DATE, undefined, allIn),
-    ).toBe('unconfirmed')
+  it('is free when the owner is away', () => {
+    expect(spotStatusOnDate(owned('Ana'), DATE, undefined, away)).toBe('free')
   })
 
-  it('is taken (not unconfirmed) when exactly one co-owner is in office', () => {
-    const oneIn = byName({ Ana: 'in_office', Boris: 'absent' })
-    expect(spotStatusOnDate(owned('Ana / Boris'), DATE, undefined, oneIn)).toBe(
+  // Spots have exactly one owner, so a name is never split: a slash is just part
+  // of the name and matches nobody, leaving the stored status to decide.
+  it('treats a slash-containing name as one owner, not as co-owners', () => {
+    const anaIn = byName({ Ana: 'in_office' })
+    expect(spotStatusOnDate(owned('Ana / Boris'), DATE, undefined, anaIn)).toBe(
       'taken',
-    )
-  })
-
-  it('is free when all co-owners are absent', () => {
-    const allAway = byName({ Ana: 'absent', Boris: 'absent' })
-    expect(
-      spotStatusOnDate(owned('Ana / Boris'), DATE, undefined, allAway),
-    ).toBe('free')
-  })
-
-  it('does not count owners with unknown presence toward the in-office tally', () => {
-    // Only one known in-office co-owner (others unknown) → taken, not unconfirmed.
-    const oneKnown = byName({ Ana: 'in_office' })
-    expect(
-      spotStatusOnDate(owned('Ana / Boris / Cveto'), DATE, undefined, oneKnown),
-    ).toBe('taken')
+    ) // owned() is stored 'occupied' → baseFallback
   })
 
   it('lets a per-day override win over presence', () => {
@@ -947,21 +927,21 @@ describe('formatOwners', () => {
     )
   })
 
-  it('renders the unconfirmed icon for a shared spot', () => {
+  it('renders the taken icon for an occupied spot', () => {
     const spots = [
       {
         number: 56,
         label: 'K2-56',
-        status: 'unconfirmed',
+        status: 'occupied',
         lot_id: 'l3',
         owner_id: 'o3',
-        owner_name: 'Tilen Marc / Demijan Lesjak / Timotej Vesel',
+        owner_name: 'Timotej Vesel',
       },
     ]
-    const statusOf = () => 'unconfirmed' as const
+    const statusOf = () => 'taken' as const
     expect(formatOwners(spots, LOTS, statusOf, 'today')).toBe(
       'Parking spot owners (1) — today:\n' +
-        '• Tilen Marc / Demijan Lesjak / Timotej Vesel — K2-56 🟪 (Klet -2)',
+        '• Timotej Vesel — K2-56 🟥 (Klet -2)',
     )
   })
 

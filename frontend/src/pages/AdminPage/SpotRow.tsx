@@ -48,7 +48,6 @@ export function SpotRow({
     free: t('admin.freeStatus'),
     occupied: t('admin.occupiedStatus'),
     reserved: t('admin.reservedStatus'),
-    unconfirmed: t('spotModal.unconfirmedStatus'),
     spotted: t('spotModal.spottedStatus'),
   }
   const TYPE_LABELS: Record<SpotType, string> = {
