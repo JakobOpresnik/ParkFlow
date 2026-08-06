@@ -48,7 +48,7 @@ export const HELP_TEXT = [
   '      _e.g._ `reserve A12` · `reserve zunaj tomorrow` · `reserve any`',
   '*cancel* `[spot]` — cancel your current reservation',
   '*history* — see your last 5 bookings',
-  '*owners* `[building] [today|tomorrow|dd.mm.yyyy]` — who owns which spot (🟩 free / 🟥 taken / 🟪 maybe in — shared)',
+  '*owners* `[building] [today|tomorrow|dd.mm.yyyy]` — who owns which spot (🟩 free / 🟥 taken)',
   '*stats* `[building] [today|tomorrow|dd.mm.yyyy]` — how full parking is',
   '*peak hours* `[building]` — busiest times (last 90 days)',
   '*map* `[spot]` / *where* `<spot>` — get a map link (highlighting the spot)',
@@ -461,27 +461,25 @@ export function formatFreeSpotsByBuilding(
 }
 
 // A spot's effective availability for a day, from the owners-list point of view.
-export type SpotDayStatus = 'free' | 'taken' | 'unconfirmed'
+export type SpotDayStatus = 'free' | 'taken'
 
 // How an owner reads on the timesheet for a given day.
 export type OwnerPresence = 'in_office' | 'absent' | 'unknown'
 
 // Icons shown after each spot label in the `owners` list. Squares (not circles):
 // the colour-circle emojis are from different Unicode generations and render at
-// mismatched sizes in Rocket.Chat; 🟩/🟥/🟪 are a matched set (same size).
+// mismatched sizes in Rocket.Chat; 🟩/🟥 are a matched set (same size).
 const SPOT_STATUS_ICON: Record<SpotDayStatus, string> = {
   free: '🟩', // free for someone else to use that day
-  taken: '🟥', // a co-owner is in / spot is otherwise occupied or reserved
-  unconfirmed: '🟪', // shared spot, 2+ co-owners may be in — can't tell who
+  taken: '🟥', // the owner is in, or the spot is otherwise occupied or reserved
 }
 
 // Effective availability of `spot` for `date`, mirroring the frontend's
 // useEffectiveSpots: an active booking for that day or an 'occupied' override →
-// taken; a 'free' override → free; otherwise count the co-owners in office that
-// day — 0 → free, 1 → taken (occupied), 2+ → unconfirmed (the PP signal can't
-// pick one). `overrideStatus` is the spot's spot_day_status for `date`, if any.
-// `ownerPresence(name)` returns in_office / absent / unknown. Falls back to the
-// stored status when no co-owner has presence data.
+// taken; a 'free' override → free; otherwise the single owner's presence decides
+// — in office → taken, away → free. `overrideStatus` is the spot's
+// spot_day_status for `date`, if any. `ownerPresence(name)` returns in_office /
+// absent / unknown, and an unknown owner falls back to the stored status.
 export function spotStatusOnDate(
   spot: SpotLike,
   date: string,
@@ -501,20 +499,13 @@ export function spotStatusOnDate(
   // The ACEX public pool defaults to free, but an admin's explicit non-free
   // status wins (normally filtered out of this list anyway).
   if (spot.owner_name === ACEX_OWNER_NAME) return baseFallback
-  // Owned spot: decide from how many co-owners are in office that day.
-  if (spot.owner_name) {
-    const ownerNames = spot.owner_name
-      .split('/')
-      .map((n) => n.trim())
-      .filter(Boolean)
-    if (ownerNames.length === 0) return baseFallback
-    const presences = ownerNames.map((n) => ownerPresence(n))
-    // No presence data for any co-owner → fall back to the stored status.
-    if (presences.every((p) => p === 'unknown')) return baseFallback
-    const inOffice = presences.filter((p) => p === 'in_office').length
-    if (inOffice >= 2) return 'unconfirmed'
-    if (inOffice === 1) return 'taken'
-    return 'free'
+  // Owned spot: the single owner's presence decides.
+  const ownerName = spot.owner_name?.trim()
+  if (ownerName) {
+    const presence = ownerPresence(ownerName)
+    // No presence data → fall back to the stored status.
+    if (presence === 'unknown') return baseFallback
+    return presence === 'in_office' ? 'taken' : 'free'
   }
   // Unowned spot.
   return baseFallback
@@ -647,7 +638,7 @@ async function resolveDayView(
 // List every ACEX-employee-owned spot grouped by its owner. Skips unowned spots
 // and any non-employee owner (public pool, placeholders/vehicles, external
 // rentals — see NOT_ACEX_OWNERS). Each spot label carries an availability icon
-// for `when` (🟩 free / 🟥 taken / 🟪 unconfirmed), per `statusOf`. When all of an
+// for `when` (🟩 free / 🟥 taken), per `statusOf`. When all of an
 // owner's spots sit in one building, that building is shown in parentheses —
 // unless `building` is set (a building filter), in which case the scope is named
 // in the header and the redundant per-owner suffix is omitted. The caller is
