@@ -99,9 +99,7 @@ export function ManagementAccordion({ spot }: ManagementAccordionProps) {
           <div>
             <div className="mb-2.5 flex flex-wrap items-center justify-between gap-1">
               <p className="text-muted-foreground text-xs font-medium tracking-widest uppercase">
-                {spot.owner_name?.includes('/')
-                  ? t('spotModal.owners')
-                  : t('spotModal.owner')}
+                {t('spotModal.owner')}
               </p>
               <div className="flex flex-wrap gap-1">
                 {spot.owner_id && (

@@ -69,10 +69,8 @@ export function DashboardPage() {
   const totalFree = countByStatus(allSpots, 'free')
   const totalOccupied = countByStatus(allSpots, 'occupied')
   const totalReserved = countByStatus(allSpots, 'reserved')
-  const totalUnconfirmed = countByStatus(allSpots, 'unconfirmed')
   const totalSpotted = countByStatus(allSpots, 'spotted')
-  const totalInUse =
-    totalOccupied + totalReserved + totalUnconfirmed + totalSpotted
+  const totalInUse = totalOccupied + totalReserved + totalSpotted
   const total = allSpots.length
   const occupancyPct = total ? Math.round((totalInUse / total) * 100) : 0
 

@@ -48,8 +48,8 @@ export function SpotCard({
   const { color, border } = StatusConfig[status]
   const label = t(STATUS_LABEL_KEYS[status])
   const canModifyStatus = !isToggling && !isNonWorkDay && !isPastCutoff
-  // A co-owner's booking may only be cancelled by themselves or an admin (handled
-  // server-side). Hide the button entirely when another co-owner holds the booking.
+  // A booking may only be cancelled by whoever made it, or an admin (enforced
+  // server-side); the button is hidden otherwise.
   const isMyBooking = spot.active_booking_user_id === currentUserId
   // Only cancel a booking that is actually for the day being viewed — the joined
   // active booking can belong to another day (a spot booked on several days), and
@@ -116,11 +116,6 @@ export function SpotCard({
                 {spot.active_booking_reserved_by}
               </span>
             </span>
-            {spot.active_booking_booked_by_owner && !isMyBooking && (
-              <span className="ml-auto shrink-0 rounded-full bg-blue-200/60 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-800/40 dark:text-blue-300">
-                {t('ownerParking.coOwner')}
-              </span>
-            )}
           </div>
           {spot.active_booking_expires_at && (
             <div className="text-muted-foreground mt-1 flex items-center gap-2 text-xs">

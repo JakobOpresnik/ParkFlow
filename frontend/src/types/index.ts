@@ -1,9 +1,4 @@
-export type SpotStatus =
-  | 'free'
-  | 'occupied'
-  | 'reserved'
-  | 'unconfirmed'
-  | 'spotted'
+export type SpotStatus = 'free' | 'occupied' | 'reserved' | 'spotted'
 export type SpotType = 'standard' | 'ev' | 'handicap' | 'compact'
 
 export interface StatsHeatmapCell {
@@ -89,21 +84,15 @@ export interface Spot {
   owner_phone: string | null
   owner_vehicle_plate: string | null
   owner_user_id: string | null
-  // set by useEffectiveSpots: which specific owner is in office (for shared spots)
+  // set by useEffectiveSpots: the owner, when presence says they are in office
   in_office_owner?: string | null
-  // set by useEffectiveSpots for shared spots where 2+ co-owners are flagged as
-  // coming (PP signal ambiguous) — lists all candidates so the UI can show them.
-  possible_occupiers?: string[] | null
-  // set by useEffectiveSpots: co-owners whose presence resolves to 'absent' for
-  // the selected date — UI flags them with a "not in office" badge so users can
-  // see which co-owners are confirmed away on a shared spot.
+  // set by useEffectiveSpots: the owner when presence resolves to 'absent' for the
+  // selected date — the UI flags them with a "not in office" badge.
   away_owners?: string[] | null
-  // Guest-only index-based mirrors of in_office_owner / possible_occupiers /
-  // away_owners. For guest viewers, the name-based fields above are nulled and
-  // these index fields (positions into owner_name.split('/')) are populated
-  // instead — so React state and DevTools never expose real co-owner names.
+  // Guest-only mirrors: for guests the name-bearing fields above are nulled and
+  // these are set instead (always index 0, the spot's single owner), so React
+  // state and DevTools never expose who is in the office by name.
   in_office_owner_index?: number | null
-  possible_occupier_indices?: number[] | null
   away_owner_indices?: number[] | null
   // joined from bookings table (active booking for this spot, if any)
   active_booking_id: string | null

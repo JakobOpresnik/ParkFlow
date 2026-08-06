@@ -34,9 +34,9 @@ export function useOwnerParkingActions(selectedDate: string) {
 
   function handleSetDayStatus(spot: OwnerSpot, status: 'free' | 'occupied') {
     // "Occupy" creates a real booking under the current user — this is what
-    // makes co-owner attribution show up correctly on the map modal. The
+    // makes owner attribution show up correctly on the map modal. The
     // backend auto-cancels any same-day booking the user already had, and the
-    // co-owner gate at POST /api/bookings always allows owners to book their
+    // ownership gate at POST /api/bookings always allows owners to book their
     // own spot regardless of presence.
     if (status === 'occupied') {
       const { startsAt, expiresAt } = computeOccupyInterval(

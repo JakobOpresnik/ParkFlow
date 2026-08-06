@@ -42,7 +42,6 @@ const STATUS_LABEL_KEYS: Record<SpotStatus, string> = {
   free: 'map.free',
   occupied: 'map.occupied',
   reserved: 'map.reserved',
-  unconfirmed: 'map.unconfirmed',
   spotted: 'map.spotted',
 }
 
@@ -61,11 +60,6 @@ const STATUS_CONFIG: Record<SpotStatus, StatusConfigDetails> = {
     accent: 'bg-spot-reserved',
     badgeText: 'text-spot-reserved',
     badgeBg: 'bg-spot-reserved/15',
-  },
-  unconfirmed: {
-    accent: 'bg-spot-unconfirmed',
-    badgeText: 'text-spot-unconfirmed',
-    badgeBg: 'bg-spot-unconfirmed/15',
   },
   spotted: {
     accent: 'bg-spot-spotted',
@@ -101,85 +95,30 @@ function OwnerNameRows({
     )
   }
 
-  const possibleSet = new Set(
-    (spot.possible_occupiers ?? []).map((n) => n.toLowerCase()),
-  )
-  const awaySet = new Set((spot.away_owners ?? []).map((n) => n.toLowerCase()))
-  const possibleIndexSet = new Set(spot.possible_occupier_indices ?? [])
-  const awayIndexSet = new Set(spot.away_owner_indices ?? [])
-  const isUnconfirmed =
-    spot.status === 'unconfirmed' &&
-    (isGuest ? possibleIndexSet.size > 0 : possibleSet.size > 0)
-  const isSharedSpot = spot.owner_name.includes('/')
+  const ownerName = spot.owner_name.trim()
+  const isInOffice = isGuest
+    ? spot.in_office_owner_index === 0
+    : spot.in_office_owner?.toLowerCase() === ownerName.toLowerCase()
+  const isAway = isGuest
+    ? (spot.away_owner_indices ?? []).includes(0)
+    : (spot.away_owners ?? []).some(
+        (n) => n.toLowerCase() === ownerName.toLowerCase(),
+      )
+
+  let textClass = 'text-muted-foreground'
+  if (isInOffice) textClass = 'text-spot-occupied font-medium'
+  else if (isAway) textClass = 'text-destructive font-medium'
 
   return (
-    <>
-      {spot.owner_name
-        .split('/')
-        .map((name: string, idx: number) => {
-          const trimmed = name.trim()
-          const lower = trimmed.toLowerCase()
-          const isInOffice = isGuest
-            ? spot.in_office_owner_index === idx
-            : spot.in_office_owner?.toLowerCase() === lower
-          const isPossible =
-            isUnconfirmed &&
-            (isGuest ? possibleIndexSet.has(idx) : possibleSet.has(lower))
-          const isAway =
-            isSharedSpot &&
-            spot.status === 'unconfirmed' &&
-            !isInOffice &&
-            !isPossible &&
-            (isGuest ? awayIndexSet.has(idx) : awaySet.has(lower))
-
-          const textClass = isInOffice
-            ? 'text-spot-occupied font-medium'
-            : isPossible
-              ? 'text-spot-unconfirmed font-medium'
-              : isAway
-                ? 'text-destructive font-medium'
-                : 'text-muted-foreground'
-
-          const displayName = isGuest
-            ? isSharedSpot
-              ? t('spotModal.anonymizedOwnerNumbered', { n: idx + 1 })
-              : t('spotModal.anonymizedOwner')
-            : trimmed
-          // Sort priority: in_office (0) → possible (1) → away (2) → no data (3).
-          const sortKey = isInOffice ? 0 : isPossible ? 1 : isAway ? 2 : 3
-
-          return {
-            name,
-            displayName,
-            textClass,
-            isInOffice,
-            isPossible,
-            isAway,
-            sortKey,
-          }
-        })
-        .sort((a, b) => a.sortKey - b.sortKey)
-        .map((entry) => (
-          <p key={entry.name} className={`text-xs ${entry.textClass}`}>
-            {entry.displayName}
-            {entry.isInOffice && (
-              <span className="ml-1 opacity-70">
-                · {t('spotModal.inOffice')}
-              </span>
-            )}
-            {entry.isPossible && (
-              <span className="ml-1 opacity-70">
-                · {t('spotModal.maybeInOffice')}
-              </span>
-            )}
-            {entry.isAway && (
-              <span className="ml-1 opacity-70">
-                · {t('spotModal.notInOffice')}
-              </span>
-            )}
-          </p>
-        ))}
-    </>
+    <p className={`text-xs ${textClass}`}>
+      {isGuest ? t('spotModal.anonymizedOwner') : ownerName}
+      {isInOffice && (
+        <span className="ml-1 opacity-70">· {t('spotModal.inOffice')}</span>
+      )}
+      {isAway && (
+        <span className="ml-1 opacity-70">· {t('spotModal.notInOffice')}</span>
+      )}
+    </p>
   )
 }
 

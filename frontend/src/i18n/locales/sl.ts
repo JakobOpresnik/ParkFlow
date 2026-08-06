@@ -152,7 +152,6 @@ const sl = {
     free: 'Prosto',
     occupied: 'Zasedeno',
     reserved: 'Rezervirano',
-    unconfirmed: 'Nepotrjeno',
     spotted: 'Prijavljeno zasedeno',
     mapView: 'Karta',
     gridView: 'Mreža',
@@ -186,23 +185,17 @@ const sl = {
     available: 'Na voljo',
     occupied: 'Zasedeno',
     reservedStatus: 'Rezervirano',
-    unconfirmedStatus: 'Nepotrjeno',
     spottedStatus: 'Prijavljeno zasedeno',
     floor: 'Etaža',
     type: 'Vrsta',
     owner: 'Lastnik',
-    owners: 'Solastniki',
     unassigned: 'Nedodeljeno',
     you: 'Vi',
     inOffice: 'v pisarni',
-    maybeInOffice: 'morda v pisarni',
     notInOffice: 'ni v pisarni',
     inOfficeTooltip: 'Potrjeno v pisarni prek evidence prisotnosti',
-    maybeInOfficeTooltip:
-      'Označen kot prihaja — prisotnost še ni potrjena za danes',
     notInOfficeTooltip: 'Potrjeno odsoten prek evidence prisotnosti',
     anonymizedOwner: 'Lastnik',
-    anonymizedOwnerNumbered: 'Lastnik {{n}}',
     anonymizedReserver: 'Nekdo',
     guestViewHint: 'Pogled obiskovalca',
     guestViewHintTooltip:
@@ -215,17 +208,9 @@ const sl = {
     bannerFreeElsewhere:
       'Imate rezervirano mesto {{label}}. Premik sem bo preklical to rezervacijo.',
     bannerReservedMine: 'To mesto ste rezervirali vi.',
-    bannerReservedByCoOwner: 'Solastnik ima rezervirano to mesto.',
     bannerOccupiedMine: 'Vaše mesto — trenutno ga uporabljate.',
     bannerOccupiedOwner: 'To mesto trenutno uporablja lastnik.',
-    bannerOccupiedSharedByMe: 'To mesto trenutno uporabljate vi.',
-    bannerOccupiedSharedByCoOwner:
-      'To mesto trenutno uporablja eden od solastnikov.',
     bannerUnavailable: 'To mesto trenutno ni na voljo.',
-    bannerUnconfirmed:
-      'Več solastnikov ima označeno, da bodo prišli — ne moremo ugotoviti, kateri od njih danes uporablja mesto.',
-    bannerUnconfirmedNamed:
-      'Več solastnikov ima označeno, da bodo prišli ({{names}}) — ne moremo ugotoviti, kateri od njih danes uporablja mesto.',
     bannerSpotted:
       'Nekdo je prijavil, da je tukaj parkiran avto, čeprav je mesto označeno kot prosto.',
     bannerSpottedRelative: '{{when}}',
@@ -262,8 +247,6 @@ const sl = {
     spotUnavailableOccupied: 'Mesto ni na voljo — trenutno zasedeno',
     occupiedHours: 'V uporabi danes: {{start}} – {{end}}',
     spotUnavailableReserved: 'Mesto ni na voljo — že rezervirano',
-    spotUnavailableUnconfirmed:
-      'Mesto ni na voljo — solastnik ga morda danes uporablja',
     manageSpot: 'Upravljanje mesta',
     statusSection: 'Status',
     unassign: 'Odstrani dodelitev',
@@ -603,7 +586,6 @@ const sl = {
     statusReserved: 'Rezervirano',
     reservedBy: 'Rezerviral:',
     until: 'Do:',
-    coOwner: 'solastnik',
     freeSpot: 'Sprosti mesto',
     occupySpot: 'Zasedi mesto',
     cancelReservation: 'Prekliči rezervacijo',

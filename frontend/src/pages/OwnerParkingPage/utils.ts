@@ -134,8 +134,7 @@ export function computeDayStatus(
     // undefined → no presence data, fall through to spot default
   }
 
-  // 'unconfirmed' is only a derived UI state, not a stored OwnerSpot status,
-  // but TS narrowing requires we collapse anything non-'occupied' to 'free'.
+  // Collapse anything non-'occupied' to 'free' for TS narrowing.
   return spot.status === 'occupied' ? 'occupied' : 'free'
 }
 

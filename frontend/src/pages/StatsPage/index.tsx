@@ -18,7 +18,6 @@ const StatusColorVar: Record<SpotStatus, string> = {
   free: '--color-spot-free',
   occupied: '--color-spot-occupied',
   reserved: '--color-spot-occupied',
-  unconfirmed: '--color-spot-occupied',
   spotted: '--color-spot-spotted',
 }
 
@@ -26,7 +25,6 @@ const STATUS_LABEL_KEYS: Record<SpotStatus, string> = {
   free: 'stats.free',
   occupied: 'stats.occupied',
   reserved: 'stats.occupied',
-  unconfirmed: 'stats.occupied',
   spotted: 'map.spotted',
 }
 
@@ -104,16 +102,15 @@ export function StatsPage() {
     free: spots.filter((s) => s.status === 'free').length,
     occupied: spots.filter((s) => s.status === 'occupied').length,
     reserved: spots.filter((s) => s.status === 'reserved').length,
-    unconfirmed: spots.filter((s) => s.status === 'unconfirmed').length,
     spotted: spots.filter((s) => s.status === 'spotted').length,
   }
-  // 'occupied' bucket here = occupied + reserved + unconfirmed (system-owned signals).
+  // 'occupied' bucket here = occupied + reserved (system-owned signals).
   // 'spotted' stays its own bucket so users can see at a glance how many spots
   // were user-reported as taken. Overall occupancy rate (below) still sums all
   // non-free statuses, including spotted.
   const mergedCounts = {
     free: counts.free,
-    occupied: counts.occupied + counts.reserved + counts.unconfirmed,
+    occupied: counts.occupied + counts.reserved,
     spotted: counts.spotted,
   }
 
