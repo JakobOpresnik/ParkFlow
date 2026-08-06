@@ -31,9 +31,19 @@ async function resolveOwner(
   req: Request,
   res: Response,
 ): Promise<Record<string, unknown> | null> {
+  // Several rows can match one person: their own row, plus any legacy row whose
+  // comma-separated user_id still lists them. Rank an exact user_id match above a
+  // list membership above a name match — otherwise both score equally and the
+  // winner falls to `o.id`, i.e. whichever UUID happens to sort first.
   const result = await pool.query(
     `SELECT * FROM owners AS o WHERE ${OWNER_MATCHES_USER}
-     ORDER BY CASE WHEN $1 = ANY(string_to_array(o.user_id, ',')) THEN 0 ELSE 1 END, o.id
+     ORDER BY
+       CASE
+         WHEN $1 = o.user_id THEN 0
+         WHEN $1 = ANY(string_to_array(o.user_id, ',')) THEN 1
+         ELSE 2
+       END,
+       o.id
      LIMIT 1`,
     [req.user!.username, req.user!.displayName],
   )
