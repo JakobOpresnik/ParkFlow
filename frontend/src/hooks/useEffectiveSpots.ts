@@ -14,6 +14,23 @@ function hasActiveSpottedReport(spot: Spot): boolean {
   return new Date(spot.spotted_expires_at).getTime() > Date.now()
 }
 
+// A booking for another day must not leak into this day's view.
+function stripForeignBooking(spot: Spot, date: string): Spot {
+  if (spot.active_booking_date === date || spot.active_booking_id == null) {
+    return spot
+  }
+  return {
+    ...spot,
+    active_booking_id: null,
+    active_booking_user_id: null,
+    active_booking_reserved_by: null,
+    active_booking_starts_at: null,
+    active_booking_expires_at: null,
+    active_booking_date: null,
+    active_booking_booked_by_owner: null,
+  }
+}
+
 /**
  * Returns all spots with effective status for a given date.
  * Priority (matches backend booking logic):
@@ -69,9 +86,10 @@ export function useEffectiveSpots(date: string) {
       }
     }
 
-    const processed = spots.map((spot) => {
-      const bookingIsForDate = spot.active_booking_date === date
-      const hasNoBooking = spot.active_booking_id == null
+    const processed = spots.map((raw) => {
+      const bookingIsForDate = raw.active_booking_date === date
+      const hasNoBooking = raw.active_booking_id == null
+      const spot = stripForeignBooking(raw, date)
 
       // An active booking for this specific date → always show as reserved,
       // regardless of the spot's base status. This matters for ACEX-owned spots
