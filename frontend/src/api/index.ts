@@ -86,14 +86,15 @@ export const api = {
     ),
   setSpotDayStatus: (
     spotId: string,
-    date: string,
+    date: string | undefined,
     status: 'free' | 'occupied' | null,
+    opts?: { days?: number; indefinite?: boolean },
   ) =>
     request<SpotDayOverride | { ok: boolean }>(
       `/api/owners/me/spots/${spotId}/day-status`,
       {
         method: 'PUT',
-        body: JSON.stringify({ date, status }),
+        body: JSON.stringify({ date, status, ...opts }),
       },
     ),
   linkOwner: (id: string, username: string | null) =>

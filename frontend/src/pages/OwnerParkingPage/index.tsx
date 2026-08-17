@@ -13,6 +13,7 @@ import { useOwnerParkingActions } from './useOwnerParkingActions'
 import { useOwnerParkingData } from './useOwnerParkingData'
 import {
   computeDayStatus,
+  findOverrideForDay,
   getAdjacentWeek,
   getFirstWorkday,
   getWeekDays7,
@@ -215,11 +216,13 @@ export function OwnerParkingPage() {
         <div className="space-y-3">
           {spots.map((spot) => {
             const status = getStatus(spot)
-            const isOverridden = hasOverrideForDay(
+            const override = findOverrideForDay(
               spot.id,
               selectedDate,
               overrides,
             )
+            const isOverridden = override !== undefined
+            const isIndefiniteOverride = isOverridden && override.date === null
             const isSwitchedFree =
               isOverridden &&
               status === 'free' &&
@@ -231,6 +234,7 @@ export function OwnerParkingPage() {
                 status={status}
                 selectedDate={selectedDate}
                 isOverridden={isOverridden}
+                isIndefiniteOverride={isIndefiniteOverride}
                 isNonWorkDay={isNonWorkDay(selectedDate, today, workFreeDays)}
                 isPastCutoff={isPastBookingCutoff(selectedDate, today)}
                 currentUserId={currentUserId}
@@ -240,8 +244,10 @@ export function OwnerParkingPage() {
                       `#${myBookingElsewhere.spot_number}`)
                     : undefined
                 }
-                onSetDayStatus={(s) => handleSetDayStatus(spot, s)}
-                onClearOverride={() => handleClearOverride(spot)}
+                onSetDayStatus={(s, d) => handleSetDayStatus(spot, s, d)}
+                onClearOverride={() =>
+                  handleClearOverride(spot, isIndefiniteOverride)
+                }
                 onCancelBooking={() => handleCancelBooking(spot)}
                 onToggleHistory={() => handleToggleHistory(spot.id)}
                 isHistoryOpen={historySpotId === spot.id}

@@ -224,9 +224,12 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
         return
       }
 
-      // Check per-day override (spot_day_status) — owner's explicit decision
+      // Check per-day override (spot_day_status) — owner's explicit decision.
+      // An exact-date row beats the indefinite (date IS NULL) row.
       const overrideResult = await client.query(
-        `SELECT status FROM spot_day_status WHERE spot_id = $1 AND date = $2::date`,
+        `SELECT status FROM spot_day_status
+         WHERE spot_id = $1 AND (date = $2::date OR date IS NULL)
+         ORDER BY date NULLS LAST LIMIT 1`,
         [spot_id, targetDate],
       )
       let isBookable: boolean

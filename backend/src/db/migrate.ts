@@ -34,6 +34,14 @@ const SCHEMA_PROBES: Record<string, string> = {
         AND table_name = 'owners'
         AND column_name = 'timesheet_user_id'
     ) AS present`,
+  '029_spot_day_status_indefinite.sql': `
+    SELECT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'spot_day_status'
+        AND column_name = 'date'
+        AND is_nullable = 'YES'
+    ) AS present`,
 }
 
 export async function runMigrations() {

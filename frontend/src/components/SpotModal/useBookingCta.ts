@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import { useCancelBooking, useCreateBooking } from '@/hooks/useBookings'
 import { useSetSpotDayStatus } from '@/hooks/useOwnerParking'
-import { useReportSpotted } from '@/hooks/useSpots'
+import { useReportSpotted, useSpotDayOverrides } from '@/hooks/useSpots'
 import { fmtTime } from '@/lib/datetime'
 import type { Spot } from '@/types'
 
@@ -52,6 +52,7 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
   const cancelBooking = useCancelBooking()
   const setSpotDayStatus = useSetSpotDayStatus()
   const reportSpotted = useReportSpotted()
+  const dayOverrides = useSpotDayOverrides(selectedDate)
 
   const today = new Date().toISOString().slice(0, 10)
   const isBookableDate = selectedDate >= today
@@ -109,8 +110,15 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
         expires_at: expiresAt.toISOString(),
       })
 
-      // If the user owns another spot, free it for the day so others can use it.
-      if (myOwnedSpot) {
+      // If the user owns another spot, free it for the day so others can use
+      // it — unless they explicitly marked it occupied (day/indefinite
+      // override), which booking elsewhere must not clobber.
+      const ownedSpotMarkedOccupied =
+        myOwnedSpot &&
+        dayOverrides.data?.some(
+          (o) => o.spot_id === myOwnedSpot.id && o.status === 'occupied',
+        )
+      if (myOwnedSpot && !ownedSpotMarkedOccupied) {
         try {
           await setSpotDayStatus.mutateAsync({
             spotId: myOwnedSpot.id,

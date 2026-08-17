@@ -122,9 +122,7 @@ export function computeDayStatus(
   )
   if (hasBooking) return 'reserved'
 
-  const override = overrides.find(
-    (o) => o.spot_id === spot.id && o.date.slice(0, 10) === date,
-  )
+  const override = findOverrideForDay(spot.id, date, overrides)
   if (override) return override.status
 
   if (spot.owner_name) {
@@ -138,12 +136,23 @@ export function computeDayStatus(
   return spot.status === 'occupied' ? 'occupied' : 'free'
 }
 
+// An exact-date override beats the indefinite (date === null) one.
+export function findOverrideForDay(
+  spotId: string,
+  date: string,
+  overrides: SpotDayOverride[],
+): SpotDayOverride | undefined {
+  return (
+    overrides.find(
+      (o) => o.spot_id === spotId && o.date?.slice(0, 10) === date,
+    ) ?? overrides.find((o) => o.spot_id === spotId && o.date === null)
+  )
+}
+
 export function hasOverrideForDay(
   spotId: string,
   date: string,
   overrides: SpotDayOverride[],
 ): boolean {
-  return overrides.some(
-    (o) => o.spot_id === spotId && o.date.slice(0, 10) === date,
-  )
+  return findOverrideForDay(spotId, date, overrides) !== undefined
 }
