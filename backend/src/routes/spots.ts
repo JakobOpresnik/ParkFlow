@@ -210,7 +210,9 @@ router.post(
         //      multiple PPs), neither of which is reportable.
         //   4. Orphan / unowned spot: fall back to stored s.status.
         const overrideResult = await client.query(
-          `SELECT status FROM spot_day_status WHERE spot_id = $1 AND date = $2::date`,
+          `SELECT status FROM spot_day_status
+           WHERE spot_id = $1 AND (date = $2::date OR date IS NULL)
+           ORDER BY date NULLS LAST LIMIT 1`,
           [id, targetDate],
         )
         let isEffectivelyFree: boolean
@@ -342,10 +344,15 @@ router.get('/day-overrides', requireAuth, async (req, res, next) => {
       res.status(400).json({ error: 'date query param required (YYYY-MM-DD)' })
       return
     }
+    // Exact-date rows beat the indefinite (date IS NULL) row per spot.
+    // sds.date must stay qualified — the bare name would resolve to the
+    // COALESCEd output alias and break the NULLS LAST precedence.
     const result = await pool.query(
-      `SELECT id, spot_id, date, status, set_by
-       FROM spot_day_status
-       WHERE date = $1::date`,
+      `SELECT DISTINCT ON (sds.spot_id)
+         sds.id, sds.spot_id, COALESCE(sds.date, $1::date) AS date, sds.status, sds.set_by
+       FROM spot_day_status sds
+       WHERE sds.date = $1::date OR sds.date IS NULL
+       ORDER BY sds.spot_id, sds.date NULLS LAST`,
       [date],
     )
     res.json(result.rows)
@@ -516,6 +523,18 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res, next) => {
       return
     }
 
+    // Owner-controlled spots keep their stored status — availability is the
+    // owner's to manage; the rest of the row stays editable.
+    let statusUpdate = status ?? null
+    if (statusUpdate) {
+      const ownerResult = await pool.query(
+        `SELECT o.name FROM spots s LEFT JOIN owners o ON s.owner_id = o.id WHERE s.id = $1`,
+        [id],
+      )
+      const ownerName = ownerResult.rows[0]?.name as string | null | undefined
+      if (ownerName && ownerName !== ACEX_OWNER_NAME) statusUpdate = null
+    }
+
     const result = await pool.query(
       `UPDATE spots
        SET number = COALESCE($1, number),
@@ -529,7 +548,7 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res, next) => {
         number ?? null,
         label !== undefined ? label?.trim() || null : null,
         lot_id ?? null,
-        status ?? null,
+        statusUpdate,
         type ?? null,
         id,
       ],
@@ -675,6 +694,24 @@ router.patch(
       if (!adminSettableStatuses.includes(status)) {
         res.status(400).json({
           error: `status must be one of: ${adminSettableStatuses.join(', ')}`,
+        })
+        return
+      }
+
+      // Owner-controlled spots: availability is derived from presence and the
+      // owner's day overrides — only pool/unowned spots take a stored status.
+      const ownerResult = await pool.query(
+        `SELECT o.name FROM spots s LEFT JOIN owners o ON s.owner_id = o.id WHERE s.id = $1`,
+        [id],
+      )
+      if (ownerResult.rows.length === 0) {
+        res.status(404).json({ error: 'Spot not found' })
+        return
+      }
+      const ownerName = ownerResult.rows[0].name as string | null
+      if (ownerName && ownerName !== ACEX_OWNER_NAME) {
+        res.status(403).json({
+          error: 'This spot is owner-controlled — only its owner can change availability',
         })
         return
       }

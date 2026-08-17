@@ -144,6 +144,7 @@ describe('PUT /api/spots/:id — admin update', () => {
 
   it('updates spot status', async () => {
     const updated = { ...SPOT, status: 'occupied' }
+    mockQuery.mockResolvedValueOnce({ rows: [{ name: null }] }) // owner lookup
     mockQuery.mockResolvedValueOnce({ rows: [updated] })
 
     const res = await request(app)
@@ -152,6 +153,84 @@ describe('PUT /api/spots/:id — admin update', () => {
 
     expect(res.status).toBe(200)
     expect(res.body.status).toBe('occupied')
+  })
+
+  it('keeps the stored status when the spot is owner-controlled', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ name: 'Jana Novak' }] }) // owner lookup
+    mockQuery.mockResolvedValueOnce({ rows: [SPOT] })
+
+    const res = await request(app)
+      .put('/api/spots/spot-uuid-1')
+      .send({ status: 'occupied' })
+
+    expect(res.status).toBe(200)
+    // status param must be nulled so COALESCE keeps the current value
+    const [, params] = mockQuery.mock.calls[1]!
+    expect(params[3]).toBeNull()
+  })
+})
+
+describe('PATCH /api/spots/:id/status — admin status flip', () => {
+  it('returns 400 for a non-settable status', async () => {
+    const res = await request(app)
+      .patch('/api/spots/spot-uuid-1/status')
+      .send({ status: 'reserved' })
+
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 404 when the spot does not exist', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] })
+
+    const res = await request(app)
+      .patch('/api/spots/non-existent-id/status')
+      .send({ status: 'occupied' })
+
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 403 for an owner-controlled spot', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ name: 'Jana Novak' }] })
+
+    const res = await request(app)
+      .patch('/api/spots/spot-uuid-1/status')
+      .send({ status: 'occupied' })
+
+    expect(res.status).toBe(403)
+    expect(res.body.error).toMatch(/owner/i)
+  })
+
+  it('flips an unowned spot', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ name: null }] }) // owner lookup
+    mockQuery.mockResolvedValueOnce({ rows: [{ status: 'free' }] }) // old value
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ ...SPOT, status: 'occupied' }],
+    }) // update
+    mockQuery.mockResolvedValueOnce({ rows: [] }) // audit insert
+
+    const res = await request(app)
+      .patch('/api/spots/spot-uuid-1/status')
+      .send({ status: 'occupied' })
+
+    expect(res.status).toBe(200)
+    expect(res.body.status).toBe('occupied')
+  })
+
+  it('flips an ACEX pool spot', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ name: 'ACEX - kdor prej pride, prej melje' }],
+    })
+    mockQuery.mockResolvedValueOnce({ rows: [{ status: 'free' }] }) // old value
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ ...SPOT, status: 'occupied' }],
+    })
+    mockQuery.mockResolvedValueOnce({ rows: [] })
+
+    const res = await request(app)
+      .patch('/api/spots/spot-uuid-1/status')
+      .send({ status: 'occupied' })
+
+    expect(res.status).toBe(200)
   })
 })
 

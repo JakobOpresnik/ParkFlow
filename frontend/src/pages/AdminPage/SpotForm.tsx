@@ -2,6 +2,7 @@ import { Select } from '@mantine/core'
 import { useTranslation } from 'react-i18next'
 
 import { Input } from '@/components/ui/input'
+import { ACEX_OWNER_NAME } from '@/lib/spots'
 import type { Owner, ParkingLot, SpotStatus, SpotType } from '@/types'
 
 // — types —
@@ -26,6 +27,9 @@ interface SpotFormProps {
 
 export function SpotForm({ value, onChange, lots, owners }: SpotFormProps) {
   const { t } = useTranslation()
+  const selectedOwner = owners.find((o) => o.id === value.owner_id)
+  const isOwnerControlled =
+    selectedOwner !== undefined && selectedOwner.name !== ACEX_OWNER_NAME
   return (
     <div className="grid gap-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -79,7 +83,13 @@ export function SpotForm({ value, onChange, lots, owners }: SpotFormProps) {
               { value: 'occupied', label: t('admin.occupiedStatus') },
             ]}
             allowDeselect={false}
+            disabled={isOwnerControlled}
           />
+          {isOwnerControlled && (
+            <p className="text-muted-foreground mt-1 text-xs">
+              {t('admin.ownerControlledStatusHint')}
+            </p>
+          )}
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium">
