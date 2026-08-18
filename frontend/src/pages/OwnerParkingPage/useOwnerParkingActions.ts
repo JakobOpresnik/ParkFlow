@@ -18,6 +18,12 @@ const DURATION_DAYS: Record<
   month: 30,
 }
 
+// Minimal spot shape the actions need — a full map Spot satisfies it too.
+type ActionSpot = Pick<
+  OwnerSpot,
+  'id' | 'number' | 'label' | 'active_booking_id'
+>
+
 // — hook —
 
 export function useOwnerParkingActions(selectedDate: string) {
@@ -26,7 +32,7 @@ export function useOwnerParkingActions(selectedDate: string) {
   const cancelBooking = useCancelBooking()
 
   function handleSetDayStatus(
-    spot: OwnerSpot,
+    spot: ActionSpot,
     status: 'free' | 'occupied',
     duration: DayStatusDuration = 'day',
   ) {
@@ -81,7 +87,7 @@ export function useOwnerParkingActions(selectedDate: string) {
     )
   }
 
-  function handleClearOverride(spot: OwnerSpot, indefinite = false) {
+  function handleClearOverride(spot: ActionSpot, indefinite = false) {
     setDayStatus.mutate(
       {
         spotId: spot.id,
@@ -107,7 +113,7 @@ export function useOwnerParkingActions(selectedDate: string) {
     )
   }
 
-  function handleCancelBooking(spot: OwnerSpot) {
+  function handleCancelBooking(spot: ActionSpot) {
     if (!spot.active_booking_id) return
     cancelBooking.mutate(spot.active_booking_id, {
       onSuccess: (result) => {
