@@ -711,7 +711,8 @@ router.patch(
       const ownerName = ownerResult.rows[0].name as string | null
       if (ownerName && ownerName !== ACEX_OWNER_NAME) {
         res.status(403).json({
-          error: 'This spot is owner-controlled — only its owner can change availability',
+          error:
+            'This spot is owner-controlled — only its owner can change availability',
         })
         return
       }

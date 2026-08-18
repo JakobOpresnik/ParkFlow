@@ -100,13 +100,7 @@ describe('PUT /api/owners/me/spots/:spotId/day-status', () => {
     expect(res.status).toBe(200)
     const [sql, params] = mockQuery.mock.calls[1]!
     expect(sql).toContain('generate_series')
-    expect(params).toEqual([
-      SPOT_ID,
-      '2026-08-17',
-      'occupied',
-      'Jana Novak',
-      1,
-    ])
+    expect(params).toEqual([SPOT_ID, '2026-08-17', 'occupied', 'Jana Novak', 1])
   })
 
   it('upserts a row per day for a multi-day span', async () => {

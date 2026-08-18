@@ -227,7 +227,9 @@ router.put(
       }
       const spanDays = days ?? 1
       if (!Number.isInteger(spanDays) || spanDays < 1 || spanDays > 31) {
-        res.status(400).json({ error: 'days must be an integer between 1 and 31' })
+        res
+          .status(400)
+          .json({ error: 'days must be an integer between 1 and 31' })
         return
       }
 
