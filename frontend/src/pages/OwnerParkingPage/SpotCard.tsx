@@ -1,3 +1,4 @@
+import { Menu } from '@mantine/core'
 import {
   ArrowRightLeft,
   ChevronUp,
@@ -13,6 +14,7 @@ import { useTranslation } from 'react-i18next'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import type { DayStatusDuration } from '@/types'
 
 import type { DayStatus, SpotCardProps } from './types'
 import { formatDateTime, StatusConfig } from './utils'
@@ -25,6 +27,13 @@ const STATUS_LABEL_KEYS: Record<DayStatus, string> = {
   reserved: 'ownerParking.statusReserved',
 }
 
+const DURATION_OPTIONS: { duration: DayStatusDuration; labelKey: string }[] = [
+  { duration: 'day', labelKey: 'ownerParking.durationDay' },
+  { duration: 'week', labelKey: 'ownerParking.durationWeek' },
+  { duration: 'month', labelKey: 'ownerParking.durationMonth' },
+  { duration: 'indefinite', labelKey: 'ownerParking.durationIndefinite' },
+]
+
 // — main component —
 
 export function SpotCard({
@@ -32,6 +41,7 @@ export function SpotCard({
   status,
   selectedDate,
   isOverridden,
+  isIndefiniteOverride,
   isNonWorkDay,
   isPastCutoff,
   switchedToSpotLabel,
@@ -75,7 +85,11 @@ export function SpotCard({
             </Badge>
             {isOverridden && (
               <span className="text-muted-foreground text-xs">
-                {t('ownerParking.override')}
+                {t(
+                  isIndefiniteOverride
+                    ? 'ownerParking.overrideIndefinite'
+                    : 'ownerParking.override',
+                )}
               </span>
             )}
           </div>
@@ -130,26 +144,52 @@ export function SpotCard({
       {/* Actions */}
       <div className="flex flex-wrap gap-2 border-t p-3">
         {status === 'occupied' && (
-          <Button
-            onClick={() => onSetDayStatus('free')}
-            disabled={!canModifyStatus}
-            color="orange"
-            className="h-11 flex-1 gap-2 text-sm font-semibold"
-          >
-            <DoorOpen className="size-4" />
-            {t('ownerParking.freeSpot')}
-          </Button>
+          <Menu shadow="md" position="bottom-start" withinPortal>
+            <Menu.Target>
+              <Button
+                disabled={!canModifyStatus}
+                color="orange"
+                className="h-11 flex-1 gap-2 text-sm font-semibold"
+              >
+                <DoorOpen className="size-4" />
+                {t('ownerParking.freeSpot')}
+              </Button>
+            </Menu.Target>
+            <Menu.Dropdown>
+              {DURATION_OPTIONS.map(({ duration, labelKey }) => (
+                <Menu.Item
+                  key={duration}
+                  onClick={() => onSetDayStatus('free', duration)}
+                >
+                  {t(labelKey)}
+                </Menu.Item>
+              ))}
+            </Menu.Dropdown>
+          </Menu>
         )}
         {status === 'free' && (
-          <Button
-            onClick={() => onSetDayStatus('occupied')}
-            disabled={!canModifyStatus}
-            color="green"
-            className="h-11 flex-1 gap-2 text-sm font-semibold"
-          >
-            <UserCheck className="size-4" />
-            {t('ownerParking.occupySpot')}
-          </Button>
+          <Menu shadow="md" position="bottom-start" withinPortal>
+            <Menu.Target>
+              <Button
+                disabled={!canModifyStatus}
+                color="green"
+                className="h-11 flex-1 gap-2 text-sm font-semibold"
+              >
+                <UserCheck className="size-4" />
+                {t('ownerParking.occupySpot')}
+              </Button>
+            </Menu.Target>
+            <Menu.Dropdown>
+              {DURATION_OPTIONS.map(({ duration, labelKey }) => (
+                <Menu.Item
+                  key={duration}
+                  onClick={() => onSetDayStatus('occupied', duration)}
+                >
+                  {t(labelKey)}
+                </Menu.Item>
+              ))}
+            </Menu.Dropdown>
+          </Menu>
         )}
         {status === 'reserved' &&
           spot.active_booking_id &&

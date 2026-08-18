@@ -194,8 +194,9 @@ router.get(
         `SELECT sds.id, sds.spot_id, sds.date, sds.status, sds.set_by
        FROM spot_day_status sds
        JOIN spots s ON sds.spot_id = s.id
-       WHERE s.owner_id = $1 AND sds.date >= $2::date AND sds.date <= $3::date
-       ORDER BY sds.date`,
+       WHERE s.owner_id = $1
+         AND (sds.date IS NULL OR (sds.date >= $2::date AND sds.date <= $3::date))
+       ORDER BY sds.date NULLS FIRST`,
         [ownerId, from, to],
       )
       res.json(result.rows)
@@ -213,13 +214,20 @@ router.put(
   async (req, res, next) => {
     try {
       const { spotId } = req.params
-      const { date, status } = req.body as {
-        date: string
+      const { date, status, days, indefinite } = req.body as {
+        date?: string
         status: string | null
+        days?: number
+        indefinite?: boolean
       }
 
-      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      if (!indefinite && (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date))) {
         res.status(400).json({ error: 'date is required (YYYY-MM-DD)' })
+        return
+      }
+      const spanDays = days ?? 1
+      if (!Number.isInteger(spanDays) || spanDays < 1 || spanDays > 31) {
+        res.status(400).json({ error: 'days must be an integer between 1 and 31' })
         return
       }
 
@@ -245,8 +253,10 @@ router.put(
       if (status === null || status === undefined) {
         // Clear override — revert to timesheet
         await pool.query(
-          `DELETE FROM spot_day_status WHERE spot_id = $1 AND date = $2`,
-          [spotId, date],
+          indefinite
+            ? `DELETE FROM spot_day_status WHERE spot_id = $1 AND date IS NULL`
+            : `DELETE FROM spot_day_status WHERE spot_id = $1 AND date = $2`,
+          indefinite ? [spotId] : [spotId, date],
         )
         broadcast()
         res.json({ ok: true, cleared: true })
@@ -260,13 +270,27 @@ router.put(
         return
       }
 
-      const result = await pool.query(
-        `INSERT INTO spot_day_status (spot_id, date, status, set_by)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (spot_id, date) DO UPDATE SET status = $3, set_by = $4
-       RETURNING *`,
-        [spotId, date, status, req.user!.displayName],
-      )
+      // Indefinite also clears future per-day rows — stale exceptions would
+      // otherwise shadow it, since exact dates beat the NULL row on read.
+      const result = indefinite
+        ? await pool.query(
+            `WITH cleared AS (
+             DELETE FROM spot_day_status WHERE spot_id = $1 AND date >= CURRENT_DATE
+           )
+           INSERT INTO spot_day_status (spot_id, date, status, set_by)
+           VALUES ($1, NULL, $2, $3)
+           ON CONFLICT (spot_id) WHERE date IS NULL
+           DO UPDATE SET status = $2, set_by = $3
+           RETURNING *`,
+            [spotId, status, req.user!.displayName],
+          )
+        : await pool.query(
+            `INSERT INTO spot_day_status (spot_id, date, status, set_by)
+           SELECT $1, $2::date + i, $3, $4 FROM generate_series(0, $5::int - 1) AS i
+           ON CONFLICT (spot_id, date) DO UPDATE SET status = EXCLUDED.status, set_by = EXCLUDED.set_by
+           RETURNING *`,
+            [spotId, date, status, req.user!.displayName, spanDays],
+          )
       broadcast()
       res.json(result.rows[0])
     } catch (err) {

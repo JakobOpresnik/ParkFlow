@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { ACEX_OWNER_NAME } from '@/lib/spots'
 import type { Spot } from '@/types'
 
 import { useManagementAccordion } from './useManagementAccordion'
@@ -73,26 +74,33 @@ export function ManagementAccordion({ spot }: ManagementAccordionProps) {
 
       {expanded && (
         <div className="space-y-5 border-t px-4 pt-4 pb-4">
-          {/* Toggle availability: checked = free, unchecked = any taken state */}
+          {/* Toggle availability: checked = free, unchecked = any taken state.
+              Owner-controlled spots are excluded — the backend rejects the flip. */}
           <div>
             <p className="text-muted-foreground mb-2.5 text-xs font-medium tracking-widest uppercase">
               {t('spotModal.statusSection')}
             </p>
-            <Switch
-              checked={spot.status === 'free'}
-              onChange={(e) =>
-                handleStatusChange(
-                  e.currentTarget.checked ? 'free' : 'occupied',
-                )
-              }
-              disabled={isStatusPending}
-              color="green"
-              label={
-                spot.status === 'free'
-                  ? t('spotModal.available')
-                  : t('spotModal.occupied')
-              }
-            />
+            {spot.owner_name && spot.owner_name !== ACEX_OWNER_NAME ? (
+              <p className="text-muted-foreground text-sm">
+                {t('spotModal.ownerControlledHint')}
+              </p>
+            ) : (
+              <Switch
+                checked={spot.status === 'free'}
+                onChange={(e) =>
+                  handleStatusChange(
+                    e.currentTarget.checked ? 'free' : 'occupied',
+                  )
+                }
+                disabled={isStatusPending}
+                color="green"
+                label={
+                  spot.status === 'free'
+                    ? t('spotModal.available')
+                    : t('spotModal.occupied')
+                }
+              />
+            )}
           </div>
 
           {/* Assign owner */}

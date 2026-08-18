@@ -1,4 +1,4 @@
-import type { OwnerSpot } from '@/types'
+import type { DayStatusDuration, OwnerSpot } from '@/types'
 
 // — types —
 
@@ -20,11 +20,15 @@ export interface SpotCardProps {
   readonly status: DayStatus
   readonly selectedDate: string
   readonly isOverridden: boolean
+  readonly isIndefiniteOverride: boolean
   readonly isNonWorkDay: boolean
   readonly isPastCutoff: boolean
   readonly switchedToSpotLabel?: string
   readonly currentUserId: string
-  readonly onSetDayStatus: (s: 'free' | 'occupied') => void
+  readonly onSetDayStatus: (
+    s: 'free' | 'occupied',
+    duration: DayStatusDuration,
+  ) => void
   readonly onClearOverride: () => void
   readonly onCancelBooking: () => void
   readonly onToggleHistory: () => void

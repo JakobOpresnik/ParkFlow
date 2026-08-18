@@ -49,18 +49,25 @@ export function useSetSpotDayStatus() {
       spotId,
       date,
       status,
+      days,
+      indefinite,
     }: {
       spotId: string
-      date: string
+      date?: string
       status: 'free' | 'occupied' | null
-    }) => api.setSpotDayStatus(spotId, date, status),
+      days?: number
+      indefinite?: boolean
+    }) => api.setSpotDayStatus(spotId, date, status, { days, indefinite }),
     onSuccess: (_, variables) => {
       invalidateAllSpotQueries()
-      // Proactively refetch day-overrides for the changed date so Stats/Dashboard
+      // Proactively refetch day-overrides for the changed date(s) so Stats/Dashboard
       // pages are immediately in sync even when they are not currently mounted
       // (invalidateQueries alone only marks inactive queries stale — no refetch).
       void queryClient.refetchQueries({
-        queryKey: ['spots', 'day-overrides', variables.date],
+        queryKey:
+          variables.indefinite || (variables.days ?? 1) > 1
+            ? ['spots', 'day-overrides']
+            : ['spots', 'day-overrides', variables.date],
         type: 'all',
       })
     },

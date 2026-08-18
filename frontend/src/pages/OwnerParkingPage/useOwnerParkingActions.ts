@@ -1,90 +1,76 @@
 import { notifications } from '@mantine/notifications'
 import { useTranslation } from 'react-i18next'
 
-import { useCancelBooking, useCreateBooking } from '@/hooks/useBookings'
+import { useCancelBooking } from '@/hooks/useBookings'
 import { useSetSpotDayStatus } from '@/hooks/useOwnerParking'
-import { usePrefsStore } from '@/store/prefsStore'
-import type { OwnerSpot } from '@/types'
+import type { DayStatusDuration, OwnerSpot } from '@/types'
 
 import { formatDate } from './utils'
 
-// Compute starts_at / expires_at for an owner "Occupy" action on the given
-// date, using the user's preferred arrival time and reservation duration.
-// Mirrors the map's BookingCta computation so both reservation paths emit
-// equivalent booking rows.
-function computeOccupyInterval(
-  date: string,
-  arrivalTime: string,
-  durationHours: number,
-): { startsAt: Date; expiresAt: Date } {
-  const [hh, mm] = arrivalTime.split(':').map(Number)
-  const startsAt = new Date(date + 'T12:00:00')
-  startsAt.setHours(hh ?? 9, mm ?? 0, 0, 0)
-  const expiresAt = new Date(startsAt.getTime() + durationHours * 3_600_000)
-  return { startsAt, expiresAt }
+// — constants —
+
+const DURATION_DAYS: Record<
+  Exclude<DayStatusDuration, 'indefinite'>,
+  number
+> = {
+  day: 1,
+  week: 7,
+  month: 30,
 }
+
+// — hook —
 
 export function useOwnerParkingActions(selectedDate: string) {
   const { t, i18n } = useTranslation()
   const setDayStatus = useSetSpotDayStatus()
   const cancelBooking = useCancelBooking()
-  const createBooking = useCreateBooking()
-  const arrivalTime = usePrefsStore((s) => s.arrivalTime)
-  const reservationDuration = usePrefsStore((s) => s.reservationDuration)
 
-  function handleSetDayStatus(spot: OwnerSpot, status: 'free' | 'occupied') {
-    // "Occupy" creates a real booking under the current user — this is what
-    // makes owner attribution show up correctly on the map modal. The
-    // backend auto-cancels any same-day booking the user already had, and the
-    // ownership gate at POST /api/bookings always allows owners to book their
-    // own spot regardless of presence.
-    if (status === 'occupied') {
-      const { startsAt, expiresAt } = computeOccupyInterval(
-        selectedDate,
-        arrivalTime,
-        reservationDuration,
+  function handleSetDayStatus(
+    spot: OwnerSpot,
+    status: 'free' | 'occupied',
+    duration: DayStatusDuration = 'day',
+  ) {
+    // Both directions write spot_day_status overrides — they beat presence in
+    // every reader and never collide with the user's own bookings elsewhere.
+    const label = spot.label ?? `#${spot.number}`
+    const indefinite = duration === 'indefinite'
+    const days = indefinite ? undefined : DURATION_DAYS[duration]
+    const occupied = status === 'occupied'
+    let successMessage: string
+    if (indefinite) {
+      successMessage = t(
+        occupied
+          ? 'ownerParking.toastSpotOccupiedIndefinite'
+          : 'ownerParking.toastSpotFreedIndefinite',
+        { label },
       )
-      createBooking.mutate(
-        {
-          spot_id: spot.id,
-          starts_at: startsAt.toISOString(),
-          expires_at: expiresAt.toISOString(),
-        },
-        {
-          onSuccess: () =>
-            notifications.show({
-              message: t('ownerParking.toastSpotOccupied', {
-                label: spot.label ?? `#${spot.number}`,
-                date: formatDate(selectedDate, i18n.language),
-              }),
-              color: 'green',
-            }),
-          onError: (err) =>
-            notifications.show({
-              message:
-                err instanceof Error
-                  ? err.message
-                  : t('ownerParking.toastError'),
-              color: 'red',
-            }),
-        },
+    } else if (days === 1) {
+      successMessage = t(
+        occupied
+          ? 'ownerParking.toastSpotOccupied'
+          : 'ownerParking.toastSpotFreed',
+        { label, date: formatDate(selectedDate, i18n.language) },
       )
-      return
+    } else {
+      successMessage = t(
+        occupied
+          ? 'ownerParking.toastSpotOccupiedDays'
+          : 'ownerParking.toastSpotFreedDays',
+        { label, days },
+      )
     }
 
-    // "Free" remains a spot_day_status override — it expresses the owner's
-    // intent ("I won't be coming in") without creating a booking row.
     setDayStatus.mutate(
-      { spotId: spot.id, date: selectedDate, status },
+      {
+        spotId: spot.id,
+        date: indefinite ? undefined : selectedDate,
+        status,
+        days,
+        indefinite: indefinite || undefined,
+      },
       {
         onSuccess: () =>
-          notifications.show({
-            message: t('ownerParking.toastSpotFreed', {
-              label: spot.label ?? `#${spot.number}`,
-              date: formatDate(selectedDate, i18n.language),
-            }),
-            color: 'green',
-          }),
+          notifications.show({ message: successMessage, color: 'green' }),
         onError: (err) =>
           notifications.show({
             message:
@@ -95,9 +81,14 @@ export function useOwnerParkingActions(selectedDate: string) {
     )
   }
 
-  function handleClearOverride(spot: OwnerSpot) {
+  function handleClearOverride(spot: OwnerSpot, indefinite = false) {
     setDayStatus.mutate(
-      { spotId: spot.id, date: selectedDate, status: null },
+      {
+        spotId: spot.id,
+        date: indefinite ? undefined : selectedDate,
+        status: null,
+        indefinite: indefinite || undefined,
+      },
       {
         onSuccess: () =>
           notifications.show({
@@ -143,7 +134,7 @@ export function useOwnerParkingActions(selectedDate: string) {
     handleSetDayStatus,
     handleClearOverride,
     handleCancelBooking,
-    isToggling: setDayStatus.isPending || createBooking.isPending,
+    isToggling: setDayStatus.isPending,
     isCancelling: cancelBooking.isPending,
   }
 }

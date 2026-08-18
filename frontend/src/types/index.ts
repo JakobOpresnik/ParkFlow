@@ -187,10 +187,12 @@ export interface OwnerSpot {
 export interface SpotDayOverride {
   id: string
   spot_id: string
-  date: string
+  date: string | null
   status: 'free' | 'occupied'
   set_by: string | null
 }
+
+export type DayStatusDuration = 'day' | 'week' | 'month' | 'indefinite'
 
 export interface OwnerWeekBooking {
   id: string
