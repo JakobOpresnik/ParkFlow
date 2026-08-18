@@ -62,6 +62,7 @@ export function BookingCta({
     arrivalWindowPassed,
     bookingPending,
     unavailableMsg,
+    ownerMarkedUnavailable,
     handleBook,
     handleCancelBooking,
     ownerWarningOpen,
@@ -361,7 +362,7 @@ export function BookingCta({
                 }
               />
             </>
-          ) : spot.status === 'occupied' ? (
+          ) : spot.status === 'occupied' && !ownerMarkedUnavailable ? (
             <div className="flex items-center gap-1.5">
               <Clock className="size-4" />
               <span>

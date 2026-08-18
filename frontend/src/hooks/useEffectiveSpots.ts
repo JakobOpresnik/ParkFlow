@@ -100,20 +100,17 @@ export function useEffectiveSpots(date: string) {
       // Manually reserved today with no booking → preserve reserved.
       if (spot.status === 'reserved' && isToday && hasNoBooking) return spot
 
-      // 2. Manual override → authoritative.
-      // Treat 'occupied' overrides as 'reserved' so owner self-occupation
-      // registers as a reservation in Stats/Dashboard counts.
+      // 2. Manual override → authoritative. An 'occupied' override shows as
+      // occupied (red, "unavailable") — it is not a reservation.
       // Exception: a 'free' override still yields 'spotted' if there's an
       // active user report — owner waiving the spot doesn't disprove a
       // user's "car here" report.
       const override = overrideBySpot.get(spot.id)
       if (override) {
         const status: SpotStatus =
-          override === 'occupied'
-            ? 'reserved'
-            : hasActiveSpottedReport(spot)
-              ? 'spotted'
-              : override
+          override === 'free' && hasActiveSpottedReport(spot)
+            ? 'spotted'
+            : override
         return { ...spot, status }
       }
 

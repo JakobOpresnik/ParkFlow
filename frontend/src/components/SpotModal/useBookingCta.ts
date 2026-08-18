@@ -66,10 +66,18 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
     selectedDate === today && computedExpiry <= new Date()
   const bookingPending = createBooking.isPending
 
-  const unavailableMsg =
-    spot.status === 'occupied'
-      ? t('spotModal.spotUnavailableOccupied')
-      : t('spotModal.spotUnavailableReserved')
+  // The owner marked this spot unavailable for the selected day.
+  const ownerMarkedUnavailable =
+    dayOverrides.data?.some(
+      (o) => o.spot_id === spot.id && o.status === 'occupied',
+    ) ?? false
+
+  let unavailableMsg = t('spotModal.spotUnavailableReserved')
+  if (ownerMarkedUnavailable) {
+    unavailableMsg = t('spotModal.spotUnavailableOwnerMarked')
+  } else if (spot.status === 'occupied') {
+    unavailableMsg = t('spotModal.spotUnavailableOccupied')
+  }
 
   async function handleBook() {
     if (bookingInFlight.current) return
@@ -205,6 +213,7 @@ export function useBookingCta(spot: Spot, options: UseBookingCtaOptions) {
     arrivalWindowPassed,
     bookingPending,
     unavailableMsg,
+    ownerMarkedUnavailable,
     handleBook,
     handleCancelBooking,
     ownerWarningOpen,

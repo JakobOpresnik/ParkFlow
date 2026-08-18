@@ -103,6 +103,24 @@ describe('useEffectiveSpots — external owner without presence data', () => {
   })
 })
 
+describe('useEffectiveSpots — owner-marked unavailable override', () => {
+  it('shows as occupied (unavailable), not reserved', () => {
+    vi.mocked(useSpotDayOverrides).mockReturnValue({
+      data: [
+        {
+          id: 'ov-1',
+          spot_id: 's-1vp52',
+          date: WED,
+          status: 'occupied',
+          set_by: 'Mitja Gornik',
+        },
+      ],
+    } as unknown as ReturnType<typeof useSpotDayOverrides>)
+    const { result } = renderHook(() => useEffectiveSpots(WED))
+    expect((result.current.data[0] as Spot).status).toBe('occupied')
+  })
+})
+
 describe('useEffectiveSpots — booking on another day must not leak', () => {
   it('Wednesday: owner in office, Thursday booking stripped', () => {
     const { result } = renderHook(() => useEffectiveSpots(WED))
