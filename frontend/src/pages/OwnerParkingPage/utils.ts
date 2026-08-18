@@ -1,8 +1,23 @@
-import type { OwnerSpot, OwnerWeekBooking, SpotDayOverride } from '@/types'
+import type {
+  DayStatusDuration,
+  OwnerSpot,
+  OwnerWeekBooking,
+  SpotDayOverride,
+} from '@/types'
 
 import type { DayStatus } from './types'
 
 // — constants —
+
+export const DURATION_OPTIONS: {
+  duration: DayStatusDuration
+  labelKey: string
+}[] = [
+  { duration: 'day', labelKey: 'ownerParking.durationDay' },
+  { duration: 'week', labelKey: 'ownerParking.durationWeek' },
+  { duration: 'month', labelKey: 'ownerParking.durationMonth' },
+  { duration: 'indefinite', labelKey: 'ownerParking.durationIndefinite' },
+]
 
 export const StatusConfig: Record<
   DayStatus,

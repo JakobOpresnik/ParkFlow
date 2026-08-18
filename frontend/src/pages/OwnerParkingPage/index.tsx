@@ -155,7 +155,7 @@ export function OwnerParkingPage() {
     )
 
   return (
-    <div className="space-y-5 pb-8">
+    <div className="mx-auto w-full max-w-3xl space-y-5 pb-8">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold">{t('ownerParking.title')}</h1>

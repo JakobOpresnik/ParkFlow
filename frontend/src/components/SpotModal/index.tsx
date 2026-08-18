@@ -14,6 +14,7 @@ import { BookingCta } from './BookingCta'
 import { ClearSpottedAction } from './ClearSpottedAction'
 import { DetailsCard } from './DetailsCard'
 import { ManagementAccordion } from './ManagementAccordion'
+import { OwnerStatusCta } from './OwnerStatusCta'
 import { StatusBanner } from './StatusBanner'
 
 // — helpers —
@@ -251,6 +252,11 @@ export function SpotModal() {
             canCancelThisBooking={canCancelThisBooking}
             myOwnedSpot={myOwnedSpot}
           />
+
+          {/* Owner availability controls — same actions as /my-parking */}
+          {isCurrentUserOwner && !isGuest && (
+            <OwnerStatusCta spot={spot} selectedDate={selectedDate} />
+          )}
         </div>
       </DialogContent>
     </Dialog>
