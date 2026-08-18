@@ -71,6 +71,38 @@ beforeEach(() => {
   } as unknown as ReturnType<typeof useSpotDayOverrides>)
 })
 
+// K1-46: owned by an external (no presence row), stored 'reserved' by a Thu booking.
+const spotK146 = {
+  ...spot1VP52,
+  id: 's-k146',
+  number: 46,
+  label: 'K1-46',
+  status: 'reserved',
+  owner_id: 'o-tbuh',
+  owner_name: 'REDUXI - Tomaž Buh',
+  owner_user_id: 'tbuh',
+} as Spot
+
+describe('useEffectiveSpots — external owner without presence data', () => {
+  beforeEach(() => {
+    vi.mocked(useSpots).mockReturnValue({
+      data: [spotK146],
+    } as ReturnType<typeof useSpots>)
+  })
+
+  it('Thursday: booking for that day shows as reserved', () => {
+    const { result } = renderHook(() => useEffectiveSpots(THU))
+    expect((result.current.data[0] as Spot).status).toBe('reserved')
+  })
+
+  it("Wednesday: another day's booking rests at occupied, not free", () => {
+    const { result } = renderHook(() => useEffectiveSpots(WED))
+    const spot = result.current.data[0] as Spot
+    expect(spot.status).toBe('occupied')
+    expect(spot.active_booking_id).toBeNull()
+  })
+})
+
 describe('useEffectiveSpots — booking on another day must not leak', () => {
   it('Wednesday: owner in office, Thursday booking stripped', () => {
     const { result } = renderHook(() => useEffectiveSpots(WED))
