@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 
 import { usePresence } from '@/hooks/usePresence'
 import { useSpotDayOverrides, useSpots } from '@/hooks/useSpots'
+import { ACEX_OWNER_NAME } from '@/lib/spots'
 import { useAuthStore } from '@/store/authStore'
 import type { Spot, SpotStatus } from '@/types'
 
@@ -122,11 +123,13 @@ export function useEffectiveSpots(date: string) {
         ? presenceByName.get(ownerName.toLowerCase())
         : undefined
 
-      // No presence data for the owner → reset non-today reservations to free.
+      // No presence data for the owner → a non-today 'reserved' is another
+      // day's booking; owned (non-ACEX) spots rest occupied, pool spots free.
       if (presence === undefined) {
-        return spot.status === 'reserved'
-          ? { ...spot, status: 'free' as const }
-          : spot
+        if (spot.status !== 'reserved') return spot
+        const restStatus: SpotStatus =
+          ownerName && ownerName !== ACEX_OWNER_NAME ? 'occupied' : 'free'
+        return { ...spot, status: restStatus }
       }
 
       const isInOffice = presence === 'in_office'

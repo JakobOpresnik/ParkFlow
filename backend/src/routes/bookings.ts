@@ -36,15 +36,23 @@ function isUserCoOwner(
   return usernameMatch || displayNameMatch
 }
 
+// Where a released spot rests: owned (non-ACEX) spots return to 'occupied',
+// pool/unowned spots to 'free' — a booking cycle must not erase that baseline.
+const RELEASED_STATUS_SQL = `CASE WHEN EXISTS (
+  SELECT 1 FROM owners o WHERE o.id = spots.owner_id AND o.name <> '${ACEX_OWNER_NAME}'
+) THEN 'occupied' ELSE 'free' END`
+
 export async function freeOrphanedReservedSpots(): Promise<void> {
   const result = await pool.query(`
     UPDATE spots
-    SET status = 'free'
+    SET status = ${RELEASED_STATUS_SQL}
     WHERE status = 'reserved'
       AND id NOT IN (SELECT spot_id FROM bookings WHERE status = 'active')
   `)
   if (result.rowCount && result.rowCount > 0) {
-    console.log(`[startup] Freed ${result.rowCount} orphaned reserved spot(s)`)
+    console.log(
+      `[startup] Released ${result.rowCount} orphaned reserved spot(s)`,
+    )
   }
 }
 
@@ -57,7 +65,7 @@ async function expireStaleBookings(): Promise<void> {
       RETURNING spot_id
     )
     UPDATE spots
-    SET status = 'free'
+    SET status = ${RELEASED_STATUS_SQL}
     WHERE id IN (SELECT spot_id FROM expired)
       AND id NOT IN (SELECT spot_id FROM bookings WHERE status = 'active')
   `)
@@ -203,9 +211,10 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
           [old.spot_id, old.id],
         )
         if (otherActive.rows.length === 0) {
-          await client.query(`UPDATE spots SET status = 'free' WHERE id = $1`, [
-            old.spot_id,
-          ])
+          await client.query(
+            `UPDATE spots SET status = ${RELEASED_STATUS_SQL} WHERE id = $1`,
+            [old.spot_id],
+          )
         }
       }
 
@@ -243,10 +252,9 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
         // blocks new bookings; 'free'/'reserved' stay bookable and real
         // same-day conflicts are already rejected by the conflict check above.
         isBookable = spotRow.status !== 'occupied'
-      } else if (spotRow.status === 'occupied' && spotRow.owner_name) {
-        // Co-owners can always book their own spot, regardless of presence —
-        // clicking Reserve on an unconfirmed shared spot resolves the ambiguity
-        // into a concrete booking under this co-owner's name.
+      } else if (spotRow.owner_name) {
+        // Owned spots ignore the transient stored status (a booking on another
+        // day sets 'reserved') — only override/co-ownership/presence decide.
         if (bookedByOwner) {
           isBookable = true
         } else {
@@ -265,8 +273,8 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
             )
         }
       } else {
-        // No override — use spot's base status.
-        // 'reserved' with no active-booking conflict (already checked above) is bookable.
+        // Unowned spot — base status decides; 'reserved' with no active-booking
+        // conflict (already checked above) is bookable.
         isBookable = spotRow.status === 'free' || spotRow.status === 'reserved'
       }
 
@@ -530,9 +538,10 @@ router.patch(
           [booking.spot_id, id],
         )
         if (remaining.rows.length === 0) {
-          await client.query(`UPDATE spots SET status = 'free' WHERE id = $1`, [
-            booking.spot_id,
-          ])
+          await client.query(
+            `UPDATE spots SET status = ${RELEASED_STATUS_SQL} WHERE id = $1`,
+            [booking.spot_id],
+          )
         }
 
         // If someone other than the booking owner cancelled (spot owner reclaiming,
