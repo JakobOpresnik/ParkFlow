@@ -28,7 +28,7 @@ const en = {
       },
       owners: {
         title: 'Owner spots + presence',
-        desc: 'Owner-assigned spots free themselves automatically when the owner is marked absent in the company timesheet system or when the owner marks his or her spot available for the day.',
+        desc: 'Owner-assigned spots free themselves automatically when the owner is marked absent in the company timesheet system — or when owners free their own spot for a day, week, month, or until they take it back.',
       },
       stats: {
         title: 'Live stats & peak hours',
@@ -36,11 +36,11 @@ const en = {
       },
       realtime: {
         title: 'Real-time updates',
-        desc: 'Every booking, override, and status change propagates instantly over WebSocket — no refresh needed.',
+        desc: 'Every booking, override, and status change propagates instantly over a live server stream — no refresh needed.',
       },
       admin: {
         title: 'Admin controls',
-        desc: 'Manage lots, spots, owners, day-overrides, and audit every change via a built-in change log.',
+        desc: 'Manage lots, spots, owners, and day-overrides; the change log names who changed what, and when.',
       },
     },
     benefits: {
@@ -128,6 +128,9 @@ const en = {
     daysAgo: '{{d}}d ago',
     ownerAssigned: 'owner → {{name}}',
     statusChangedTo: '→ {{status}}',
+    byActor: 'by {{name}}',
+    actorSystem: 'system',
+    actorTimesheet: 'timesheet sync',
     hotSpots: 'Hot spots',
     hotSpotsSub: 'most activity recently',
     hotSpotsEmpty: 'Not enough activity yet.',
@@ -155,6 +158,7 @@ const en = {
     mapView: 'Map',
     gridView: 'Grid',
     historical: 'Historical · based on recorded attendance',
+    pastDay: 'Past day — no longer selectable',
     projected: 'Projected · based on scheduled attendance',
     spotsUnmapped: '{{count}} spot(s) unmapped',
     errorLoadingData: 'Could not load parking data',
@@ -674,6 +678,7 @@ const en = {
     close: 'Close',
     back: 'Back',
     clearSearch: 'Clear search',
+    scrollToTop: 'Go to top',
     toggleTheme: 'Toggle theme',
   },
   time: {

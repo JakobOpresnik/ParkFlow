@@ -28,7 +28,7 @@ const sl = {
       },
       owners: {
         title: 'Lastniška mesta + prisotnost',
-        desc: 'Lastniška mesta se samodejno sprostijo, ko je lastnik odsoten v podjetniškem sistemu za evidenco prisotnosti ali ko lastnik sam označi svoje mesto kot prosto za določen dan.',
+        desc: 'Lastniška mesta se samodejno sprostijo, ko je lastnik odsoten v podjetniškem sistemu za evidenco prisotnosti — ali ko lastnik sam sprosti svoje mesto za dan, teden, mesec ali do preklica.',
       },
       stats: {
         title: 'Statistika in ure konic',
@@ -36,11 +36,11 @@ const sl = {
       },
       realtime: {
         title: 'Osveževanje v realnem času',
-        desc: 'Vsaka rezervacija, oznaka in sprememba statusa se takoj posreduje prek WebSocketa — brez osveževanja.',
+        desc: 'Vsaka rezervacija, oznaka in sprememba statusa se takoj posreduje prek živega toka s strežnika — brez osveževanja.',
       },
       admin: {
         title: 'Skrbniška orodja',
-        desc: 'Upravljaj parkirišča, mesta, lastnike, dnevne oznake ter spremljaj vse spremembe prek dnevnika.',
+        desc: 'Upravljaj parkirišča, mesta, lastnike in dnevne oznake; dnevnik sprememb pokaže, kdo je kaj spremenil in kdaj.',
       },
     },
     benefits: {
@@ -129,6 +129,9 @@ const sl = {
     daysAgo: 'pred {{d}}d',
     ownerAssigned: 'lastnik → {{name}}',
     statusChangedTo: '→ {{status}}',
+    byActor: 'spremenil: {{name}}',
+    actorSystem: 'sistem',
+    actorTimesheet: 'sinhronizacija prisotnosti',
     hotSpots: 'Najbolj aktivna mesta',
     hotSpotsSub: 'največ aktivnosti v zadnjem času',
     hotSpotsEmpty: 'Še ni dovolj aktivnosti.',
@@ -156,6 +159,7 @@ const sl = {
     mapView: 'Karta',
     gridView: 'Mreža',
     historical: 'Zgodovinsko · na podlagi zabeležene prisotnosti',
+    pastDay: 'Pretekli dan — ni več izbirljiv',
     projected: 'Načrtovano · na podlagi urnika prisotnosti',
     spotsUnmapped: '{{count}} mesto(a) brez koordinat',
     errorLoadingData: 'Napaka pri nalaganju podatkov',
@@ -679,6 +683,7 @@ const sl = {
     close: 'Zapri',
     back: 'Nazaj',
     clearSearch: 'Počisti iskanje',
+    scrollToTop: 'Na vrh',
     toggleTheme: 'Preklopi temo',
   },
   time: {
