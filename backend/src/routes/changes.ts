@@ -23,10 +23,14 @@ router.get('/', requireAuth, requireNonGuest, async (req, res, next) => {
         s.number  AS spot_number,
         s.label   AS spot_label,
         s.lot_id  AS spot_lot_id,
-        pl.name   AS lot_name
+        pl.name   AS lot_name,
+        o.name    AS new_owner_name
       FROM spot_changes sc
       JOIN spots s ON sc.spot_id = s.id
       LEFT JOIN parking_lots pl ON s.lot_id = pl.id
+      -- owner_assigned rows store the owner UUID in new_value; resolve it to a
+      -- name (text compare, so non-uuid values can't blow up the cast)
+      LEFT JOIN owners o ON o.id::text = sc.new_value
     `
     const params: string[] = []
 

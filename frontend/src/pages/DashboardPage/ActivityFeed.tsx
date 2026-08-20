@@ -46,17 +46,23 @@ function getChangeDotClass(
   return 'bg-muted-foreground/40'
 }
 
-function getChangeDescription(
-  changeType: SpotChangeType,
-  newValue: string | null,
-  t: TFunc,
-): string {
-  if (changeType === 'status_changed' && newValue)
+function getChangeDescription(change: SpotChange, t: TFunc): string {
+  const { change_type: type, new_value: newValue } = change
+  if (type === 'status_changed' && newValue)
     return t('dashboard.statusChangedTo', { status: newValue })
-  if (changeType === 'owner_assigned' && newValue)
-    return t('dashboard.ownerAssigned', { name: newValue })
-  if (changeType === 'owner_unassigned') return t('dashboard.ownerRemoved')
-  return changeType.replace(/_/g, ' ')
+  if (type === 'owner_assigned' && newValue)
+    return t('dashboard.ownerAssigned', {
+      name: change.new_owner_name ?? newValue,
+    })
+  if (type === 'owner_unassigned') return t('dashboard.ownerRemoved')
+  return type.replace(/_/g, ' ')
+}
+
+// 'system' / 'timesheet' are the two non-human actors written by the backend.
+function formatActor(changedBy: string, t: TFunc): string {
+  if (changedBy === 'system') return t('dashboard.actorSystem')
+  if (changedBy === 'timesheet') return t('dashboard.actorTimesheet')
+  return changedBy
 }
 
 // — main component —
@@ -105,12 +111,16 @@ export function ActivityFeed({ changes, isLoading }: ActivityFeedProps) {
                     {change.spot_label ?? `#${change.spot_number}`}
                   </span>
                   <span className="text-muted-foreground text-xs">
-                    {getChangeDescription(
-                      change.change_type,
-                      change.new_value,
-                      t as TFunc,
-                    )}
+                    {getChangeDescription(change, t as TFunc)}
                   </span>
+                  {change.changed_by && (
+                    <span className="text-muted-foreground/70 text-xs">
+                      ·{' '}
+                      {t('dashboard.byActor', {
+                        name: formatActor(change.changed_by, t as TFunc),
+                      })}
+                    </span>
+                  )}
                 </div>
               </div>
               <time
