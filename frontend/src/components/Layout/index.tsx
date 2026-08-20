@@ -1,6 +1,6 @@
 import { useRouterState } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
-import { type ReactNode, useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { AboutModal } from '@/components/AboutModal'
@@ -15,6 +15,7 @@ import { DesktopSidebar } from './DesktopSidebar'
 import { MobileBottomNav } from './MobileBottomNav'
 import { MobileHeader } from './MobileHeader'
 import { MoreDrawer } from './MoreDrawer'
+import { ScrollTopButton } from './ScrollTopButton'
 
 // — types —
 
@@ -34,6 +35,7 @@ export function Layout({ children, noPadding }: LayoutProps) {
   const logout = useAuthStore((s) => s.logout)
   const sessionExpired = useAuthStore((s) => s.sessionExpired)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const mainRef = useRef<HTMLElement>(null)
 
   const moreOpen = useUIStore((s) => s.moreDrawerOpen)
   const setMoreOpen = useUIStore((s) => s.setMoreDrawerOpen)
@@ -107,8 +109,12 @@ export function Layout({ children, noPadding }: LayoutProps) {
         {noPadding ? (
           <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
         ) : (
-          <main className="bg-muted/40 min-h-0 flex-1 overflow-y-auto p-4 pb-20 sm:p-6 sm:pb-6">
+          <main
+            ref={mainRef}
+            className="bg-muted/40 min-h-0 flex-1 overflow-y-auto p-4 pb-20 sm:p-6 sm:pb-6"
+          >
             <div className="mx-auto max-w-6xl">{children}</div>
+            <ScrollTopButton scrollRef={mainRef} />
           </main>
         )}
       </div>
