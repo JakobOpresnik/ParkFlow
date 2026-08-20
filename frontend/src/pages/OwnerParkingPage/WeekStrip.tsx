@@ -17,6 +17,9 @@ export function WeekStrip({
   const { i18n, t } = useTranslation()
   const weekLabel = getWeekLabel(days, i18n.language)
   const isCurrentWeek = days.includes(today)
+  // The previous week ends the day before days[0], so it's fully past whenever
+  // days[0] is today or earlier — nothing selectable there.
+  const prevDisabled = (days[0] ?? '') <= today
   // today is in a past week → need to go left; future week → go right
   const todayIsLeft = !isCurrentWeek && today < (days[0] ?? '')
   const todayIsRight = !isCurrentWeek && today > (days[days.length - 1] ?? '')
@@ -38,8 +41,13 @@ export function WeekStrip({
         <div className="flex items-center gap-3">
           <button
             onClick={onPrevWeek}
+            disabled={prevDisabled}
             title={t('map.prevWeek')}
-            className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-7 items-center justify-center rounded-lg transition-colors"
+            className={`flex size-7 items-center justify-center rounded-lg transition-colors ${
+              prevDisabled
+                ? 'text-muted-foreground/30 cursor-not-allowed'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            }`}
           >
             <ChevronLeft className="size-4" />
           </button>
@@ -68,7 +76,8 @@ export function WeekStrip({
           const isToday = date === today
           const isWeekend = [0, 6].includes(d.getDay())
           const isHoliday = !isWeekend && workFreeDays.includes(date)
-          const isNonWork = isWeekend || isHoliday
+          const isPast = date < today
+          const isNonWork = isWeekend || isHoliday || isPast
           const weekday = d.toLocaleDateString(i18n.language, {
             weekday: 'short',
           })
@@ -80,6 +89,7 @@ export function WeekStrip({
               onClick={() => !isNonWork && onSelect(date)}
               disabled={isNonWork}
               aria-label={`${weekday} ${dayNum}`}
+              title={isPast ? t('map.pastDay') : undefined}
               className={`relative flex flex-col items-center gap-0.5 rounded-xl py-2.5 transition-all ${
                 isSelected
                   ? 'bg-primary text-primary-foreground cursor-pointer shadow-sm'
@@ -97,7 +107,11 @@ export function WeekStrip({
               >
                 {weekday}
               </span>
-              <span className="text-lg leading-tight font-bold">{dayNum}</span>
+              <span
+                className={`text-lg leading-tight font-bold ${isPast && !isSelected ? 'line-through decoration-1' : ''}`}
+              >
+                {dayNum}
+              </span>
               {isToday && !isNonWork && (
                 <div
                   className={`mt-0.5 size-1 rounded-full ${
