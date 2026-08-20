@@ -34,7 +34,7 @@ export const STICKY_ACTIONS_CLASS =
 // — helpers —
 
 export function buildPillClass(active: boolean): string {
-  return `cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+  return `cursor-pointer rounded-full border px-4 py-1 text-xs font-medium transition-colors ${
     active
       ? 'bg-primary text-primary-foreground border-primary'
       : 'text-muted-foreground border-border hover:text-foreground'
