@@ -166,6 +166,7 @@ export function MapPage() {
     if (
       /^\d{4}-\d{2}-\d{2}$/.test(deepLinkDate) &&
       getWeekDays(today).includes(deepLinkDate) &&
+      deepLinkDate >= today &&
       deepLinkDate !== selectedDate
     ) {
       setSelectedDate(deepLinkDate)
