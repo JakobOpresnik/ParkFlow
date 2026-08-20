@@ -54,19 +54,12 @@ export function useKeyboardNav({
         if (next) setSelectedLotId(next.id)
       } else {
         const idx = weekDays.indexOf(selectedDate)
-        if (e.key === 'ArrowRight') {
-          if (idx === weekDays.length - 1) {
-            setSelectedDate(getAdjacentWeekDay(weekDays, 'next'))
-          } else {
-            setSelectedDate(weekDays[idx + 1] ?? selectedDate)
-          }
-        } else {
-          if (idx === 0) {
-            setSelectedDate(getAdjacentWeekDay(weekDays, 'prev'))
-          } else {
-            setSelectedDate(weekDays[idx - 1] ?? selectedDate)
-          }
-        }
+        const dir = e.key === 'ArrowRight' ? 'next' : 'prev'
+        const next =
+          weekDays[idx + (dir === 'next' ? 1 : -1)] ??
+          getAdjacentWeekDay(weekDays, dir)
+        // Past days aren't selectable anywhere else either.
+        if (next >= new Date().toISOString().slice(0, 10)) setSelectedDate(next)
       }
     }
     document.addEventListener('keydown', onKeyDown)

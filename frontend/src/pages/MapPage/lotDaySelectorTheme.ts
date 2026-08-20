@@ -1,6 +1,6 @@
 // — types —
 
-interface SelectorTheme {
+export interface SelectorTheme {
   readonly container: string
   readonly divider: string
   readonly lotActive: string
@@ -10,6 +10,7 @@ interface SelectorTheme {
   readonly dayDropdownMenu: string
   readonly daySelected: string
   readonly dayUnselected: string
+  readonly dayPast: string
   readonly daySelectedDot: string
   readonly dayUnselectedDot: string
   readonly todayBtn: string
@@ -31,6 +32,7 @@ const MAP_THEME: SelectorTheme = {
   dayDropdownMenu: 'bg-card border shadow-md',
   daySelected: 'bg-primary text-primary-foreground',
   dayUnselected: 'text-muted-foreground hover:bg-muted hover:text-foreground',
+  dayPast: 'text-primary/30 cursor-not-allowed',
   daySelectedDot: 'bg-primary-foreground',
   dayUnselectedDot: 'bg-primary',
   todayBtn:
@@ -52,6 +54,7 @@ const NORMAL_THEME: SelectorTheme = {
   dayDropdownMenu: 'bg-card border shadow-md',
   daySelected: 'bg-primary text-primary-foreground',
   dayUnselected: 'text-muted-foreground hover:bg-muted hover:text-foreground',
+  dayPast: 'text-muted-foreground/40 cursor-not-allowed',
   daySelectedDot: 'bg-primary-foreground',
   dayUnselectedDot: 'bg-primary',
   todayBtn:
@@ -66,4 +69,13 @@ const NORMAL_THEME: SelectorTheme = {
 
 export function getTheme(isMapMode: boolean): SelectorTheme {
   return isMapMode ? MAP_THEME : NORMAL_THEME
+}
+
+export function dayClass(
+  theme: SelectorTheme,
+  isSelected: boolean,
+  isPast: boolean,
+): string {
+  if (isSelected) return theme.daySelected
+  return isPast ? theme.dayPast : theme.dayUnselected
 }

@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next'
 import type { ParkingLot, Spot } from '@/types'
 
 import { DayDropdown } from './DayDropdown'
-import { getTheme } from './lotDaySelectorTheme'
+import { dayClass, getTheme } from './lotDaySelectorTheme'
 import {
   formatDayLabel,
   getAdjacentWeekDay,
@@ -86,6 +86,7 @@ export function LotDaySelector({
 }: LotDaySelectorProps) {
   const { t, i18n } = useTranslation()
   const theme = getTheme(isMapMode)
+  const prevWeekDay = getAdjacentWeekDay(weekDays, 'prev')
 
   return (
     <div className="absolute top-3 left-3 z-20 max-w-[calc(100%-88px)] sm:max-w-[calc(100%-216px)]">
@@ -172,9 +173,10 @@ export function LotDaySelector({
           {/* md+: full day strip with week navigation */}
           <div className="hidden items-center gap-0.5 md:flex">
             <button
-              onClick={() => onDateSelect(getAdjacentWeekDay(weekDays, 'prev'))}
+              onClick={() => onDateSelect(prevWeekDay)}
+              disabled={prevWeekDay < today}
               title={t('map.prevWeek')}
-              className={`flex size-7 shrink-0 items-center justify-center rounded-lg transition-colors ${theme.dayUnselected}`}
+              className={`flex size-7 shrink-0 items-center justify-center rounded-lg transition-colors ${prevWeekDay < today ? theme.dayPast : theme.dayUnselected}`}
             >
               <ChevronLeft className="size-3" />
             </button>
@@ -182,14 +184,14 @@ export function LotDaySelector({
               const { short, num } = formatDayLabel(date, i18n.language)
               const isToday = date === today
               const isSelected = date === selectedDate
+              const isPast = date < today
               return (
                 <button
                   key={date}
                   onClick={() => onDateSelect(date)}
-                  title={date}
-                  className={`flex flex-1 flex-col items-center rounded-lg px-2 py-1.5 transition-colors ${
-                    isSelected ? theme.daySelected : theme.dayUnselected
-                  }`}
+                  disabled={isPast}
+                  title={isPast ? t('map.pastDay') : date}
+                  className={`flex flex-1 flex-col items-center rounded-lg px-2 py-1.5 transition-colors ${dayClass(theme, isSelected, isPast)}`}
                 >
                   <span className="text-[10px] leading-none font-medium tracking-wide uppercase">
                     {short}

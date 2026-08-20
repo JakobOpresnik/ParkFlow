@@ -130,6 +130,8 @@ export interface SpotChange {
   spot_label: string | null
   spot_lot_id: string | null
   lot_name: string | null
+  // owner_assigned rows carry the owner UUID in new_value; this is its name
+  new_owner_name: string | null
 }
 
 export const PRESENCE_STATUSES = [

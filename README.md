@@ -20,7 +20,7 @@ ParkFlow is a full-stack web application built for internal parking management a
 Beyond presence-aware availability, ParkFlow provides:
 - A visual SVG parking map drawn over real CAD floor plans, with zoom, pan, and pinch-to-zoom
 - A self-service booking system with automatic expiry
-- An owner portal for spot owners to manage their own availability overrides
+- An owner portal where spot owners free up or hold their spot for a day, week, month, or until they revert it
 - A full admin panel for managing lots, spots, and owners
 - A complete audit log of every change
 - Real-time updates via Server-Sent Events
@@ -70,11 +70,12 @@ Beyond presence-aware availability, ParkFlow provides:
 - 📜 Full booking history with status tracking (`active`, `cancelled`, `expired`)
 - 🔒 **Owner protection** — spot owners who book their own spot cannot have their booking cancelled by other admins
 - 🚫 **Conflict prevention** — booking is blocked if the spot already has an active booking on the target date
+- ⏳ **Past days are read-only** — day pickers only offer today and future workdays, and the app always opens on the current date
 
 ### 🗓️ Timesheet Integration
 
 - 🔗 **Presence-aware availability** — spot availability is automatically adjusted based on employee presence data fetched from the AI uprava timesheet API (`GET /api/v1/timesheet/entries?from=&to=`, static bearer token, company network only)
-- 🗓️ **Week navigation** — users can browse any Mon–Fri week with prev/next controls; the current workday is auto-selected on load
+- 🗓️ **Week navigation** — users can browse the current or any future Mon–Fri week with prev/next controls; the current workday is auto-selected on load and past days are disabled
 - 🏠 If a spot's owner is absent (remote, sick, on leave, etc.), their reserved spot is shown as **free** for that day without modifying the database
 - 📅 Presence data is fetched for the full week and cached; the frontend merges it with spot data client-side via `useEffectiveSpots`
 - 🔄 **Polled once a minute** (`lib/presencePoll.ts`) — the timesheet API is REST-only, so an SSE `spot_change` is pushed to clients whenever parking availability actually changes. The Action Cable client in `lib/timesheetWs.ts` is kept **dormant** for when a push channel appears; set `TIMESHEET_WS_URL` and call `startTimesheetWs()` to revive it
@@ -86,16 +87,19 @@ Beyond presence-aware availability, ParkFlow provides:
 ### 👤 Owner Portal
 
 - 🔑 Spot owners can log in and see their own spots and weekly booking overview
-- 📅 Owners can set per-day status overrides (mark their spot free or occupied for a specific date)
+- 📅 Owners can free up or hold their spot for a **day, week, month, or indefinitely** (until they revert it) — an indefinite override is a single `date IS NULL` row
+- 🗺️ The same controls are available straight from the spot modal on the map, not just the `/my-parking` page
+- 🚧 A spot the owner has marked unavailable shows as **unavailable** to everyone else, so nobody tries to book it
 - 📋 Owners can view who has booked their spot each day of the week
 
 ### 🔧 Administration
 
 - 🛡️ **Admin panel** with full CRUD for parking lots, spots, and owners
 - 🚧 **Take spots out of circulation** — admins can toggle a spot between available and occupied to remove an ACEX shared-pool spot from the bookable pool (forcing `reserved` is deliberately not possible — reservations always belong to a person)
+- 🙅 **Owner-controlled spots are off-limits** — `PATCH /api/spots/:id/status` returns `403` for any spot with a real owner; its availability comes from presence plus the owner's own overrides
 - 🏷️ **Named status badges** — the admin spots list shows today's effective status and names who holds each spot (the booker, the admin who forced it, or the presence-confirmed occupant); a reserved spot with no nameable holder displays as `unavailable`, with a matching status filter
 - 👤 **Owner management** — create owners with name, email, phone, vehicle plate, and notes; link to SSO username for self-service login
-- 📋 **Audit log** — every spot status change is recorded with who changed it, when, and the before/after values (change types: `owner_assigned`, `owner_unassigned`, `status_changed`, `type_changed`)
+- 📋 **Audit log** — every spot status change is recorded with who changed it, when, and the before/after values (change types: `owner_assigned`, `owner_unassigned`, `status_changed`, `type_changed`); the actor is an admin's display name, `timesheet` for owner syncs, or `system` for legacy rows
 - 💬 **Feedback management** — view, triage, and update status of user-submitted feature requests and bug reports
 
 ### 🔔 Real-Time Updates
@@ -125,7 +129,7 @@ Beyond presence-aware availability, ParkFlow provides:
 
 ### 📊 Dashboard & Analytics
 
-- 📈 **Dashboard** — occupancy overview, weekly usage bar chart, live activity feed
+- 📈 **Dashboard** — occupancy overview, weekly usage bar chart, live activity feed naming who made each change
 - 📉 **Analytics / Stats page** — per-floor breakdown, utilization metrics, stacked progress bars
 - 🔥 **Peak-hours heatmap** — historical occupancy by weekday/hour, derived from booking and override history (`GET /api/stats/history`)
 - 👤 **Profile page** — user preferences, attendance stats, active booking summary
@@ -141,6 +145,7 @@ Beyond presence-aware availability, ParkFlow provides:
 - 🌙 Dark mode toggle
 - 📱 Mobile-first responsive design
 - 🪟 Spot detail modal with inline booking, owner info, and status management
+- ⬆️ Floating scroll-to-top button on every long page (admin tables, owners, bookings, dashboard)
 
 ---
 
@@ -156,9 +161,9 @@ Beyond presence-aware availability, ParkFlow provides:
 | 🌍 i18n            | i18next + react-i18next (English / Slovenian)           |
 | 🗃️ State           | Zustand 5                                               |
 | 🔄 Data Fetching   | TanStack Query 5                                        |
-| 🧭 Routing         | TanStack Router 1.16                                    |
+| 🧭 Routing         | TanStack Router 1.162                                   |
 | 🖼️ Icons           | Lucide React                                            |
-| 🧪 Testing         | Vitest 4                                                |
+| 🧪 Testing         | Vitest 4 + Testing Library (jsdom)                      |
 | 📦 Package Manager | Bun                                                     |
 
 ### ⚙️ Backend (`/backend`)
@@ -208,7 +213,9 @@ parkflow/
 │   ├── Dockerfile
 │   └── package.json
 │
+├── 📖  docs/                       # Architecture notes, Rocket.Chat setup, prod DB read-only access
 ├── 🎨  jakob/                      # UI prototype (Mantine 8 + mock data, reference only)
+├── 🎞️  presentation/               # Slides / demo material
 ├── 🐳  compose.yml                 # Production deployment (used by GitLab CI/CD)
 ├── 🐳  docker-compose.yml          # Production build (local)
 ├── 🐳  docker-compose.dev.yml      # Local development with hot reload
@@ -319,6 +326,8 @@ bun dev        # starts on port 5173
 | `REMINDER_TZ`            | 🕒 Timezone for scheduled reminders                     | `Europe/Ljubljana`                                       |
 | `REMINDER_MORNING_TIME`  | ☀️ Local time of the morning "you have a spot" reminder  | `07:30`                                                  |
 | `REMINDER_OWNER_TIME`    | 🌇 Local time of the Friday "free your spot" owner nudge | `15:00`                                                  |
+| `PUBLIC_FRONTEND_URL`    | 🌐 Frontend base URL used to build the bot's map deep-links | `https://parkflow.matheo.si`                          |
+| `INTERNAL_API_BASE_URL`  | 🔁 Optional loopback base for the webhook's internal calls | `http://127.0.0.1:3001`                                |
 
 ### 🖥️ Frontend (`frontend/.env`)
 
@@ -359,7 +368,7 @@ All endpoints require an `Authorization: Bearer <token>` header (a guest token w
 | `PUT`    | `/api/spots/:id`                      | Update spot `{number?, label?, lot_id?, status?, type?}` | 🛡️ Admin |
 | `DELETE` | `/api/spots/:id`                      | Delete a spot                                            | 🛡️ Admin |
 | `PATCH`  | `/api/spots/:id/owner`                | Assign/unassign owner `{owner_id: string\|null}`         | 🛡️ Admin |
-| `PATCH`  | `/api/spots/:id/status`               | Change status `{status: free\|occupied}`                 | 🛡️ Admin |
+| `PATCH`  | `/api/spots/:id/status`               | Change status `{status: free\|occupied}`; `403` on owner-controlled spots | 🛡️ Admin |
 | `PATCH`  | `/api/spots/:id/type`                 | Change type `{type: standard\|ev\|handicap\|compact}`    | 🛡️ Admin |
 | `PATCH`  | `/api/spots/:id/coordinates`          | Save/clear SVG map coordinates `{coordinates: {...}\|null}` | 🛡️ Admin |
 
@@ -376,7 +385,7 @@ All endpoints require an `Authorization: Bearer <token>` header (a guest token w
 | `GET`    | `/api/owners/me/spots`                | List own spots with active booking info                            | 🔑 User  |
 | `GET`    | `/api/owners/me/week?from=&to=`       | Bookings on own spots for a date range (`YYYY-MM-DD`)              | 🔑 User  |
 | `GET`    | `/api/owners/me/overrides?from=&to=`  | Per-day status overrides on own spots for a date range             | 🔑 User  |
-| `PUT`    | `/api/owners/me/spots/:spotId/day-status` | Set/clear per-day override `{date, status: free\|occupied\|null}` | 🔑 User |
+| `PUT`    | `/api/owners/me/spots/:spotId/day-status` | Set/clear own override `{date?, status: free\|occupied\|null, days?: 1–31, indefinite?}` — `days` spans a week/month, `indefinite` drops the date | 🔑 User |
 
 ### 🏢 Parking Lots
 
@@ -416,7 +425,7 @@ All endpoints require an `Authorization: Bearer <token>` header (a guest token w
 
 | Method   | Endpoint                      | Description                                                  | Auth     |
 | -------- | ----------------------------- | ------------------------------------------------------------ | -------- |
-| `GET`    | `/api/changes?lot_id=`        | Last 50 spot changes with spot info; optionally filter by lot | 🔑 User  |
+| `GET`    | `/api/changes?lot_id=`        | Last 50 spot changes with spot info and the acting user; owner ids are resolved to `new_owner_name`; optionally filter by lot | 🔑 User  |
 | `POST`   | `/api/feedback`               | Submit feedback `{title, description, category?}`            | 🔑 User  |
 | `GET`    | `/api/feedback`               | List all feedback submissions (newest first)                 | 🛡️ Admin |
 | `PATCH`  | `/api/feedback/:id/status`    | Update feedback status `{status: open\|in_progress\|done\|dismissed\|archived}` | 🛡️ Admin |
@@ -569,7 +578,7 @@ Full audit log of every spot status/ownership change.
 | ------------- | ------------- | ---------------------------------------------------------------------- |
 | `id`          | UUID PK       | `gen_random_uuid()`                                                    |
 | `spot_id`     | UUID FK       | → `spots(id)` ON DELETE CASCADE                                        |
-| `changed_by`  | TEXT          | Display name of the acting admin, or `'system'` (legacy rows)          |
+| `changed_by`  | TEXT          | Display name of the acting admin, `'timesheet'` for owner syncs, or `'system'` (legacy rows) |
 | `change_type` | TEXT NOT NULL | `owner_assigned` \| `owner_unassigned` \| `status_changed` \| `type_changed` |
 | `old_value`   | TEXT          |                                                                        |
 | `new_value`   | TEXT          |                                                                        |
@@ -586,7 +595,7 @@ Per-day status overrides for individual spots (bypasses presence logic for that 
 | ---------- | ------------- | ------------------------------------------- |
 | `id`       | UUID PK       | `gen_random_uuid()`                         |
 | `spot_id`  | UUID FK       | → `spots(id)` ON DELETE CASCADE             |
-| `date`     | DATE NOT NULL | Unique per spot (composite unique with `spot_id`) |
+| `date`     | DATE          | Unique per spot (composite unique with `spot_id`); `NULL` = indefinite override, at most one per spot |
 | `status`   | TEXT NOT NULL | `free` \| `occupied`                        |
 | `set_by`   | TEXT          | Username who set the override               |
 | `created_at` | TIMESTAMPTZ | `now()`                                     |
@@ -661,6 +670,8 @@ Per-user opt-out for scheduled reminder types. Absence of a row means enabled (d
 
 </details>
 
+---
+
 ## 🧪 Testing
 
 ### ⚙️ Backend
@@ -671,14 +682,19 @@ bun run test            # run all test suites (vitest run)
 bun run test --coverage # with coverage report
 ```
 
-The suite covers every REST route group, the auth middleware, and the reminder scheduler using Vitest + Supertest — 200+ test cases across 13 suites.
+The suite covers every REST route group, the auth middleware, the owner day-status flows, and the reminder scheduler using Vitest + Supertest — 260+ test cases across 18 suites.
+
+> [!WARNING]
+> Use `bun run test` (Vitest), never bare `bun test` — Bun's own runner ignores `vi.mock`, which makes the auth-mocked suites fail with spurious `401`s.
 
 ### 🖥️ Frontend
 
 ```bash
 cd frontend
-bun test
+bun run test    # vitest run
 ```
+
+Frontend suites are colocated next to the code they cover (e.g. `hooks/useEffectiveSpots.test.ts`).
 
 ---
 
@@ -753,7 +769,7 @@ When building or modifying frontend UI:
 
 1. 🌿 Branch from `main` using a descriptive branch name
 2. 📝 Follow the conventional commit format (`feat:`, `fix:`, etc.)
-3. ✅ Run `bun lint` and `bun test` before opening a PR
+3. ✅ Run `bun run lint:all` and `bun run test` before opening a PR
 4. 🎯 Target `main` for pull requests
 
 ---

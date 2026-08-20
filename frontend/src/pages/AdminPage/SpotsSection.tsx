@@ -152,7 +152,7 @@ export function SpotsSection() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-14">
+                  <TableHead className="w-24">
                     {t('admin.spotHeader')}
                   </TableHead>
                   <TableHead>{t('admin.labelHeader')}</TableHead>

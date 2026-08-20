@@ -7,7 +7,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { getTheme } from './lotDaySelectorTheme'
+import { dayClass, getTheme } from './lotDaySelectorTheme'
 import { formatDayLabel, getAdjacentWeekDay, getWeekLabel } from './utils'
 
 // — types —
@@ -36,6 +36,8 @@ export function DayDropdown({
 
   const selected = formatDayLabel(selectedDate, i18n.language)
   const isToday = selectedDate === today
+  const prevWeekDay = getAdjacentWeekDay(weekDays, 'prev')
+  const prevDisabled = prevWeekDay < today
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -74,9 +76,10 @@ export function DayDropdown({
             className={`mb-0.5 flex items-center justify-between gap-1 px-1 py-0.5 ${theme.projectionNote}`}
           >
             <button
-              onClick={() => onDateSelect(getAdjacentWeekDay(weekDays, 'prev'))}
+              onClick={() => onDateSelect(prevWeekDay)}
+              disabled={prevDisabled}
               title={t('map.prevWeek')}
-              className={`flex size-5 items-center justify-center rounded-md transition-colors ${theme.dayUnselected}`}
+              className={`flex size-5 items-center justify-center rounded-md transition-colors ${prevDisabled ? theme.dayPast : theme.dayUnselected}`}
             >
               <ChevronLeft className="size-3" />
             </button>
@@ -110,6 +113,7 @@ export function DayDropdown({
             const { short, num } = formatDayLabel(date, i18n.language)
             const isSelected = date === selectedDate
             const isDayToday = date === today
+            const isPast = date < today
             return (
               <button
                 key={date}
@@ -117,9 +121,9 @@ export function DayDropdown({
                   onDateSelect(date)
                   setOpen(false)
                 }}
-                className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-[10px] font-medium transition-colors ${
-                  isSelected ? theme.daySelected : theme.dayUnselected
-                }`}
+                disabled={isPast}
+                title={isPast ? t('map.pastDay') : undefined}
+                className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-[10px] font-medium transition-colors ${dayClass(theme, isSelected, isPast)}`}
               >
                 <span className="flex items-center gap-2">
                   <span className="w-9 tracking-wide uppercase">{short}</span>

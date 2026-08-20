@@ -33,7 +33,9 @@ export function resolveInitialDate(
   const hasValidDate =
     dateParam !== null && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
   if (hasSpot && !hasValidDate) return today
-  if (stored && weekDays.includes(stored)) return stored
+  // A stored day that has already passed is never restored — past days aren't
+  // selectable, so a returning/logging-in user always lands on today.
+  if (stored && weekDays.includes(stored) && stored >= today) return stored
   return today
 }
 
