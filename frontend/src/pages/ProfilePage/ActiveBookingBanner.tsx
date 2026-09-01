@@ -3,6 +3,7 @@ import { Clock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { ExpiryProgress } from '@/components/ExpiryProgress'
+import { useLotName } from '@/hooks/useLotName'
 import { useTimeRemaining } from '@/hooks/useTimeRemaining'
 import { expiryProgressPct } from '@/lib/datetime'
 import type { Booking } from '@/types'
@@ -18,7 +19,8 @@ interface ActiveBookingBannerProps {
 // — main component —
 
 export function ActiveBookingBanner({ booking }: ActiveBookingBannerProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const tLot = useLotName()
   const timeRemaining = useTimeRemaining()
   return (
     <Link
@@ -36,7 +38,7 @@ export function ActiveBookingBanner({ booking }: ActiveBookingBannerProps) {
             <span className="font-bold">
               {booking.spot_label ?? `#${booking.spot_number}`}
             </span>{' '}
-            — {booking.spot_floor}
+            — {tLot(booking.spot_floor)}
           </p>
         </div>
         <div className="text-right text-sm">
@@ -45,7 +47,7 @@ export function ActiveBookingBanner({ booking }: ActiveBookingBannerProps) {
             {timeRemaining(booking.expires_at)}
           </p>
           <p className="text-muted-foreground text-xs">
-            {t('profile.until')} {formatDate(booking.expires_at)}
+            {t('profile.until')} {formatDate(booking.expires_at, i18n.language)}
           </p>
         </div>
       </div>

@@ -7,8 +7,8 @@ export function getInitials(name: string): string {
     .join('')
 }
 
-export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
+export function formatDate(iso: string, locale = 'en'): string {
+  return new Date(iso).toLocaleString(locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
