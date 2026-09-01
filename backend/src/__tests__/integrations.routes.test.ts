@@ -729,6 +729,15 @@ describe('spotStatusOnDate', () => {
     expect(spotStatusOnDate(owned('Ana'), DATE, undefined, away)).toBe('free')
   })
 
+  it('stays taken when manually reserved today with no booking, even if the owner is absent', () => {
+    const spot = owned('Ana', { status: 'reserved' })
+    expect(spotStatusOnDate(spot, DATE, undefined, away, DATE)).toBe('taken')
+    // Same spot on a non-today date → presence decides again.
+    expect(spotStatusOnDate(spot, DATE, undefined, away, '2026-05-31')).toBe(
+      'free',
+    )
+  })
+
   it('is taken when the (single) owner is in office', () => {
     expect(spotStatusOnDate(owned('Ana'), DATE, undefined, present)).toBe(
       'taken',
