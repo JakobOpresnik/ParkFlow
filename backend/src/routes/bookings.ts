@@ -62,12 +62,16 @@ async function expireStaleBookings(): Promise<void> {
       UPDATE bookings
       SET status = 'expired', ended_at = now()
       WHERE status = 'active' AND expires_at < now()
-      RETURNING spot_id
+      RETURNING id, spot_id
     )
     UPDATE spots
     SET status = ${RELEASED_STATUS_SQL}
     WHERE id IN (SELECT spot_id FROM expired)
-      AND id NOT IN (SELECT spot_id FROM bookings WHERE status = 'active')
+      -- the outer query's snapshot still sees just-expired rows as 'active'
+      AND id NOT IN (
+        SELECT spot_id FROM bookings
+        WHERE status = 'active' AND id NOT IN (SELECT id FROM expired)
+      )
   `)
 }
 
