@@ -485,11 +485,16 @@ export function spotStatusOnDate(
   date: string,
   overrideStatus: string | undefined,
   ownerPresence: (ownerName: string) => OwnerPresence,
+  today?: string,
 ): SpotDayStatus {
   const baseFallback: SpotDayStatus = spot.status === 'free' ? 'free' : 'taken'
 
   // An active booking for that day → taken, regardless of everything else.
   if (spot.active_booking_id && spotBookingDay(spot) === date) {
+    return 'taken'
+  }
+  // Manually reserved today with no booking → taken (mirrors useEffectiveSpots).
+  if (date === today && spot.status === 'reserved' && !spot.active_booking_id) {
     return 'taken'
   }
   // A per-day override is authoritative ('occupied' reads as taken).
@@ -622,6 +627,7 @@ async function resolveDayView(
       date,
       s.id ? overrideBySpot.get(s.id) : undefined,
       ownerPresence,
+      localDate(now),
     )
   const lot = lotFilter
   const unique = dedupeSpotsForDate(spots, date)
@@ -1101,6 +1107,7 @@ router.post('/rocketchat', async (req, res, next) => {
               targetDate,
               s.id ? overrideBySpot.get(s.id) : undefined,
               ownerPresence,
+              localDate(now),
             ) === 'free',
         )
 
