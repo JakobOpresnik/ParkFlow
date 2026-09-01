@@ -123,7 +123,7 @@ Beyond presence-aware availability, ParkFlow provides:
 ### 🔐 Authentication & Access Control
 
 - 🔑 **Authentik SSO** — OAuth 2.0 with PKCE flow; no username/password stored locally
-- 🪪 Bearer tokens validated server-side against the Authentik userinfo endpoint on each request
+- 🪪 The backend exchanges the code, identifies the user via the Authentik userinfo endpoint, and issues its own 8h JWT — verified locally on every request (no per-request Authentik call); see [`authentik.md`](authentik.md)
 - 👑 **Admin role** — granted to members of the configured Authentik group (`AUTHENTIK_ADMIN_GROUP`)
 - 👤 **Guest mode** — `POST /api/auth/guest` mints a short-lived read-only token so visitors can browse the map without an SSO account; all write actions are blocked for guests
 - 🚫 All endpoints require authentication; write operations additionally reject guests, and admin operations require the admin role
