@@ -1,7 +1,7 @@
 import { Select } from '@mantine/core'
 import { useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Inbox, Loader2, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -87,6 +87,15 @@ export function AdminFeedbackPage() {
   const updateStatus = useUpdateFeedbackStatus()
   const deleteFeedback = useDeleteFeedback()
   const [deleteTarget, setDeleteTarget] = useState<FeatureRequest | null>(null)
+
+  // Visiting this page clears the "new feedback" nav dot.
+  const markSeen = useUIStore((s) => s.markFeedbackSeen)
+  useEffect(() => {
+    if (!feedback?.length) return
+    markSeen(
+      feedback.reduce((m, f) => (f.created_at > m ? f.created_at : m), ''),
+    )
+  }, [feedback, markSeen])
 
   const statusOptions = STATUS_ORDER.map((s) => ({
     value: s,

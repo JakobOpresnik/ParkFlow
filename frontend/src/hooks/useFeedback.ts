@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { api } from '@/api'
+import { useAuthStore } from '@/store/authStore'
+import { useUIStore } from '@/store/uiStore'
 import type { FeedbackCategory, FeedbackStatus } from '@/types'
 
 export function useCreateFeedback() {
@@ -22,6 +24,20 @@ export function useFeedbackList() {
     queryKey: ['feedback'],
     queryFn: api.getFeedbackList,
   })
+}
+
+// True when feedback newer than the admin's last visit to the feedback page
+// exists — drives the nav indicator dot. Always false for non-admins.
+export function useHasNewFeedback(): boolean {
+  const isAdmin = useAuthStore((s) => s.user?.role === 'admin')
+  const seenAt = useUIStore((s) => s.feedbackSeenAt)
+  const { data } = useQuery({
+    queryKey: ['feedback'],
+    queryFn: api.getFeedbackList,
+    enabled: isAdmin,
+    refetchInterval: 5 * 60_000,
+  })
+  return !!data?.some((f) => f.created_at > seenAt)
 }
 
 export function useDeleteFeedback() {
