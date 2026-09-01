@@ -111,6 +111,7 @@ Users type plain words in the bot channel — English, no prefix. The full, curr
 | `reserve <spot\|building\|any> [today\|tomorrow\|dd.mm.yyyy]` | reserve a spot | as the user |
 | `cancel [<spot>]` | cancel your reservation | as the user |
 | `history` | your last 5 bookings | as the user |
+| `reminders [on\|off <type\|all>]` | list or toggle your scheduled reminder DMs | as the user |
 | `owners [building] [date]` | list ACEX employees and their assigned spots (grouped by owner), each tagged 🟩 free / 🟥 taken / 🟪 unconfirmed (shared, 2+ co-owners may be in) for the chosen day (defaults to today); optional building filter (`zunaj`/`klet1`/`klet2`) restricts to one building | none |
 | `stats [building] [date]` | live occupancy snapshot — overall % full + per-building breakdown (defaults to today) | none |
 | `peak hours [building]` | busiest parking times from the last ~90 days (peak day/hour) | none |
