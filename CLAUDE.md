@@ -79,12 +79,13 @@
 ### When working in /frontend
 
 - Package manager: **Bun** (never npm/yarn/pnpm)
-- **Always run `bun run fix` (from `/frontend/package.json`) after making any code changes to the frontend** — this runs the linter in fix mode and the formatter together
+- **Always run `bun run lint:all` (from `/frontend/package.json`) after making any code changes to the frontend** — this runs the linter in fix mode and the formatter together
 
 ### When working in /backend
 
 - Package manager: **Bun** (never npm/yarn/pnpm)
-- Run: `bun run build`, `bun run lint`, `bun run format`, `bun test`
+- Run: `bun run build`, `bun run lint`, `bun run format`, `bun run test`
+- **Never bare `bun test`** — Bun's own runner ignores `vi.mock`, so auth-mocked suites fail with spurious 401s; always `bun run test` (Vitest)
 
 ### Production server & database — READ-ONLY ONLY
 

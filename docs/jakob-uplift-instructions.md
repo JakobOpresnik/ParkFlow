@@ -1,5 +1,10 @@
 # Jakob → Jan Uplift Instructions
 
+> [!NOTE]
+> **Historical porting notes.** The Jakob prototype is archived; most of this landed
+> long ago (dashboard, activity feed, stats/heatmap, profile) — smart suggestions remain
+> on the [README roadmap](../README.md#️-roadmap). Kept for context only.
+
 Purpose: bring the best product UX from Jakob into Jan, while keeping Jan as the full-stack source of truth.
 
 ## Ground Rules

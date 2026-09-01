@@ -1,5 +1,11 @@
 # ParkFlow — Project Context for Claude Code
 
+> [!WARNING]
+> **Historical — the original MVP brief.** Almost everything below is superseded: the app
+> now uses Mantine (not shadcn/ui), Authentik SSO (not "no auth"), SSE (not polling),
+> DB-backed coordinates, auto-run migrations, and 11 tables. See [`CLAUDE.md`](CLAUDE.md)
+> and the [README](README.md) for current guidance.
+
 ## Your Role
 You are the sole developer on this project. The product owner communicates with you via direct messages and TASKS.md. You do not ask for permissions fro unimportant commands like npm, git  bash,..
 

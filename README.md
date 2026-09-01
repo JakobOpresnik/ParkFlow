@@ -42,6 +42,7 @@ Beyond presence-aware availability, ParkFlow provides:
 - [🔑 Environment Variables](#-environment-variables)
 - [📡 API Reference](#-api-reference)
 - [🗄️ Database Schema](#️-database-schema)
+- [🐘 Production DB — Read-Only Access](#-production-db--read-only-access)
 - [🧪 Testing](#-testing)
 - [✅ Code Quality](#-code-quality)
 - [🗺️ Roadmap](#️-roadmap)
@@ -122,7 +123,7 @@ Beyond presence-aware availability, ParkFlow provides:
 ### 🔐 Authentication & Access Control
 
 - 🔑 **Authentik SSO** — OAuth 2.0 with PKCE flow; no username/password stored locally
-- 🪪 Bearer tokens validated server-side against the Authentik userinfo endpoint on each request
+- 🪪 The backend exchanges the code, identifies the user via the Authentik userinfo endpoint, and issues its own 8h JWT — verified locally on every request (no per-request Authentik call); see [`authentik.md`](authentik.md)
 - 👑 **Admin role** — granted to members of the configured Authentik group (`AUTHENTIK_ADMIN_GROUP`)
 - 👤 **Guest mode** — `POST /api/auth/guest` mints a short-lived read-only token so visitors can browse the map without an SSO account; all write actions are blocked for guests
 - 🚫 All endpoints require authentication; write operations additionally reject guests, and admin operations require the admin role
@@ -669,6 +670,23 @@ Per-user opt-out for scheduled reminder types. Absence of a row means enabled (d
 | `updated_at`    | TIMESTAMPTZ   | `now()`                                     |
 
 </details>
+
+---
+
+## 🐘 Production DB — Read-Only Access
+
+The production database can be inspected (never written) from a dev machine via VPN +
+SSH tunnel as the SELECT-only `parkflow_readonly` role. Full setup — SSH config, tunnel,
+psql/GUI connection, and registering the `postgres-prod` Claude Code MCP for read-only
+SQL straight from Claude — lives in
+[`docs/prod-db-readonly-access.md`](docs/prod-db-readonly-access.md).
+
+```bash
+ssh -f -N parkflow   # tunnel on localhost:15432, then connect as parkflow_readonly
+```
+
+> [!WARNING]
+> All prod changes go through CI/CD — never write to the prod DB or touch its containers by hand.
 
 ---
 
