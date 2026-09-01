@@ -2,6 +2,7 @@ import { Sparkles } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { useLotName } from '@/hooks/useLotName'
 import type { Spot, SpotChange } from '@/types'
 
 interface RecentlyFreedProps {
@@ -72,6 +73,7 @@ function formatRelative(iso: string, t: TFunc): string {
 
 export function RecentlyFreed({ changes, spots }: RecentlyFreedProps) {
   const { t } = useTranslation()
+  const tLot = useLotName()
   const items = useMemo(
     () => pickRecentlyFreed(changes, spots),
     [changes, spots],
@@ -101,7 +103,7 @@ export function RecentlyFreed({ changes, spots }: RecentlyFreedProps) {
               <span className="truncate font-medium">{s.label}</span>
               {s.lotName && (
                 <span className="text-muted-foreground truncate text-[11px]">
-                  · {s.lotName}
+                  · {tLot(s.lotName)}
                 </span>
               )}
             </div>

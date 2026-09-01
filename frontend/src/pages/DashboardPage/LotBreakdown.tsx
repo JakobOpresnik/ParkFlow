@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 
+import { useLotName } from '@/hooks/useLotName'
 import { countByStatus } from '@/lib/spots'
 import type { ParkingLot, Spot } from '@/types'
 
@@ -61,6 +62,7 @@ function LotBar({ name, free, occupied, total }: LotBarProps) {
 
 export function LotBreakdown({ lots, allSpots }: LotBreakdownProps) {
   const { t } = useTranslation()
+  const tLot = useLotName()
 
   const LOT_LEGEND = LOT_LEGEND_CONFIG.map((item) => ({
     ...item,
@@ -92,7 +94,7 @@ export function LotBreakdown({ lots, allSpots }: LotBreakdownProps) {
           return (
             <LotBar
               key={lot.id}
-              name={lot.name}
+              name={tLot(lot.name)}
               free={countByStatus(lotSpots, 'free')}
               occupied={
                 countByStatus(lotSpots, 'occupied') +

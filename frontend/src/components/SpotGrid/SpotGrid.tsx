@@ -200,7 +200,7 @@ function SpotCard({ spot, onClick }: SpotCardProps) {
   return (
     <button
       onClick={onClick}
-      aria-label={`Spot ${spot.label ?? spot.number}`}
+      aria-label={`${t('map.spotLabel')} ${spot.label ?? spot.number}`}
       className="bg-card group relative cursor-pointer overflow-hidden rounded-xl border text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
     >
       {/* Colored top accent strip */}

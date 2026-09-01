@@ -6,6 +6,7 @@ import { ExpiryProgress } from '@/components/ExpiryProgress'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useCancelBooking, useMyBookings } from '@/hooks/useBookings'
+import { useLotName } from '@/hooks/useLotName'
 import { useRelativeTime } from '@/hooks/useRelativeTime'
 import { useTimeRemaining } from '@/hooks/useTimeRemaining'
 import { expiryProgressPct } from '@/lib/datetime'
@@ -24,8 +25,8 @@ const STATUS_LABEL_KEYS: Record<BookingStatus, string> = {
   expired: 'bookings.statusExpired',
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleString('sl-SI', {
+function formatDate(iso: string, locale: string) {
+  return new Date(iso).toLocaleString(locale, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -39,7 +40,8 @@ interface BookingCardProps {
 }
 
 function BookingCard({ booking }: BookingCardProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const tLot = useLotName()
   const cancelBooking = useCancelBooking()
   const timeRemaining = useTimeRemaining()
   const relativeTime = useRelativeTime()
@@ -79,12 +81,12 @@ function BookingCard({ booking }: BookingCardProps) {
 
           <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
             <MapPin className="size-3.5" />
-            {booking.spot_floor}
+            {tLot(booking.spot_floor)}
           </div>
 
           <div
             className="text-muted-foreground flex items-center gap-1.5 text-sm"
-            title={formatDate(booking.booked_at)}
+            title={formatDate(booking.booked_at, i18n.language)}
           >
             <Calendar className="size-3.5" />
             {t('bookings.booked', { date: relativeTime(booking.booked_at) })}
@@ -94,14 +96,16 @@ function BookingCard({ booking }: BookingCardProps) {
             <div className="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400">
               <Clock className="size-3.5" />
               {timeRemaining(booking.expires_at)} ·{' '}
-              {t('bookings.until', { date: formatDate(booking.expires_at) })}
+              {t('bookings.until', {
+                date: formatDate(booking.expires_at, i18n.language),
+              })}
             </div>
           )}
 
           {booking.ended_at && booking.status !== 'active' && (
             <div
               className="text-muted-foreground flex items-center gap-1.5 text-sm"
-              title={formatDate(booking.ended_at)}
+              title={formatDate(booking.ended_at, i18n.language)}
             >
               <Clock className="size-3.5" />
               {t('bookings.ended', { date: relativeTime(booking.ended_at) })}

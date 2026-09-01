@@ -3,6 +3,7 @@ import { Clock, ParkingCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { PreferenceRow } from '@/components/PreferenceRow/PreferenceRow'
+import { useLotName } from '@/hooks/useLotName'
 
 import { RemindersSection } from './RemindersSection'
 
@@ -30,6 +31,7 @@ export function PreferencesCard({
   onReservationDurationChange,
 }: PreferencesCardProps) {
   const { t } = useTranslation()
+  const tLot = useLotName()
 
   return (
     <div className="bg-card rounded-lg border shadow-sm">
@@ -54,7 +56,10 @@ export function PreferencesCard({
                 clearable
                 placeholder={t('profile.anyLot')}
                 classNames={{ input: 'min-w-28 text-xs' }}
-                data={lots.map((lot) => ({ value: lot.id, label: lot.name }))}
+                data={lots.map((lot) => ({
+                  value: lot.id,
+                  label: tLot(lot.name),
+                }))}
               />
             </PreferenceRow>
           </div>

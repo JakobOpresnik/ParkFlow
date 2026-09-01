@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useLotName } from '@/hooks/useLotName'
 import {
   useMarkAllNotificationsRead,
   useNotifications,
@@ -17,6 +18,7 @@ import type { AppNotification } from '@/types'
 
 export function NotificationBell() {
   const { t } = useTranslation()
+  const tLot = useLotName()
   const relativeTime = useRelativeTime()
   const [open, setOpen] = useState(false)
   const { data: notifications = [] } = useNotifications()
@@ -37,7 +39,7 @@ export function NotificationBell() {
           title: t('notifications.reservationTodayTitle'),
           body: t('notifications.reservationTodayBody', {
             spot: str('spot_label') ?? t('notifications.yourSpot'),
-            floor: floorVal ? ` (${floorVal})` : '',
+            floor: floorVal ? ` (${tLot(floorVal)})` : '',
           }),
         }
       }

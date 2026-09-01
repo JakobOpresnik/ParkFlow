@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Highlight } from '@/components/ui/highlight'
 import { TableCell, TableRow } from '@/components/ui/table'
+import { useLotName } from '@/hooks/useLotName'
 import { hasRealOwner, isDisplayedUnavailable } from '@/lib/spots'
 import type { Spot, SpotType } from '@/types'
 
@@ -33,6 +34,7 @@ export function SpotRow({
   onDelete,
 }: SpotRowProps) {
   const { t } = useTranslation()
+  const tLot = useLotName()
   const typeConf = SpotTypeConfig[spot.type]
   const displayStatus = spot.status
   // Who's actually there, not necessarily the owner: the reserver for a
@@ -65,7 +67,7 @@ export function SpotRow({
         {spot.label ? <Highlight text={spot.label} query={spotSearch} /> : '—'}
       </TableCell>
       <TableCell className="text-muted-foreground text-sm">
-        <Highlight text={getLotName(spot.lot_id)} query={spotSearch} />
+        <Highlight text={tLot(getLotName(spot.lot_id))} query={spotSearch} />
       </TableCell>
       <TableCell>
         <div className="flex flex-wrap items-center gap-1.5">
@@ -112,7 +114,7 @@ export function SpotRow({
             size="sm"
             variant="ghost"
             onClick={() => onEdit(spot)}
-            aria-label="Edit spot"
+            aria-label={t('admin.editSpot')}
           >
             <Pencil className="size-3.5" />
           </Button>
@@ -121,7 +123,7 @@ export function SpotRow({
             variant="ghost"
             className="text-destructive hover:text-destructive"
             onClick={() => onDelete(spot)}
-            aria-label="Delete spot"
+            aria-label={t('admin.deleteSpot')}
           >
             <Trash2 className="size-3.5" />
           </Button>

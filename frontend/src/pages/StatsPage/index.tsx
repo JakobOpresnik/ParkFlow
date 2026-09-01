@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useEffectiveSpots } from '@/hooks/useEffectiveSpots'
+import { useLotName } from '@/hooks/useLotName'
 import { useLots } from '@/hooks/useLots'
 import { useStatsHistory } from '@/hooks/useStatsHistory'
 import type { SpotStatus } from '@/types'
@@ -64,6 +65,7 @@ function StatusProgressRow({ segment, total }: StatusProgressRowProps) {
 
 export function StatsPage() {
   const { t } = useTranslation()
+  const tLot = useLotName()
   const today = new Date().toISOString().slice(0, 10)
   const { data: allSpots = [], isLoading: isSpotsLoading } =
     useEffectiveSpots(today)
@@ -92,10 +94,10 @@ export function StatsPage() {
     return lots
       .map((lot) => {
         const lotSpots = allSpots.filter((s) => s.lot_id === lot.id)
-        return computeFloorStats(lot.id, lot.name, lotSpots)
+        return computeFloorStats(lot.id, tLot(lot.name), lotSpots)
       })
       .filter((f) => f.total > 0)
-  }, [lots, allSpots])
+  }, [lots, allSpots, tLot])
 
   const total = spots.length
   const counts: Record<SpotStatus, number> = {
@@ -146,7 +148,7 @@ export function StatsPage() {
             onChange={(v) => v && setSelectedLotId(v)}
             data={[
               { value: '__all__', label: t('stats.allFloors') },
-              ...lots.map((lot) => ({ value: lot.id, label: lot.name })),
+              ...lots.map((lot) => ({ value: lot.id, label: tLot(lot.name) })),
             ]}
             placeholder={t('stats.allFloors')}
           />

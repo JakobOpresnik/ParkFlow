@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { useLotName } from '@/hooks/useLotName'
 import type { ParkingLot, Spot } from '@/types'
 
 import { DayDropdown } from './DayDropdown'
@@ -85,6 +86,7 @@ export function LotDaySelector({
   onDateSelect,
 }: LotDaySelectorProps) {
   const { t, i18n } = useTranslation()
+  const tLot = useLotName()
   const theme = getTheme(isMapMode)
   const prevWeekDay = getAdjacentWeekDay(weekDays, 'prev')
 
@@ -120,7 +122,7 @@ export function LotDaySelector({
                   onClick={() => onLotSelect(lots[0]!)}
                   className={`w-full ${lotButtonClass(theme, activeLot?.id === lots[0].id)}`}
                 >
-                  {lots[0].name}
+                  {tLot(lots[0].name)}
                   <LotStatusDot
                     lot={lots[0]}
                     allSpots={allSpots}
@@ -136,7 +138,7 @@ export function LotDaySelector({
                       onClick={() => onLotSelect(lot)}
                       className={`min-w-9 flex-1 ${lotButtonClass(theme, activeLot?.id === lot.id)}`}
                     >
-                      {lot.name}
+                      {tLot(lot.name)}
                       <LotStatusDot
                         lot={lot}
                         allSpots={allSpots}

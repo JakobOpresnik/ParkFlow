@@ -181,6 +181,13 @@ const en = {
     nextWeek: 'Next week',
     today: 'Today',
     closeSidebar: 'Close sidebar',
+    mapAria: '{{name}} parking map',
+  },
+  lotNames: {
+    'Zunanje parkirišče': 'Outdoor lot',
+    Zunanje: 'Outdoor',
+    'Klet -1': 'Basement -1',
+    'Klet -2': 'Basement -2',
   },
   spotModal: {
     parkingSpot: 'Parking Spot',
