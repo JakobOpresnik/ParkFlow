@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useLotName } from '@/hooks/useLotName'
 import type { ParkingLot, SpotType } from '@/types'
 
 import { buildPillClass } from './spotConstants'
@@ -39,6 +40,7 @@ export function SpotFilterBar({
   onAddSpot,
 }: SpotFilterBarProps) {
   const { t } = useTranslation()
+  const tLot = useLotName()
   return (
     <div className="flex flex-row flex-wrap items-center gap-2">
       <div className="mr-auto flex flex-col flex-wrap items-start gap-2">
@@ -56,7 +58,7 @@ export function SpotFilterBar({
               onClick={() => onLotFilter(lot.id)}
               className={buildPillClass(lotFilter === lot.id)}
             >
-              {lot.name}
+              {tLot(lot.name)}
             </button>
           ))}
         </div>

@@ -2,6 +2,7 @@ import { Pencil, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
+import { useLotName } from '@/hooks/useLotName'
 import { hasRealOwner, isDisplayedUnavailable } from '@/lib/spots'
 import type { Spot } from '@/types'
 
@@ -22,6 +23,7 @@ export function SpotCard({ spot, lotName, onEdit, onDelete }: SpotCardProps) {
   const typeConf = SpotTypeConfig[spot.type]
   const displayStatus = spot.status
   const { t } = useTranslation()
+  const tLot = useLotName()
   // Who's actually there, not necessarily the owner: the reserver for a
   // booked spot, or today's presence-confirmed occupant for one flagged
   // 'occupied' directly.
@@ -79,7 +81,7 @@ export function SpotCard({ spot, lotName, onEdit, onDelete }: SpotCardProps) {
       </div>
       <div className="text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
         {spot.label && <span>{spot.label}</span>}
-        <span>{lotName}</span>
+        <span>{tLot(lotName)}</span>
         {spot.owner_name && <span className="truncate">{spot.owner_name}</span>}
       </div>
     </div>

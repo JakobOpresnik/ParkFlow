@@ -2,6 +2,7 @@ import { Tooltip } from '@mantine/core'
 import { Car, Check, Clock, MapPin, User, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { useLotName } from '@/hooks/useLotName'
 import type { Spot, SpotType } from '@/types'
 
 // — types —
@@ -34,6 +35,7 @@ export function DetailsCard({
   isGuest = false,
 }: DetailsCardProps) {
   const { t } = useTranslation()
+  const tLot = useLotName()
 
   const icon = spot.type ? SPOT_TYPE_ICONS[spot.type] : undefined
   const labelKey = spot.type ? SPOT_TYPE_LABEL_KEYS[spot.type] : undefined
@@ -54,7 +56,7 @@ export function DetailsCard({
         <span className="text-muted-foreground w-20 shrink-0 text-sm">
           {t('spotModal.floor')}
         </span>
-        <span className="text-sm font-medium">{spot.floor}</span>
+        <span className="text-sm font-medium">{tLot(spot.floor)}</span>
       </div>
 
       {typeInfo && (

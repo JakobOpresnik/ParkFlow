@@ -1,8 +1,11 @@
+import { useLotName } from '@/hooks/useLotName'
+
 import type { LotTabsProps } from './types'
 
 // — sub-components —
 
 export function LotTabs({ lots, selectedId, onSelect }: LotTabsProps) {
+  const tLot = useLotName()
   return (
     <div className="flex flex-wrap gap-1">
       {lots.map((lot) => (
@@ -15,7 +18,7 @@ export function LotTabs({ lots, selectedId, onSelect }: LotTabsProps) {
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          {lot.name}
+          {tLot(lot.name)}
         </button>
       ))}
     </div>

@@ -1,6 +1,7 @@
 import { forwardRef, useImperativeHandle } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { useLotName } from '@/hooks/useLotName'
 import { useAuthStore } from '@/store/authStore'
 import type { ParkingLot, Spot, SpotCoordinates, SpotStatus } from '@/types'
 
@@ -130,6 +131,7 @@ function SpotOverlay({
   isHighlighted,
   onClick,
 }: SpotOverlayProps) {
+  const { t } = useTranslation()
   const currentUser = useAuthStore((s) => s.user)
   const coords = resolveCoords(spot.coordinates, imageWidth, imageHeight)
   const { x, y, width, height, rotation } = coords
@@ -163,7 +165,7 @@ function SpotOverlay({
       transform={`rotate(${rotation}, ${cx}, ${cy})`}
       style={{ pointerEvents: 'all', cursor: 'pointer' }}
       onClick={onClick}
-      aria-label={`Spot ${spot.label ?? spot.number} — ${spot.status}`}
+      aria-label={`${t('map.spotLabel')} ${spot.label ?? spot.number} — ${t(`map.${displayStatus}`)}`}
     >
       {isHighlighted && (
         <rect
@@ -248,6 +250,7 @@ export const ParkingMap = forwardRef<ParkingMapHandle, ParkingMapProps>(
     ref,
   ) {
     const { t } = useTranslation()
+    const tLot = useLotName()
     const {
       containerRef,
       view,
@@ -296,7 +299,7 @@ export const ParkingMap = forwardRef<ParkingMapHandle, ParkingMapProps>(
           <svg
             viewBox={vb}
             className="absolute inset-0 h-full w-full"
-            aria-label={`${lot.name} parking map`}
+            aria-label={t('map.mapAria', { name: tLot(lot.name) })}
             style={{ pointerEvents: 'none' }}
           >
             <defs>

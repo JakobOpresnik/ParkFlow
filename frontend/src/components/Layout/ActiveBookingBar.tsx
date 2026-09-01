@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useMyBookings } from '@/hooks/useBookings'
+import { useLotName } from '@/hooks/useLotName'
 import { expiryProgressPct } from '@/lib/datetime'
 import { useAuthStore } from '@/store/authStore'
 
@@ -27,6 +28,7 @@ function remainingLabel(expiresAt: string, now: number, t: TFunction): string {
 // beyond the Profile page. Renders nothing when there's no active booking.
 function ActiveBookingBarInner() {
   const { t } = useTranslation()
+  const tLot = useLotName()
   const { data: bookings = [] } = useMyBookings()
 
   // Re-tick about once a minute so the countdown stays fresh on whatever page
@@ -56,7 +58,7 @@ function ActiveBookingBarInner() {
       <ParkingCircle className="size-4 shrink-0 transition-transform group-hover:-translate-y-0.5" />
       <span className="font-semibold">{label}</span>
       <span className="text-green-700/70 dark:text-green-400/70">
-        · {active.spot_floor}
+        · {tLot(active.spot_floor)}
       </span>
       <span className="ml-auto flex shrink-0 items-center gap-1 text-xs font-medium">
         <Clock className="size-3.5" />

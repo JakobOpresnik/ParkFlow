@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 
+import { useLotName } from '@/hooks/useLotName'
 import type { ParkingLot, Spot, SpotCoordinates } from '@/types'
 
 import { PendingPanel } from './PendingPanel'
@@ -59,12 +60,13 @@ export function EditorSidebar({
   onRemove,
 }: EditorSidebarProps) {
   const { t } = useTranslation()
+  const tLot = useLotName()
   return (
     <div className="w-full shrink-0 space-y-3 sm:w-64">
       {/* Stats */}
       <div className="bg-card rounded-lg border p-3">
         <p className="text-muted-foreground mb-1 text-xs font-medium tracking-wide uppercase">
-          {activeLot.name}
+          {tLot(activeLot.name)}
         </p>
         <p className="text-2xl font-bold">{mappedCount}</p>
         <p className="text-muted-foreground text-xs">

@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useLotName } from '@/hooks/useLotName'
 import { useLots } from '@/hooks/useLots'
 import { useSpots } from '@/hooks/useSpots'
 
@@ -20,6 +21,7 @@ import { useLotDialog } from './useLotDialog'
 
 export function LotsSection() {
   const { t } = useTranslation()
+  const tLot = useLotName()
   const { data: lots = [], isLoading } = useLots()
   const { data: allSpots = [] } = useSpots()
 
@@ -74,7 +76,7 @@ export function LotsSection() {
                 <Layers className="text-primary size-3.5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">{lot.name}</p>
+                <p className="text-sm font-medium">{tLot(lot.name)}</p>
                 <p className="text-muted-foreground text-xs">
                   {t('admin.lotSpots', { count: getSpotCount(lot.id) })} ·{' '}
                   {lot.image_filename}
@@ -85,7 +87,7 @@ export function LotsSection() {
                   size="sm"
                   variant="ghost"
                   onClick={() => handleOpenEdit(lot)}
-                  aria-label={`Edit ${lot.name}`}
+                  aria-label={`${t('admin.editParkingLot')}: ${tLot(lot.name)}`}
                 >
                   <Pencil className="size-3.5" />
                 </Button>
@@ -94,7 +96,7 @@ export function LotsSection() {
                   variant="ghost"
                   className="text-destructive hover:text-destructive"
                   onClick={() => setDeleteTarget(lot)}
-                  aria-label={`Delete ${lot.name}`}
+                  aria-label={`${t('admin.deleteParkingLot')}: ${tLot(lot.name)}`}
                 >
                   <Trash2 className="size-3.5" />
                 </Button>

@@ -182,6 +182,13 @@ const sl = {
     nextWeek: 'Naslednji teden',
     today: 'Danes',
     closeSidebar: 'Zapri stransko ploščo',
+    mapAria: 'Zemljevid parkirišča {{name}}',
+  },
+  lotNames: {
+    'Zunanje parkirišče': 'Zunanje parkirišče',
+    Zunanje: 'Zunanje',
+    'Klet -1': 'Klet -1',
+    'Klet -2': 'Klet -2',
   },
   spotModal: {
     parkingSpot: 'Parkirno mesto',

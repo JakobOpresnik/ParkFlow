@@ -2,6 +2,7 @@ import { Flame } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { useLotName } from '@/hooks/useLotName'
 import type { Spot, SpotChange } from '@/types'
 
 interface HotSpotsProps {
@@ -57,6 +58,7 @@ function rankHotSpots(
 
 export function HotSpots({ changes, spots, isLoading }: HotSpotsProps) {
   const { t } = useTranslation()
+  const tLot = useLotName()
   const top = useMemo(() => rankHotSpots(changes, spots), [changes, spots])
 
   return (
@@ -94,7 +96,7 @@ export function HotSpots({ changes, spots, isLoading }: HotSpotsProps) {
                     <p className="truncate font-medium">{s.label}</p>
                     {s.lotName && (
                       <p className="text-muted-foreground truncate text-[11px]">
-                        {s.lotName}
+                        {tLot(s.lotName)}
                       </p>
                     )}
                   </div>
