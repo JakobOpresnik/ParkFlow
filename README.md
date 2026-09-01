@@ -42,6 +42,7 @@ Beyond presence-aware availability, ParkFlow provides:
 - [🔑 Environment Variables](#-environment-variables)
 - [📡 API Reference](#-api-reference)
 - [🗄️ Database Schema](#️-database-schema)
+- [🐘 Production DB — Read-Only Access](#-production-db--read-only-access)
 - [🧪 Testing](#-testing)
 - [✅ Code Quality](#-code-quality)
 - [🗺️ Roadmap](#️-roadmap)
@@ -669,6 +670,23 @@ Per-user opt-out for scheduled reminder types. Absence of a row means enabled (d
 | `updated_at`    | TIMESTAMPTZ   | `now()`                                     |
 
 </details>
+
+---
+
+## 🐘 Production DB — Read-Only Access
+
+The production database can be inspected (never written) from a dev machine via VPN +
+SSH tunnel as the SELECT-only `parkflow_readonly` role. Full setup — SSH config, tunnel,
+psql/GUI connection, and registering the `postgres-prod` Claude Code MCP for read-only
+SQL straight from Claude — lives in
+[`docs/prod-db-readonly-access.md`](docs/prod-db-readonly-access.md).
+
+```bash
+ssh -f -N parkflow   # tunnel on localhost:15432, then connect as parkflow_readonly
+```
+
+> [!WARNING]
+> All prod changes go through CI/CD — never write to the prod DB or touch its containers by hand.
 
 ---
 
