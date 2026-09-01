@@ -42,7 +42,7 @@ function SpotResult({ spot, onClick }: SpotResultProps) {
   return (
     <button
       onClick={onClick}
-      aria-label={`Spot ${spot.label ?? spot.number}`}
+      aria-label={`${t('map.spotLabel')} ${spot.label ?? spot.number}`}
       className="bg-card hover:bg-accent/50 flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors"
     >
       <MapPin className="text-muted-foreground size-4 shrink-0" />
