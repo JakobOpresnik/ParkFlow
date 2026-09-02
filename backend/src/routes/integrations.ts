@@ -298,6 +298,16 @@ export interface SpotLike {
   active_booking_id?: string | null
   active_booking_expires_at?: string | null
   active_booking_date?: string | null
+  spotted_reported_at?: string | null
+  spotted_expires_at?: string | null
+}
+
+// Active user-reported "car here" flag, mirroring the frontend's
+// hasActiveSpottedReport — owned spots need this layered in (the API only
+// bakes 'spotted' into status for base-'free' rows).
+export function hasActiveSpottedReport(s: SpotLike, now: Date): boolean {
+  if (!s.spotted_reported_at || !s.spotted_expires_at) return false
+  return new Date(s.spotted_expires_at).getTime() > now.getTime()
 }
 
 // The local day a spot's active booking is for — prefers the authoritative
@@ -486,8 +496,16 @@ export function spotStatusOnDate(
   overrideStatus: string | undefined,
   ownerPresence: (ownerName: string) => OwnerPresence,
   today?: string,
+  now: Date = new Date(),
 ): SpotDayStatus {
-  const baseFallback: SpotDayStatus = spot.status === 'free' ? 'free' : 'taken'
+  // A stored 'reserved' is a booking for some OTHER day (rules below handle this
+  // day's) — it must not leak into `date`: pool/unowned spots read free, a
+  // personally-owned spot rests taken. Mirrors useEffectiveSpots' rest-state.
+  const isPersonal = !!spot.owner_name && spot.owner_name !== ACEX_OWNER_NAME
+  const baseFallback: SpotDayStatus =
+    spot.status === 'free' || (spot.status === 'reserved' && !isPersonal)
+      ? 'free'
+      : 'taken'
 
   // An active booking for that day → taken, regardless of everything else.
   if (spot.active_booking_id && spotBookingDay(spot) === date) {
@@ -497,9 +515,11 @@ export function spotStatusOnDate(
   if (date === today && spot.status === 'reserved' && !spot.active_booking_id) {
     return 'taken'
   }
-  // A per-day override is authoritative ('occupied' reads as taken).
+  // A per-day override is authoritative ('occupied' reads as taken) — but a
+  // 'free' override doesn't disprove an active user's "car here" report.
   if (overrideStatus !== undefined) {
-    return overrideStatus === 'free' ? 'free' : 'taken'
+    if (overrideStatus !== 'free') return 'taken'
+    return hasActiveSpottedReport(spot, now) ? 'taken' : 'free'
   }
   // The ACEX public pool defaults to free, but an admin's explicit non-free
   // status wins (normally filtered out of this list anyway).
@@ -510,7 +530,9 @@ export function spotStatusOnDate(
     const presence = ownerPresence(ownerName)
     // No presence data → fall back to the stored status.
     if (presence === 'unknown') return baseFallback
-    return presence === 'in_office' ? 'taken' : 'free'
+    if (presence === 'in_office') return 'taken'
+    // Owner away — an active user report still marks the spot taken.
+    return hasActiveSpottedReport(spot, now) ? 'taken' : 'free'
   }
   // Unowned spot.
   return baseFallback
@@ -628,6 +650,7 @@ async function resolveDayView(
       s.id ? overrideBySpot.get(s.id) : undefined,
       ownerPresence,
       localDate(now),
+      now,
     )
   const lot = lotFilter
   const unique = dedupeSpotsForDate(spots, date)
@@ -1108,6 +1131,7 @@ router.post('/rocketchat', async (req, res, next) => {
               s.id ? overrideBySpot.get(s.id) : undefined,
               ownerPresence,
               localDate(now),
+              now,
             ) === 'free',
         )
 
