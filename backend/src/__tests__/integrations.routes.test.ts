@@ -824,9 +824,9 @@ describe('spotStatusOnDate', () => {
       active_booking_expires_at: '2026-05-31T15:00:00.000Z',
     }
     // Asking about DATE (the next day): booked-today pool spot reads free…
-    expect(
-      spotStatusOnDate(spot, DATE, undefined, unknown, '2026-05-31'),
-    ).toBe('free')
+    expect(spotStatusOnDate(spot, DATE, undefined, unknown, '2026-05-31')).toBe(
+      'free',
+    )
     // …but asking about the booking's own day reads taken.
     expect(
       spotStatusOnDate(spot, '2026-05-31', undefined, unknown, '2026-05-31'),
