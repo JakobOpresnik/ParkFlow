@@ -3,6 +3,7 @@ import { create } from 'zustand'
 import { invalidateAllSpotQueries } from '@/lib/queryClient'
 
 const SELECTED_DATE_KEY = 'pf_selected_date'
+const FEEDBACK_SEEN_KEY = 'pf_feedback_seen'
 
 /** Mon–Fri ISO dates for the week containing `ref`. */
 function getCurrentWeekDays(ref: Date): string[] {
@@ -67,6 +68,10 @@ interface UIStore {
 
   moreDrawerOpen: boolean
   setMoreDrawerOpen: (open: boolean) => void
+
+  /** created_at of the newest feedback item the admin has seen (ISO) */
+  feedbackSeenAt: string
+  markFeedbackSeen: (ts: string) => void
 }
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -85,4 +90,10 @@ export const useUIStore = create<UIStore>((set) => ({
 
   moreDrawerOpen: false,
   setMoreDrawerOpen: (open) => set({ moreDrawerOpen: open }),
+
+  feedbackSeenAt: localStorage.getItem(FEEDBACK_SEEN_KEY) ?? '',
+  markFeedbackSeen: (ts) => {
+    localStorage.setItem(FEEDBACK_SEEN_KEY, ts)
+    set({ feedbackSeenAt: ts })
+  },
 }))

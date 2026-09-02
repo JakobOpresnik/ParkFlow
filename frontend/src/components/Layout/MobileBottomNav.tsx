@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { EllipsisVertical } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { useHasNewFeedback } from '@/hooks/useFeedback'
 import { useAuthStore } from '@/store/authStore'
 
 import { getNavItems, isActivePath, isAdminSection } from './constants'
@@ -25,6 +26,7 @@ export function MobileBottomNav({
   const role = useAuthStore((s) => s.user?.role)
   const isAdmin = isAdminSection(pathname)
   const navItems = getNavItems(role)
+  const hasNewFeedback = useHasNewFeedback()
 
   return (
     <nav className="bg-card fixed inset-x-0 bottom-0 z-40 flex items-end justify-around border-t sm:hidden">
@@ -53,7 +55,12 @@ export function MobileBottomNav({
             : 'text-muted-foreground'
         }`}
       >
-        <EllipsisVertical className="size-5 shrink-0" />
+        <span className="relative">
+          <EllipsisVertical className="size-5 shrink-0" />
+          {hasNewFeedback && (
+            <span className="bg-destructive absolute -top-0.5 -right-1 size-2 rounded-full" />
+          )}
+        </span>
         <span className="text-[9px] leading-tight">{t('nav.more')}</span>
       </button>
     </nav>

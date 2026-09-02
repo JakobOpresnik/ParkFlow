@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui/button'
+import { useHasNewFeedback } from '@/hooks/useFeedback'
 import type { AppUser } from '@/types'
 
 import {
@@ -47,6 +48,7 @@ export function DesktopSidebar({
   const { t } = useTranslation()
   const isAdmin = isAdminSection(pathname)
   const [adminOpen, setAdminOpen] = useState(isAdmin)
+  const hasNewFeedback = useHasNewFeedback()
 
   return (
     <aside className="bg-card hidden w-60 shrink-0 flex-col border-r sm:flex">
@@ -98,6 +100,9 @@ export function DesktopSidebar({
             >
               <Settings className="size-4 shrink-0" />
               <span className="flex-1 text-left text-sm">{t('nav.admin')}</span>
+              {hasNewFeedback && !adminOpen && (
+                <span className="bg-destructive size-2 shrink-0 rounded-full" />
+              )}
               <ChevronDown
                 className={`size-3.5 shrink-0 transition-transform ${adminOpen ? 'rotate-180' : ''}`}
               />
@@ -115,7 +120,10 @@ export function DesktopSidebar({
                     activeOptions={{ exact: true }}
                   >
                     <Icon className="size-4 shrink-0" />
-                    <span>{t(labelKey)}</span>
+                    <span className="flex-1">{t(labelKey)}</span>
+                    {to === '/admin/feedback' && hasNewFeedback && (
+                      <span className="bg-destructive size-2 shrink-0 rounded-full" />
+                    )}
                   </Link>
                 ))}
               </div>

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui/button'
+import { useHasNewFeedback } from '@/hooks/useFeedback'
 import type { AppUser } from '@/types'
 
 import { ADMIN_ITEMS, isActivePath } from './constants'
@@ -32,6 +33,7 @@ export function MoreDrawer({
   onHelpOpen,
 }: MoreDrawerProps) {
   const { t } = useTranslation()
+  const hasNewFeedback = useHasNewFeedback()
 
   return (
     <Drawer
@@ -76,7 +78,10 @@ export function MoreDrawer({
                   }`}
                 >
                   <Icon className="size-4 shrink-0" />
-                  {t(labelKey)}
+                  <span className="flex-1">{t(labelKey)}</span>
+                  {to === '/admin/feedback' && hasNewFeedback && (
+                    <span className="bg-destructive size-2 shrink-0 rounded-full" />
+                  )}
                 </Link>
               )
             })}
