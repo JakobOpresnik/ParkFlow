@@ -791,12 +791,13 @@ describe('spotStatusOnDate', () => {
   })
 
   it("keeps an ACEX pool spot free by default but respects an admin's non-free status", () => {
-    const acex = (status: string) => ({
+    const acex = (status: string, extra = {}) => ({
       number: 1,
       label: 'X1',
       status,
       owner_id: 'acex',
       owner_name: 'ACEX - kdor prej pride, prej melje',
+      ...extra,
     })
     expect(spotStatusOnDate(acex('free'), DATE, undefined, unknown)).toBe(
       'free',
@@ -804,9 +805,61 @@ describe('spotStatusOnDate', () => {
     expect(spotStatusOnDate(acex('occupied'), DATE, undefined, unknown)).toBe(
       'taken',
     )
+    // 'reserved' is always booking-driven and day-scoped — it must not leak
+    // into another day's view (mirrors useEffectiveSpots).
     expect(spotStatusOnDate(acex('reserved'), DATE, undefined, unknown)).toBe(
+      'free',
+    )
+  })
+
+  it("frees a pool spot booked today when asked about tomorrow (today's booking must not leak)", () => {
+    const spot = {
+      number: 1,
+      label: 'X1',
+      status: 'reserved',
+      owner_id: 'acex',
+      owner_name: 'ACEX - kdor prej pride, prej melje',
+      active_booking_id: 'b1',
+      active_booking_date: '2026-05-31',
+      active_booking_expires_at: '2026-05-31T15:00:00.000Z',
+    }
+    // Asking about DATE (the next day): booked-today pool spot reads free…
+    expect(
+      spotStatusOnDate(spot, DATE, undefined, unknown, '2026-05-31'),
+    ).toBe('free')
+    // …but asking about the booking's own day reads taken.
+    expect(
+      spotStatusOnDate(spot, '2026-05-31', undefined, unknown, '2026-05-31'),
+    ).toBe('taken')
+    // A personally-owned spot with unknown presence rests taken instead.
+    expect(
+      spotStatusOnDate(
+        { ...spot, owner_id: 'o', owner_name: 'Ana' },
+        DATE,
+        undefined,
+        unknown,
+        '2026-05-31',
+      ),
+    ).toBe('taken')
+  })
+
+  it('treats an active spotted report as taken even when the owner is away or a free override applies', () => {
+    const now = new Date('2026-06-01T10:00:00.000Z')
+    const reported = owned('Ana', {
+      spotted_reported_at: '2026-06-01T09:00:00.000Z',
+      spotted_expires_at: '2026-06-01T12:00:00.000Z',
+    })
+    expect(spotStatusOnDate(reported, DATE, undefined, away, DATE, now)).toBe(
       'taken',
     )
+    expect(spotStatusOnDate(reported, DATE, 'free', away, DATE, now)).toBe(
+      'taken',
+    )
+    // Expired report → free again.
+    const expired = new Date('2026-06-01T13:00:00.000Z')
+    expect(
+      spotStatusOnDate(reported, DATE, undefined, away, DATE, expired),
+    ).toBe('free')
   })
 
   it('falls back to the stored status when presence is unknown', () => {
