@@ -414,6 +414,16 @@ describe('pickRandomFree', () => {
       pickRandomFree([{ number: 1, label: 'Z-1', status: 'occupied' }]),
     ).toBeUndefined()
   })
+
+  it('honors a date-aware isFree predicate over the live status', () => {
+    // Booked today (live 'reserved') but effectively free tomorrow.
+    const spots = [
+      { number: 1, label: 'Z-1', status: 'reserved' },
+      { number: 2, label: 'Z-2', status: 'occupied' },
+    ]
+    const effFree = (s: { label: string | null }): boolean => s.label === 'Z-1'
+    expect(pickRandomFree(spots, () => 0, effFree)?.label).toBe('Z-1')
+  })
 })
 
 describe('spotLink', () => {
@@ -452,6 +462,30 @@ describe('isGrabbable', () => {
         status: 'occupied',
         owner_id: null,
       }),
+    ).toBe(false)
+  })
+
+  it('keeps the ownership rule while honoring an injected isFree predicate', () => {
+    const bookedToday = {
+      number: 5,
+      label: 'E',
+      status: 'reserved',
+      owner_id: 'acex',
+      owner_name: 'ACEX - kdor prej pride, prej melje',
+    }
+    expect(isGrabbable(bookedToday, () => true)).toBe(true)
+    // Personal spot stays ungrabbable even when effectively free.
+    expect(
+      isGrabbable(
+        {
+          number: 6,
+          label: 'F',
+          status: 'free',
+          owner_id: 'o',
+          owner_name: 'Maja',
+        },
+        () => true,
+      ),
     ).toBe(false)
   })
 })
