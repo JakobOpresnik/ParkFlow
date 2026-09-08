@@ -11,13 +11,15 @@ import { Pool } from 'pg'
 
 const PLAN_DIR = resolve(import.meta.dirname, '../../frontend/public')
 const OUT_DIR = resolve(PLAN_DIR, 'spots')
-const OUT_WIDTH = 900
+const OUT_WIDTH = 480
 const CROP_ASPECT = 4 / 3
 // How much floor plan to show around the spot, as a multiple of its longest side.
-const CROP_ZOOM = 9
+const CROP_ZOOM = 6
+// Canvas corner radius as a fraction of the crop width.
+const CORNER_RADIUS = 0.015
 // Width the whole plan is rasterized at before cropping — roughly OUT_WIDTH
 // times the zoom, so a crop still looks sharp.
-const PLAN_RASTER_WIDTH = 3600
+const PLAN_RASTER_WIDTH = 1800
 
 interface Coords {
   x: number
@@ -70,41 +72,38 @@ function planDataUri(filename: string): string {
   return uri
 }
 
-function spotRect(c: Coords, label: string | null): string {
+// `labelSize` is a fraction of the crop, not of the spot, so the label reads the
+// same at any zoom level or output width.
+function spotRect(c: Coords, label: string | null, labelSize = 0): string {
   const cx = c.x + c.width / 2
   const cy = c.y + c.height / 2
   const box = `x="${c.x}" y="${c.y}" width="${c.width}" height="${c.height}"`
   if (label === null) {
-    return `<g transform="rotate(${c.rotation}, ${cx}, ${cy})"><rect ${box} fill="rgba(0,0,0,0.04)" stroke="rgba(0,0,0,0.35)" stroke-width="1.5"/></g>`
+    return `<g transform="rotate(${c.rotation}, ${cx}, ${cy})"><rect ${box} fill="rgba(0,0,0,0.04)" stroke="rgba(0,0,0,0.35)" stroke-width="${Math.max(0.5, labelSize * 0.08)}"/></g>`
   }
-  const fontSize = Math.max(10, Math.min(22, c.height * 0.45))
-  const lp = labelAnchor(c, fontSize)
+  // The label must stay inside the rect: bounded by the crop-relative size, by
+  // the width the glyphs need (~0.62em each when bold), and by the short side.
+  // Tall spots get a rotated label, the way the map draws them.
+  const vertical = c.height > c.width * 1.3
+  const along = vertical ? c.height : c.width
+  const across = vertical ? c.width : c.height
+  const fontSize = Math.max(
+    3,
+    Math.min(
+      labelSize,
+      (along * 0.86) / Math.max(1, label.length * 0.62),
+      across * 0.74,
+    ),
+  )
+  const ring = Math.max(2, labelSize * 0.35)
   return `<g transform="rotate(${c.rotation}, ${cx}, ${cy})">
-    <rect ${box} fill="none" stroke="white" stroke-width="8"/>
-    <rect ${box} fill="rgba(59,130,246,0.45)" stroke="rgba(37,99,235,0.95)" stroke-width="3"/>
-    <text x="${lp.x}" y="${lp.y}" text-anchor="${lp.anchor}" dominant-baseline="middle"
+    <rect ${box} fill="none" stroke="white" stroke-width="${ring}"/>
+    <rect ${box} fill="rgba(59,130,246,0.45)" stroke="rgba(37,99,235,0.95)" stroke-width="${ring * 0.4}"/>
+    <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central"
       font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="700"
-      fill="#FFF" stroke="rgba(0,0,0,0.5)" stroke-width="3" paint-order="stroke"
-      transform="${c.labelRotation ? `rotate(${c.labelRotation}, ${lp.x}, ${lp.y})` : ''}">${label}</text>
+      fill="#FFF" stroke="rgba(0,0,0,0.6)" stroke-width="${fontSize * 0.22}" paint-order="stroke"
+      transform="${vertical ? `rotate(-90, ${cx}, ${cy})` : ''}">${label}</text>
   </g>`
-}
-
-function labelAnchor(
-  c: Coords,
-  fontSize: number,
-): { x: number; y: number; anchor: string } {
-  const cx = c.x + c.width / 2
-  const cy = c.y + c.height / 2
-  switch (c.labelPosition) {
-    case 'top':
-      return { x: cx, y: c.y + fontSize, anchor: 'middle' }
-    case 'bottom':
-      return { x: cx, y: c.y + c.height - 4, anchor: 'middle' }
-    case 'left':
-      return { x: c.x + 4, y: cy, anchor: 'start' }
-    default:
-      return { x: c.x + c.width - 4, y: cy, anchor: 'end' }
-  }
 }
 
 // Blueprint grid + off-white ground, matching BLUEPRINT_LIGHT on the map page.
@@ -154,17 +153,29 @@ export function buildSvg(target: Row, siblings: Row[]): string {
   if (typeof crop === 'string') throw new Error(crop)
   const { cw, ch } = crop
   const { vx, vy } = crop
+  // ~7% of the crop height — legible at any OUT_WIDTH without dwarfing the spot.
+  const labelSize = ch * 0.07
   const others = siblings
     .filter((s) => s.id !== target.id && s.coordinates)
-    .map((s) => spotRect(toAbsolute(s.coordinates!, iw, ih), null))
+    .map((s) => spotRect(toAbsolute(s.coordinates!, iw, ih), null, labelSize))
     .join('\n')
+  // Rounded canvas: everything is clipped to a rounded rect, so the PNG corners
+  // stay transparent and the chat background shows through them.
+  const radius = cw * CORNER_RADIUS
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${cw} ${ch}" width="${OUT_WIDTH}" height="${Math.round(OUT_WIDTH / CROP_ASPECT)}">
   ${GRID}
+  <defs>
+    <clipPath id="round">
+      <rect x="${vx}" y="${vy}" width="${cw}" height="${ch}" rx="${radius}" ry="${radius}"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#round)">
   <rect x="${vx}" y="${vy}" width="${cw}" height="${ch}" fill="#fafafa"/>
   <rect x="${vx}" y="${vy}" width="${cw}" height="${ch}" fill="url(#g-major)"/>
   <image x="0" y="0" width="${iw}" height="${ih}" preserveAspectRatio="xMidYMid meet" href="${planDataUri(target.image_filename)}"/>
   ${others}
-  ${spotRect(c, target.label ?? String(target.number))}
+  ${spotRect(c, target.label ?? String(target.number), labelSize)}
+  </g>
 </svg>`
 }
 
