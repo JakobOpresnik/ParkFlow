@@ -102,6 +102,7 @@ Beyond presence-aware availability, ParkFlow provides:
 - 👤 **Owner management** — create owners with name, email, phone, vehicle plate, and notes; link to SSO username for self-service login
 - 📋 **Audit log** — every spot status change is recorded with who changed it, when, and the before/after values (change types: `owner_assigned`, `owner_unassigned`, `status_changed`, `type_changed`); the actor is an admin's display name, `timesheet` for owner syncs, or `system` for legacy rows
 - 💬 **Feedback management** — view, triage, and update status of user-submitted feature requests and bug reports
+- 🔴 **New-feedback indicator** — a dot on the admin nav entry (sidebar, mobile bottom nav, and More drawer) when feedback newer than the admin's last visit to the page exists; the "seen" timestamp is per-browser and admins only
 
 ### 🔔 Real-Time Updates
 
@@ -111,7 +112,8 @@ Beyond presence-aware availability, ParkFlow provides:
 ### 🔔 Notifications & Reminders
 
 - 🛎️ **In-app notifications** — a notification bell surfaces booking and spot events, with mark-as-read and mark-all-read
-- ⏰ **Scheduled reminders** — a `reminders-cron` service nudges users with a weekday-morning "you have a spot reserved today" and a Friday-afternoon "free your spot if you won't need it" to spot owners
+- ⏰ **Scheduled reminders** — a `reminders-cron` service nudges users every morning with "you have a spot reserved today", plus a Friday-afternoon "free your spot if you won't need it" to spot owners
+- 🗺️ **Map image in the morning reminder** — the DM carries a cropped floor-plan image with the reserved spot highlighted in the map's own styling, so the location is visible without opening the app. Images are pre-generated per spot by `bun run gen:spot-images` (needs `DATABASE_URL`; re-run it after changing coordinates in the map editor) and served as static files from `frontend/public/spots/<spot_id>.png`; spots without map coordinates fall back to text only
 - 💬 **Rocket.Chat integration** — reminders and release notices are delivered as Rocket.Chat DMs, and an inbound webhook bot answers parking queries from chat
 - ⚙️ **Per-user opt-out** — users can disable any reminder type from their profile
 
@@ -119,6 +121,7 @@ Beyond presence-aware availability, ParkFlow provides:
 
 - 🇬🇧 🇸🇮 Full **English and Slovenian** translations via `i18next` / `react-i18next`
 - 🔀 In-app language switcher; user-facing strings, relative times, and dates are all localized
+- 🏢 **DB-stored lot and floor names are localized too** — the `useLotName` hook maps the Slovenian names held in the database through `lotNames.*`, falling back to the stored value for anything unknown
 
 ### 🔐 Authentication & Access Control
 
@@ -198,6 +201,7 @@ parkflow/
 │   │   ├── pages/              # Route-level page components
 │   │   ├── store/              # Zustand state (auth, UI, lot selection)
 │   │   └── types/              # Shared TypeScript interfaces
+│   ├── public/             # Floor plan SVGs + spots/ (pre-generated spot map images)
 │   ├── .env.example
 │   ├── Dockerfile
 │   └── package.json
@@ -210,6 +214,7 @@ parkflow/
 │   │   ├── db/                 # pg connection pool
 │   │   └── __tests__/          # Vitest + Supertest test suites
 │   ├── migrations/             # Ordered SQL migration files (auto-run on startup)
+│   ├── scripts/                # One-off maintenance scripts (spot map image generator)
 │   ├── .env.example
 │   ├── Dockerfile
 │   └── package.json
@@ -700,7 +705,7 @@ bun run test            # run all test suites (vitest run)
 bun run test --coverage # with coverage report
 ```
 
-The suite covers every REST route group, the auth middleware, the owner day-status flows, and the reminder scheduler using Vitest + Supertest — 260+ test cases across 18 suites.
+The suite covers every REST route group, the auth middleware, the owner day-status flows, the reminder scheduler, and the spot-map image generator using Vitest + Supertest — 265+ test cases across 19 suites.
 
 > [!WARNING]
 > Use `bun run test` (Vitest), never bare `bun test` — Bun's own runner ignores `vi.mock`, which makes the auth-mocked suites fail with spurious `401`s.
