@@ -35,14 +35,14 @@ backend, which exchanges it, identifies the user, and issues **ParkFlow's own JW
 the only credential the API ever checks afterwards. There is **no per-request call to
 Authentik**: `requireAuth` verifies the backend JWT locally with `JWT_SECRET`.
 
-| Piece | File |
-| --- | --- |
-| 🖥️ OAuth config (authorize/end-session URLs, scopes) | `frontend/src/lib/oauth.ts` |
-| 🖥️ Login page — starts the PKCE flow | `frontend/src/pages/LoginPage.tsx` |
-| 🖥️ Callback page — state check + code exchange | `frontend/src/pages/CallbackPage.tsx` |
-| 🖥️ Auth store — token storage, expiry, logout | `frontend/src/store/authStore.ts` |
-| ⚙️ Exchange / guest / me endpoints | `backend/src/routes/auth.ts` |
-| ⚙️ `requireAuth` / `requireAdmin` / `requireNonGuest` | `backend/src/middleware/auth.ts` |
+| Piece                                                 | File                                  |
+| ----------------------------------------------------- | ------------------------------------- |
+| 🖥️ OAuth config (authorize/end-session URLs, scopes)  | `frontend/src/lib/oauth.ts`           |
+| 🖥️ Login page — starts the PKCE flow                  | `frontend/src/pages/LoginPage.tsx`    |
+| 🖥️ Callback page — state check + code exchange        | `frontend/src/pages/CallbackPage.tsx` |
+| 🖥️ Auth store — token storage, expiry, logout         | `frontend/src/store/authStore.ts`     |
+| ⚙️ Exchange / guest / me endpoints                    | `backend/src/routes/auth.ts`          |
+| ⚙️ `requireAuth` / `requireAdmin` / `requireNonGuest` | `backend/src/middleware/auth.ts`      |
 
 ---
 
@@ -75,11 +75,11 @@ Authentik**: `requireAuth` verifies the backend JWT locally with `JWT_SECRET`.
 
 ## 👑 Roles
 
-| Role | How it's granted | Can do |
-| --- | --- | --- |
-| 👑 `admin` | Userinfo `groups` contains `AUTHENTIK_ADMIN_GROUP` (default `parkflow-admins`) | Everything, incl. admin panel + admin endpoints |
-| 👤 `user` | Any other SSO login | Browse + all self-service writes (booking, own spots) |
-| 👻 `guest` | `POST /api/auth/guest` — no SSO account | Read-only browsing; every write rejected |
+| Role       | How it's granted                                                               | Can do                                                |
+| ---------- | ------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| 👑 `admin` | Userinfo `groups` contains `AUTHENTIK_ADMIN_GROUP` (default `parkflow-admins`) | Everything, incl. admin panel + admin endpoints       |
+| 👤 `user`  | Any other SSO login                                                            | Browse + all self-service writes (booking, own spots) |
+| 👻 `guest` | `POST /api/auth/guest` — no SSO account                                        | Read-only browsing; every write rejected              |
 
 ---
 
@@ -98,11 +98,11 @@ presence-derived fields).
 All API endpoints require `Authorization: Bearer <backend JWT>` via `requireAuth`
 (local `jwt.verify` against `JWT_SECRET` — invalid/expired → `401`). Layered on top:
 
-| Middleware | Effect |
-| --- | --- |
-| `requireAuth` | Valid backend JWT → `req.user = {userId, username, displayName, role}` |
-| `requireNonGuest` | `403` for `guest` tokens — used on all write endpoints |
-| `requireAdmin` | `403` unless `role === 'admin'` |
+| Middleware        | Effect                                                                 |
+| ----------------- | ---------------------------------------------------------------------- |
+| `requireAuth`     | Valid backend JWT → `req.user = {userId, username, displayName, role}` |
+| `requireNonGuest` | `403` for `guest` tokens — used on all write endpoints                 |
+| `requireAdmin`    | `403` unless `role === 'admin'`                                        |
 
 Service-to-service endpoints (Rocket.Chat webhook, reminder triggers) use shared-secret
 headers instead of a JWT — see the [README API reference](README.md#-api-reference).
@@ -111,10 +111,10 @@ headers instead of a JWT — see the [README API reference](README.md#-api-refer
 
 ## ⏳ Session Lifetime & Expiry
 
-| Token | Lifetime |
-| --- | --- |
-| User/admin JWT | **8 h** |
-| Guest JWT | **4 h** |
+| Token          | Lifetime |
+| -------------- | -------- |
+| User/admin JWT | **8 h**  |
+| Guest JWT      | **4 h**  |
 
 The frontend decodes the JWT's `exp` claim and schedules a **proactive expiry**: when it
 hits, tokens are cleared, a "session expired" flag is shown, and the browser is sent to
@@ -134,11 +134,11 @@ hits, tokens are cleared, a "session expired" flag is shown, and the browser is 
 
 ## 📚 Endpoints
 
-| Method | Endpoint | Description |
-| --- | --- | --- |
+| Method | Endpoint             | Description                                                                                                             |
+| ------ | -------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `POST` | `/api/auth/exchange` | `{code, code_verifier, redirect_uri}` → `{token, id_token}`; `400` on missing fields, `401` on failed exchange/userinfo |
-| `POST` | `/api/auth/guest` | No body → `{token, id_token: null}` (4 h, role `guest`) |
-| `GET` | `/api/auth/me` | Backend JWT → `{id, username, displayName, role}` |
+| `POST` | `/api/auth/guest`    | No body → `{token, id_token: null}` (4 h, role `guest`)                                                                 |
+| `GET`  | `/api/auth/me`       | Backend JWT → `{id, username, displayName, role}`                                                                       |
 
 ---
 
@@ -146,23 +146,23 @@ hits, tokens are cleared, a "session expired" flag is shown, and the browser is 
 
 ### ⚙️ Backend
 
-| Variable | Purpose |
-| --- | --- |
-| `JWT_SECRET` | Signs ParkFlow's own JWTs |
+| Variable                                  | Purpose                                                          |
+| ----------------------------------------- | ---------------------------------------------------------------- |
+| `JWT_SECRET`                              | Signs ParkFlow's own JWTs                                        |
 | `OAUTH_CLIENT_ID` / `OAUTH_CLIENT_SECRET` | Authentik OAuth application credentials (secret is backend-only) |
-| `OAUTH_TOKEN_URL` | Authentik token endpoint for the code exchange |
-| `OAUTH_JWKS_URL` | JWKS endpoint for the best-effort `id_token` check |
-| `AUTHENTIK_USERINFO_URL` | Userinfo endpoint — the identity source |
-| `AUTHENTIK_ADMIN_GROUP` | Group name that grants the `admin` role |
+| `OAUTH_TOKEN_URL`                         | Authentik token endpoint for the code exchange                   |
+| `OAUTH_JWKS_URL`                          | JWKS endpoint for the best-effort `id_token` check               |
+| `AUTHENTIK_USERINFO_URL`                  | Userinfo endpoint — the identity source                          |
+| `AUTHENTIK_ADMIN_GROUP`                   | Group name that grants the `admin` role                          |
 
 ### 🖥️ Frontend
 
-| Variable | Purpose |
-| --- | --- |
-| `VITE_OAUTH_AUTHORITY` | OIDC issuer URL (app slug path); authorize/end-session URLs are derived from it |
-| `VITE_OAUTH_CLIENT_ID` | OAuth client ID |
-| `VITE_OAUTH_REDIRECT_URI` | Must match Authentik's configured redirect — `<origin>/callback` |
-| `VITE_OAUTH_ADMIN_GROUP` | Admin group name (must match the backend) |
+| Variable                  | Purpose                                                                         |
+| ------------------------- | ------------------------------------------------------------------------------- |
+| `VITE_OAUTH_AUTHORITY`    | OIDC issuer URL (app slug path); authorize/end-session URLs are derived from it |
+| `VITE_OAUTH_CLIENT_ID`    | OAuth client ID                                                                 |
+| `VITE_OAUTH_REDIRECT_URI` | Must match Authentik's configured redirect — `<origin>/callback`                |
+| `VITE_OAUTH_ADMIN_GROUP`  | Admin group name (must match the backend)                                       |
 
 > [!CAUTION]
 > `VITE_`-prefixed values are compiled into the public JS bundle — never put a secret in

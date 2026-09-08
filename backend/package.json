@@ -12,10 +12,12 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "lint:all": "bun run lint:fix && bun run format",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "gen:spot-images": "bun run scripts/gen-spot-images.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@resvg/resvg-js": "^2.6.2",
     "@types/bun": "latest",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",

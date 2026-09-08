@@ -267,22 +267,26 @@ export function resolveLot(token: string, lots: Lot[]): Lot | undefined {
   })
 }
 
-// Pick a random free spot from a list. `rand` is injectable for tests.
+// Pick a random free spot from a list. `rand` is injectable for tests; `isFree`
+// defaults to the live status but can be a date-aware effective check.
 export function pickRandomFree(
   spots: SpotLike[],
   rand: () => number = Math.random,
+  isFree: (s: SpotLike) => boolean = (s) => s.status === 'free',
 ): SpotLike | undefined {
-  const free = spots.filter((s) => s.status === 'free')
+  const free = spots.filter(isFree)
   if (free.length === 0) return undefined
   return free[Math.floor(rand() * free.length)]
 }
 
 // A spot anyone can grab without taking someone's personal/shared spot:
-// free, and either unowned or part of the ACEX public pool.
-export function isGrabbable(s: SpotLike): boolean {
-  return (
-    s.status === 'free' && (!s.owner_id || s.owner_name === ACEX_OWNER_NAME)
-  )
+// free, and either unowned or part of the ACEX public pool. `isFree` defaults
+// to the live status but can be a date-aware effective check.
+export function isGrabbable(
+  s: SpotLike,
+  isFree: (s: SpotLike) => boolean = (x) => x.status === 'free',
+): boolean {
+  return isFree(s) && (!s.owner_id || s.owner_name === ACEX_OWNER_NAME)
 }
 
 // --- Formatters (pure) ------------------------------------------------------
@@ -933,6 +937,12 @@ function frontendBase(): string {
 // Link that opens the public map highlighting a specific spot. Pass `date`
 // (YYYY-MM-DD) to also open the map on that day — used for reservations made
 // for a future day so the link doesn't land the user on today's map.
+// Static, pre-generated PNG of the spot on its floor plan (see
+// scripts/gen-spot-images.ts). Rendered inline by RocketChat as markdown.
+export function spotImage(spotId: string): string {
+  return `${frontendBase()}/spots/${spotId}.png`
+}
+
 export function spotLink(spotId: string, date?: string): string {
   const params = new URLSearchParams({ spot: spotId })
   if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) params.set('date', date)
@@ -1261,12 +1271,48 @@ router.post('/rocketchat', async (req, res, next) => {
           return
         }
         const spots = await callArray<SpotLike>('GET', '/api/spots')
+        // Date-aware "is free" for the random pickers — same sources and rule
+        // as the free-spots command, so "reserve any tomorrow" grabs from
+        // exactly the spots the UI shows free for that day.
+        const effectiveFree = async (): Promise<(s: SpotLike) => boolean> => {
+          const [overrides, presenceRes] = await Promise.all([
+            callArray<DayOverride>(
+              'GET',
+              `/api/spots/day-overrides?date=${date}`,
+            ),
+            call<WeekPresenceResponse>('GET', `/api/presence?date=${date}`, {
+              token: reserveToken,
+            }),
+          ])
+          const overrideBySpot = new Map(
+            overrides.map((o) => [o.spot_id, o.status]),
+          )
+          const presence = presenceRes.status === 200 ? presenceRes.data : null
+          const ownerPresence = makeOwnerPresence(presence, date)
+          return (s) =>
+            spotStatusOnDate(
+              s,
+              date,
+              s.id ? overrideBySpot.get(s.id) : undefined,
+              ownerPresence,
+              localDate(now),
+              now,
+            ) === 'free'
+        }
+        const when = dayLabel(date, now)
         let spot: SpotLike | undefined
         if (spotName.toLowerCase() === 'any') {
-          // "reserve any" — grab any free, non-personal/non-shared spot.
-          spot = pickRandomFree(spots.filter(isGrabbable))
+          // "reserve any" — grab any effectively-free, non-personal spot.
+          const isFree = await effectiveFree()
+          spot = pickRandomFree(
+            dedupeSpotsForDate(spots, date).filter((s) =>
+              isGrabbable(s, isFree),
+            ),
+            Math.random,
+            isFree,
+          )
           if (!spot) {
-            reply('No free spots available to grab right now.')
+            reply(`No free spots available to grab for ${when}.`)
             return
           }
         } else {
@@ -1280,11 +1326,16 @@ router.post('/rocketchat', async (req, res, next) => {
             )
             if (lot) {
               // Only grab public spots in that building, not someone's personal one.
+              const isFree = await effectiveFree()
               spot = pickRandomFree(
-                spots.filter((s) => s.lot_id === lot.id && isGrabbable(s)),
+                dedupeSpotsForDate(spots, date).filter(
+                  (s) => s.lot_id === lot.id && isGrabbable(s, isFree),
+                ),
+                Math.random,
+                isFree,
               )
               if (!spot) {
-                reply(`No free spots to grab in ${lot.name} right now.`)
+                reply(`No free spots to grab in ${lot.name} for ${when}.`)
                 return
               }
             }

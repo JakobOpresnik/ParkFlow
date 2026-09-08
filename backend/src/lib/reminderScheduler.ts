@@ -1,4 +1,5 @@
 import { pool } from '../db/pool.js'
+import { spotImage } from '../routes/integrations.js'
 import { pushChatMessage } from './rocketchatNotify.js'
 
 // Constant advisory-lock keys — guard against overlapping ticks / multiple
@@ -18,7 +19,9 @@ interface MorningRow {
   spot_id: string
   spot_label: string | null
   floor: string | null
+  lot_name: string | null
   expires_at: string
+  has_map: boolean
 }
 
 // All time/date/dedup/opt-out logic lives here so it is DST-safe (Postgres
@@ -33,9 +36,12 @@ const MORNING_SQL = `
     b.spot_id::text AS spot_id,
     s.label         AS spot_label,
     s.floor         AS floor,
-    b.expires_at    AS expires_at
+    l.name          AS lot_name,
+    b.expires_at    AS expires_at,
+    (s.coordinates IS NOT NULL) AS has_map
   FROM bookings b
   JOIN spots s ON s.id = b.spot_id
+  LEFT JOIN parking_lots l ON l.id = s.lot_id
   WHERE b.status = 'active'
     AND $1::timestamptz >= (date_trunc('day', $1::timestamptz AT TIME ZONE $2) + $3::interval) AT TIME ZONE $2
     AND b.booking_date = ($1::timestamptz AT TIME ZONE $2)::date
@@ -88,6 +94,25 @@ const OWNER_SQL = `
   ORDER BY ou.user_id
 `
 
+// Message shared by the 07:30 batch and the temporary instant-test hook in
+// routes/bookings.ts, so the test exercises the real text and image URL.
+export function morningReminder(r: {
+  spot_id: string
+  spot_label: string | null
+  floor: string | null
+  lot_name: string | null
+  has_map: boolean
+}): { body: string; dm: string } {
+  const where = r.lot_name ?? r.floor
+  const body = `You have a reservation today for ${r.spot_label ?? 'your spot'}${where ? ` (${where})` : ''}.`
+  // Markdown image — RocketChat ignores attachments[].image_url. Spots with no
+  // coordinates have no generated PNG, so they get text only.
+  const map = r.has_map
+    ? `\n![${r.spot_label ?? 'spot'}](${spotImage(r.spot_id)})`
+    : ''
+  return { body, dm: `🅿️ ${body}${map}` }
+}
+
 export async function runReminderTick(
   now: Date = new Date(),
   opts: { dryRun?: boolean } = {},
@@ -120,7 +145,7 @@ export async function runReminderTick(
       for (const r of rows) {
         try {
           const title = 'Reservation today'
-          const body = `You have a reservation today for ${r.spot_label ?? 'your spot'}${r.floor ? ` (${r.floor})` : ''}.`
+          const { body, dm } = morningReminder(r)
           const ins = await client.query<{ id: string }>(
             `INSERT INTO notifications (user_id, type, title, body, data)
              VALUES ($1, 'reservation_today', $2, $3, $4::jsonb)
@@ -139,7 +164,7 @@ export async function runReminderTick(
             ],
           )
           const notifId = ins.rows[0]?.id
-          const ok = await pushChatMessage(r.user_id, '🅿️ ' + body)
+          const ok = await pushChatMessage(r.user_id, dm)
           if (ok && notifId) {
             await client.query(
               'UPDATE notifications SET pushed_at = now() WHERE id = $1',

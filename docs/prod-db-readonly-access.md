@@ -31,11 +31,11 @@ VPN + SSH tunnel + a dedicated read-only role, for debugging and data inspection
 
 ## 📋 Prerequisites
 
-| Requirement | Detail |
-| --- | --- |
+| Requirement               | Detail                                                                  |
+| ------------------------- | ----------------------------------------------------------------------- |
 | 🔒 VPN / internal network | The prod host is only reachable internally — off-VPN, port 22 times out |
-| 🔑 SSH key authorized | Your public key must be on the server's `deploy` account (ask an admin) |
-| 🔐 Read-only DB password | `<pw>` throughout this doc — **not** in this repo, ask an admin (Jakob) |
+| 🔑 SSH key authorized     | Your public key must be on the server's `deploy` account (ask an admin) |
+| 🔐 Read-only DB password  | `<pw>` throughout this doc — **not** in this repo, ask an admin (Jakob) |
 
 Keep the password in your local config only (`~/.claude.json` for the MCP, or your
 password manager).
@@ -44,12 +44,12 @@ password manager).
 
 ## 🖥️ Production Server
 
-| | |
-| --- | --- |
-| 🌐 Host | `parkflow.int.matheo.si` → internal IP `10.0.0.9` |
-| 👤 Deploy account | `deploy` (CI/CD-managed deploy dir `~/parkflow`) |
-| 🐳 Stack | `compose.yml`, db = `postgres:16` — `db:5432` inside the compose network |
-| 🔌 DB port | Published to the **loopback only** (`127.0.0.1:5432`) — reachable via the SSH tunnel, invisible to the wider network |
+|                   |                                                                                                                      |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------- |
+| 🌐 Host           | `parkflow.int.matheo.si` → internal IP `10.0.0.9`                                                                    |
+| 👤 Deploy account | `deploy` (CI/CD-managed deploy dir `~/parkflow`)                                                                     |
+| 🐳 Stack          | `compose.yml`, db = `postgres:16` — `db:5432` inside the compose network                                             |
+| 🔌 DB port        | Published to the **loopback only** (`127.0.0.1:5432`) — reachable via the SSH tunnel, invisible to the wider network |
 
 > [!WARNING]
 > The superuser `parkflow` (password injected at deploy from the `POSTGRES_PASSWORD`

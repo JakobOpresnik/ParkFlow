@@ -4,8 +4,9 @@ import { pool } from '../db/pool.js'
 import { ACEX_OWNER_NAME } from '../lib/acexOwners.js'
 import { broadcast } from '../lib/broadcast.js'
 import { ljubljanaDate } from '../lib/localDate.js'
-import { pushChatMessage } from '../lib/rocketchatNotify.js'
 import { fetchWeekPresence, isOwnerAbsent } from '../lib/presence.js'
+import { morningReminder } from '../lib/reminderScheduler.js'
+import { pushChatMessage } from '../lib/rocketchatNotify.js'
 import { requireAuth, requireNonGuest } from '../middleware/auth.js'
 
 const router = Router()
@@ -329,6 +330,39 @@ router.post('/', requireAuth, requireNonGuest, async (req, res, next) => {
         spot_label: spotRow.label,
         spot_floor: spotRow.floor,
       })
+
+      // TEMP live test — REMINDER_TEST_USER gets the 07:30 reminder DM instantly
+      // on booking. Delete this block and the env var once verified.
+      const tester = process.env.REMINDER_TEST_USER
+      if (
+        tester &&
+        (tester === req.user!.userId || tester === req.user!.username)
+      ) {
+        try {
+          const info = await client.query<{
+            spot_label: string | null
+            floor: string | null
+            lot_name: string | null
+            has_map: boolean
+          }>(
+            `SELECT s.label AS spot_label, s.floor::text AS floor,
+                    l.name AS lot_name, (s.coordinates IS NOT NULL) AS has_map
+             FROM spots s
+             LEFT JOIN parking_lots l ON l.id = s.lot_id
+             WHERE s.id = $1`,
+            [spot_id],
+          )
+          const row = info.rows[0]
+          if (row) {
+            await pushChatMessage(
+              req.user!.userId,
+              morningReminder({ ...row, spot_id }).dm,
+            )
+          }
+        } catch (err) {
+          console.error('[reminders] instant test DM failed', err)
+        }
+      }
     } catch (err) {
       await client.query('ROLLBACK')
       throw err
